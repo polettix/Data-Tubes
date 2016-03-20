@@ -1,0 +1,113 @@
+=pod
+
+=for vim
+   vim: tw=72 ai et:
+
+=encoding utf8
+
+=head1 NAME
+
+Text::Tubes::Tube - Micro-class to handle Tubes
+
+=head1 SYNOPSIS
+
+   use Text::Tubes::Tube;
+   my $tube = Text::Tubes::Tube->new(
+      name => 'transformer',
+      operation => sub {
+         my $record = shift;
+         # ... whatever
+         return {record => $record};
+      },
+   );
+
+   # ... or just use Text::Tubes::tube
+
+
+=head1 DESCRIPTION
+
+This module allows you to...
+
+=head1 METHODS
+
+=over
+
+=item B<< new >>
+
+Constructor. Takes the following parameters:
+
+=over
+
+=item C<name>
+
+the name you want to assign to this tube, can come handy when debugging.
+You can also rely upon auto-generation, of course.
+
+=item C<operation>
+
+a reference to a subroutine that will do all the work. Mandatory, so
+please provide one.
+
+=back
+
+=item B<< operate >>
+
+Fire up the Tube. It will be provided a I<record> in input, and should
+provide something meaningful in output, i.e. a hash reference with one
+(and only one) of the following keys:
+
+=over
+
+=item C<iterator>
+
+the value is an iterator function that can be used to get the output
+records, like this:
+
+   while (defined(my $record = $it->())) {
+      # do whatever you want with $record
+   }
+
+=item C<record>
+
+the value is the output record. The suggestion is to reuse the same
+C<$record> got as input, but no pressure.
+
+=item C<records>
+
+the value is an array reference containing the output records, because
+this Tube had many things to say.
+
+=item C<skip>
+
+whatever the value, this means that the Tube refused to work on the
+specific input.
+
+=back
+
+Providing an C<undef> value back is equivalent to the C<skip> option,
+only a bit ruder.
+
+=back
+
+
+=head1 BUGS AND LIMITATIONS
+
+Report bugs either through RT or GitHub (patches welcome).
+
+=head1 AUTHOR
+
+Flavio Poletti <polettix@cpan.org>
+
+=head1 COPYRIGHT AND LICENSE
+
+Copyright (C) 2016 by Flavio Poletti <polettix@cpan.org>
+
+This module is free software. You can redistribute it and/or modify it
+under the terms of the Artistic License 2.0.
+
+This program is distributed in the hope that it will be useful, but
+without any warranty; without even the implied warranty of
+merchantability or fitness for a particular purpose.
+
+=cut
+
