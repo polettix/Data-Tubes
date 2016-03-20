@@ -16,19 +16,33 @@ This module allows you to...
 
 # FUNCTIONS
 
-- **whatever**
+- **loglevel**
 
-# METHODS
+        loglevel('DEBUG');
 
-- **whatever**
+    set the log level, see [Log::Log4perl::Tiny](https://metacpan.org/pod/Log::Log4perl::Tiny).
+
+- **sequence**
+
+        my $sequence_sub = sequence(@subs_or_tubes);
+        my $iterator = $sequence_sub->($some_record);
+        1 while defined $iterator->(); # not interested in outputs...
+
+        my $seq_tube = tube(my_sequence => $sequence_sub);
+        my $it = $seq_tube->operate($some_other_record);
+        # use $it to extract outputs from the sequence
+
+    create a sequence of tubes.
+
+- **tube**
+
+        my $tube = tube($name, $operation);
+
+    sugar for creating a [Text::Tubes::Tube](https://metacpan.org/pod/Text::Tubes::Tube).
 
 # BUGS AND LIMITATIONS
 
 Report bugs either through RT or GitHub (patches welcome).
-
-# SEE ALSO
-
-Foo::Bar.
 
 # AUTHOR
 
