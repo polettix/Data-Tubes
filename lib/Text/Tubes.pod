@@ -1,0 +1,63 @@
+=pod
+
+=encoding utf8
+
+=head1 NAME
+
+Text::Tubes - Text and data canalising
+
+=head1 VERSION
+
+This document describes Text::Tubes version 0.01.
+
+=head1 SYNOPSIS
+
+   use Text::Tubes;
+
+
+=head1 DESCRIPTION
+
+This module allows you to...
+
+=head1 FUNCTIONS
+
+=over
+
+=item B<< whatever >>
+
+=back
+
+
+=head1 METHODS
+
+=over
+
+=item B<< whatever >>
+
+=back
+
+
+=head1 BUGS AND LIMITATIONS
+
+Report bugs either through RT or GitHub (patches welcome).
+
+=head1 SEE ALSO
+
+Foo::Bar.
+
+=head1 AUTHOR
+
+Flavio Poletti <polettix@cpan.org>
+
+=head1 COPYRIGHT AND LICENSE
+
+Copyright (C) 2016 by Flavio Poletti <polettix@cpan.org>
+
+This module is free software. You can redistribute it and/or modify it
+under the terms of the Artistic License 2.0.
+
+This program is distributed in the hope that it will be useful, but
+without any warranty; without even the implied warranty of
+merchantability or fitness for a particular purpose.
+
+=cut
