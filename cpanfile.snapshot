@@ -1,2 +1,175 @@
 # carton snapshot format: version 1.0
 DISTRIBUTIONS
+  ExtUtils-Config-0.008
+    pathname: L/LE/LEONT/ExtUtils-Config-0.008.tar.gz
+    provides:
+      ExtUtils::Config 0.008
+    requirements:
+      Data::Dumper 0
+      ExtUtils::MakeMaker 6.30
+      strict 0
+      warnings 0
+  ExtUtils-Helpers-0.022
+    pathname: L/LE/LEONT/ExtUtils-Helpers-0.022.tar.gz
+    provides:
+      ExtUtils::Helpers 0.022
+      ExtUtils::Helpers::Unix 0.022
+      ExtUtils::Helpers::VMS 0.022
+      ExtUtils::Helpers::Windows 0.022
+    requirements:
+      Carp 0
+      Exporter 5.57
+      ExtUtils::MakeMaker 6.30
+      File::Basename 0
+      File::Copy 0
+      File::Spec::Functions 0
+      Module::Load 0
+      Text::ParseWords 3.24
+      strict 0
+      warnings 0
+  ExtUtils-InstallPaths-0.011
+    pathname: L/LE/LEONT/ExtUtils-InstallPaths-0.011.tar.gz
+    provides:
+      ExtUtils::InstallPaths 0.011
+    requirements:
+      Carp 0
+      ExtUtils::Config 0.002
+      ExtUtils::MakeMaker 0
+      File::Spec 0
+      perl 5.006
+      strict 0
+      warnings 0
+  Log-Log4perl-Tiny-1.2.7
+    pathname: P/PO/POLETTIX/Log-Log4perl-Tiny-1.2.7.tar.gz
+    provides:
+      Log::Log4perl::Tiny 1.002007
+    requirements:
+      ExtUtils::MakeMaker 6.30
+  Mo-0.39
+    pathname: I/IN/INGY/Mo-0.39.tar.gz
+    provides:
+      Attr::Trait 0.39
+      Mo 0.39
+      Mo::Golf 0.39
+      Mo::Inline 0.39
+      Mo::Moose 0.39
+      Mo::Mouse 0.39
+      Mo::build 0.39
+      Mo::builder 0.39
+      Mo::chain 0.39
+      Mo::coerce 0.39
+      Mo::default 0.39
+      Mo::exporter 0.39
+      Mo::import 0.39
+      Mo::importer 0.39
+      Mo::is 0.39
+      Mo::nonlazy 0.39
+      Mo::option 0.39
+      Mo::required 0.39
+      Mo::xs 0.39
+    requirements:
+      ExtUtils::MakeMaker 6.30
+  Module-Build-Tiny-0.039
+    pathname: L/LE/LEONT/Module-Build-Tiny-0.039.tar.gz
+    provides:
+      Module::Build::Tiny 0.039
+    requirements:
+      CPAN::Meta 0
+      DynaLoader 0
+      Exporter 5.57
+      ExtUtils::CBuilder 0
+      ExtUtils::Config 0.003
+      ExtUtils::Helpers 0.020
+      ExtUtils::Install 0
+      ExtUtils::InstallPaths 0.002
+      ExtUtils::ParseXS 0
+      File::Basename 0
+      File::Find 0
+      File::Path 0
+      File::Spec::Functions 0
+      Getopt::Long 2.36
+      JSON::PP 2
+      Pod::Man 0
+      TAP::Harness::Env 0
+      perl 5.006
+      strict 0
+      warnings 0
+  Path-Tiny-0.084
+    pathname: D/DA/DAGOLDEN/Path-Tiny-0.084.tar.gz
+    provides:
+      Path::Tiny 0.084
+      Path::Tiny::Error 0.084
+    requirements:
+      Carp 0
+      Cwd 0
+      Digest 1.03
+      Digest::SHA 5.45
+      Exporter 5.57
+      ExtUtils::MakeMaker 6.17
+      Fcntl 0
+      File::Copy 0
+      File::Glob 0
+      File::Path 2.07
+      File::Spec 0.86
+      File::Temp 0.19
+      File::stat 0
+      constant 0
+      if 0
+      overload 0
+      perl 5.008001
+      strict 0
+      warnings 0
+  Test-Harness-3.36
+    pathname: L/LE/LEONT/Test-Harness-3.36.tar.gz
+    provides:
+      App::Prove 3.36
+      App::Prove::State 3.36
+      App::Prove::State::Result 3.36
+      App::Prove::State::Result::Test 3.36
+      Harness::Hook undef
+      TAP::Base 3.36
+      TAP::Formatter::Base 3.36
+      TAP::Formatter::Color 3.36
+      TAP::Formatter::Console 3.36
+      TAP::Formatter::Console::ParallelSession 3.36
+      TAP::Formatter::Console::Session 3.36
+      TAP::Formatter::File 3.36
+      TAP::Formatter::File::Session 3.36
+      TAP::Formatter::Session 3.36
+      TAP::Harness 3.36
+      TAP::Harness::Env 3.36
+      TAP::Object 3.36
+      TAP::Parser 3.36
+      TAP::Parser::Aggregator 3.36
+      TAP::Parser::Grammar 3.36
+      TAP::Parser::Iterator 3.36
+      TAP::Parser::Iterator::Array 3.36
+      TAP::Parser::Iterator::Process 3.36
+      TAP::Parser::Iterator::Stream 3.36
+      TAP::Parser::IteratorFactory 3.36
+      TAP::Parser::Multiplexer 3.36
+      TAP::Parser::Result 3.36
+      TAP::Parser::Result::Bailout 3.36
+      TAP::Parser::Result::Comment 3.36
+      TAP::Parser::Result::Plan 3.36
+      TAP::Parser::Result::Pragma 3.36
+      TAP::Parser::Result::Test 3.36
+      TAP::Parser::Result::Unknown 3.36
+      TAP::Parser::Result::Version 3.36
+      TAP::Parser::Result::YAML 3.36
+      TAP::Parser::ResultFactory 3.36
+      TAP::Parser::Scheduler 3.36
+      TAP::Parser::Scheduler::Job 3.36
+      TAP::Parser::Scheduler::Spinner 3.36
+      TAP::Parser::Source 3.36
+      TAP::Parser::SourceHandler 3.36
+      TAP::Parser::SourceHandler::Executable 3.36
+      TAP::Parser::SourceHandler::File 3.36
+      TAP::Parser::SourceHandler::Handle 3.36
+      TAP::Parser::SourceHandler::Perl 3.36
+      TAP::Parser::SourceHandler::RawTAP 3.36
+      TAP::Parser::YAMLish::Reader 3.36
+      TAP::Parser::YAMLish::Writer 3.36
+      Test::Harness 3.36
+    requirements:
+      ExtUtils::MakeMaker 0
