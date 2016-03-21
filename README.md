@@ -12,7 +12,8 @@ This document describes Text::Tubes version 0.01.
 
 # DESCRIPTION
 
-This module allows you to...
+This module allows you to define _Tubes_, which are little more than
+transformation subroutines over records.
 
 # FUNCTIONS
 

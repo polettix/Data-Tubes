@@ -15,6 +15,7 @@ our @EXPORT_OK = (
    qw<
      loglevel
      sequence
+     summon
      tube
      >
 );
@@ -33,21 +34,26 @@ sub sequence {
          iterator => sub {
           STEP:
             while (@stack) {
-               my $pos = $#stack;
-
+               my $pos   = $#stack;
                my $frame = $stack[$pos];
-               my $record;
+
+               my ($has_record, $record);
                if (exists $frame->{record}) {
-                  $record = delete $frame->{record};
+                  $record     = delete $frame->{record};
+                  $has_record = 1;
                }
                elsif (exists $frame->{records}) {
-                  $record = shift @{$frame->{records}};
+                  $record = shift @{$frame->{records}}
+                    if $has_record = @{$frame->{records}};
                }
                elsif (exists $frame->{iterator}) {
-                  $record = $frame->{iterator}->();
+                  my @buffer = $frame->{iterator}->();
+                  $record = shift @buffer
+                    if $has_record = @buffer;
                }
 
-               if (!defined $record) {    # no more at this level...
+               if (!$has_record) {    # no more at this level...
+                  DEBUG 'no more records';
                   pop @stack;
                   next STEP;
                }
@@ -71,14 +77,29 @@ sub sequence {
                next STEP
                  if (!defined $o) || (exists $o->{skip});
 
-               push @stack, $o; # and go to next level
+               push @stack, $o;    # and go to next level
             } ## end STEP: while (@stack)
 
-            return; # end of output
+            return;                # end of output, empty list
          },
       };
    };
 } ## end sub sequence
+
+sub summon {                       # sort-of import
+   my ($caller_package) = caller(0);
+   for my $r (@_) {
+      my $requested = (substr($r, 0, 1) eq '+')
+         ? ('Text::Tubes::Plugin::' . substr($r, 1))
+         : $r;
+      my ($rpack, $rname) = $requested =~ m{\A(.*)::(\w+)\z}mxs;
+      (my $fpack = "$rpack.pm") =~ s{::}{/}gmxs;
+      require $fpack;
+
+      no strict 'refs';
+      *{$caller_package . '::' . $rname} = \&{$requested};
+   }
+}
 
 sub tube {
    my ($name, $operation) = @_;
