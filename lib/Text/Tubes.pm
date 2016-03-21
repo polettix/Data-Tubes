@@ -37,8 +37,10 @@ sub summon {                       # sort-of import
          (my $fpack = "$pack.pm") =~ s{::}{/}gmxs;
          require $fpack;
          for my $name (ref($names) ? @$names : $names) {
+            my $sub = $pack->can($name)
+               or LOGDIE "package '$pack' has no '$name' inside";
             no strict 'refs';
-            *{$cpack . '::' . $name} = \&{$pack . '::' . $name};
+            *{$cpack . '::' . $name} = $sub;
          }
       }
    } ## end for my $r (@_)
