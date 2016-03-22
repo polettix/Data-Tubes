@@ -18,7 +18,7 @@ our %EXPORT_TAGS = (all => \@EXPORT_OK,);
 
 sub drain {
    my $tube = shift;
-   my $outcome = $tube->();
+   my $outcome = $tube->(@_);
    my $iterator = $outcome->{iterator} // return;
    while (my @items = $iterator->()) {}
 }
