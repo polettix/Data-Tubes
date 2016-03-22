@@ -6,6 +6,7 @@ use Path::Tiny;
 use Text::Tubes qw< summon >;
 
 my @functions = qw<
+  dispatch_to_files
   write_to_handle
   write_to_file
 >;
@@ -72,7 +73,8 @@ $td->mkpath();
       $wtf->({rendered => "hello\n"});
       $wtf->({rendered => "you"});
    }
-   my @children = $td->children();
+   my @children =
+     sort { $a->stringify() cmp $b->stringify() } $td->children();
    is scalar(@children), 2, 'two files created';
    my $content = $children[0]->slurp_raw();
    is $content, "hello\n", 'content of first file';
@@ -93,7 +95,8 @@ $td->mkpath();
       $wtf->({rendered => "hello\n"});
       $wtf->({rendered => "you"});
    }
-   my @children = $td->children();
+   my @children =
+     sort { $a->stringify() cmp $b->stringify() } $td->children();
    is scalar(@children), 2, 'two files created';
    my $content = $children[0]->slurp_raw();
    is $content, "hello\n", 'content of first file';
@@ -101,6 +104,45 @@ $td->mkpath();
    $content = $children[1]->slurp_raw();
    is $content, "you", 'content of second file';
    is $children[1]->basename(), 'third.txt_1', 'name of second file';
+   $_->remove() for @children;
+}
+
+{
+   my $template = $td->child('third.txt');
+   {
+      my $dtf = dispatch_to_files(
+         key => [qw< structured class >],
+         filename_template =>
+           $td->child('fourth-[% key %]-%02d.txt')->stringify(),
+         records_threshold => 1
+      );
+      $dtf->({rendered => "hello\n", structured => {class => 'whatever'}});
+      $dtf->({rendered => "you",     structured => {class => 'hey'}});
+      $dtf->({rendered => "ciao",    structured => {class => 'whatever'}});
+      $dtf->({rendered => "tube",    structured => {class => 'hey'}});
+   }
+   my @children =
+     sort { $a->stringify() cmp $b->stringify() } $td->children();
+   is scalar(@children), 4, 'four files created';
+
+   my $content = $children[0]->slurp_raw();
+   is $content, "you", 'content of first file';
+   is $children[0]->basename(), 'fourth-hey-00.txt', 'name of first file';
+
+   my $content = $children[1]->slurp_raw();
+   is $content, "tube", 'content of second file';
+   is $children[1]->basename(), 'fourth-hey-01.txt', 'name of second file';
+
+   my $content = $children[2]->slurp_raw();
+   is $content, "hello\n", 'content of third file';
+   is $children[2]->basename(), 'fourth-whatever-00.txt',
+     'name of third file';
+
+   my $content = $children[3]->slurp_raw();
+   is $content, "ciao", 'content of fourth file';
+   is $children[3]->basename(), 'fourth-whatever-01.txt',
+     'name of fourth file';
+
    $_->remove() for @children;
 }
 

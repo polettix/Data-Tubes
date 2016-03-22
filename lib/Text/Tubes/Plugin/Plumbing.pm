@@ -9,12 +9,58 @@ use Log::Log4perl::Tiny qw< :easy :dead_if_first get_logger LOGLEVEL >;
 use Text::Tubes::Util qw< normalize_args traverse >;
 use Text::Tubes::Plugin::Util qw< identify log_helper >;
 
+sub dispatch {
+   my %args = normalize_args(@_,
+      {default => undef, name => 'dispatch', loglevel => $INFO});
+   identify(\%args);
+   my $name = $args{name};
+
+   my $selector = $args{selector};
+   if (! defined($selector) && defined($args{key})) {
+      my @key = ref($args{key}) ? @{$args{key}} : ($args{key});
+      $selector = sub { return traverse($_[0], @key); };
+   }
+   LOGDIE "$name: required dispatch key or selector"
+     unless defined $selector;
+
+   my $handler_for = {};    # our cache
+   my $factory = $args{factory};
+   if (! defined($factory) && defined($args{handlers})) {
+      $handler_for = $args{handlers};
+      $factory = sub {
+         my ($key, $record) = @_;
+         die {
+            message => "$name: unhandled selection key '$key'",
+            record => $record,
+         };
+      };
+   }
+
+   my $default = $args{default};
+   return sub {
+      my $record = shift;
+
+      # get a key into the cache
+      my $key = $selector->($record) // $default;
+      die {
+         message => "$name: selector key is undefined",
+         record  => $record,
+      } unless defined $key;
+
+      # register a new handler... or die!
+      $handler_for->{$key} = $factory->($key, $record)
+         unless exists $handler_for->{$key};
+
+      return $handler_for->{$key}->($record);
+   };
+} ## end sub dispatch
+
 sub logger {
    my %args = normalize_args(@_, {name => 'log pipe', loglevel => $INFO});
    identify(\%args);
    my $loglevel = $args{loglevel};
-   my $mangler = $args{target};
-   if (! defined $mangler) {
+   my $mangler  = $args{target};
+   if (!defined $mangler) {
       $mangler = sub { return shift; }
    }
    elsif (ref($mangler) ne 'CODE') {
@@ -23,14 +69,14 @@ sub logger {
          my $record = shift;
          return traverse($record, @keys);
       };
-   }
+   } ## end elsif (ref($mangler) ne 'CODE')
    my $logger = get_logger();
    return sub {
       my $record = shift;
       $logger->log($loglevel, $mangler->($record));
       return {record => $record};
    };
-}
+} ## end sub logger
 
 sub sequence {
    my %args = normalize_args(@_, {name => 'sequence'});
@@ -72,7 +118,7 @@ sub sequence {
                   TRACE "$name: level $n backtracking, no more records";
                   pop @stack;
                   next STEP;
-               }
+               } ## end if (!$has_record)
                return $record if @stack > @tubes;    # output cache
 
                TRACE sub {
