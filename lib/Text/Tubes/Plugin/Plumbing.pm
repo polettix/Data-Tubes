@@ -7,6 +7,7 @@ use Scalar::Util qw< blessed >;
 
 use Log::Log4perl::Tiny qw< :easy :dead_if_first get_logger >;
 use Text::Tubes::Tube;
+use Text::Tubes::Util qw< normalize_args >;
 use Text::Tubes::Plugin::Util qw< identify logger >;
 
 sub array_source {
@@ -34,12 +35,18 @@ sub iterator_source {
 }
 
 sub sequence {
-   my $args = (@_ && ref($_[0]) eq 'HASH') ? shift : {};
+   my %args = normalize_args(@_, {name => 'sequence'});
+   identify(\%args);
+   my $logger = logger(\%args);
+
    my @tubes =
      map { blessed($_) ? $_ : Text::Tubes::Tube->new(operation => $_); }
-     @_;
+     @{$args{tubes}};
+
    return sub {
       my $record = shift;
+      $logger->($record, \%args) if $logger;
+
       my @stack = ({record => $record});
       return {
          iterator => sub {
@@ -112,7 +119,6 @@ sub unwrap {
    my %args = normalize_args(@_,
       {name => 'unwrap', missing_ok => 0, missing_is_skip => 0});
    identify(\%args);
-
    my $logger = logger(\%args);
    my $name   = $args{name};
    my $key    = $args{key};
@@ -135,6 +141,7 @@ sub wrap {
    my %args = normalize_args(@_, {name => 'wrap'});
    identify(\%args);
    my $logger = logger(\%args);
+   my $name   = $args{name};
    my $key    = $args{key};
    LOGDIE "$name needs a key" unless defined $key;
    return sub {

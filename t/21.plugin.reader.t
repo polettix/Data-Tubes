@@ -63,7 +63,7 @@ END
 }
 
 {
-   my $sequence = sequence(files(), read_by_line());
+   my $sequence = sequence(tubes => [files(), read_by_line()]);
    my $outcome = $sequence->([\$fakefile]);
    is ref($outcome), 'HASH', 'outcome is a hash';
    my $it = $outcome->{iterator};
@@ -80,7 +80,7 @@ END
 }
 
 {
-   my $sequence = sequence(files(), read_by_paragraph());
+   my $sequence = sequence(tubes => [files(), read_by_paragraph()]);
    my $outcome = $sequence->([\$fakefile]);
    is ref($outcome), 'HASH', 'outcome is a hash';
    my $it = $outcome->{iterator};
@@ -98,7 +98,8 @@ END
 
 {
    my $sequence =
-     sequence(files(files => [\$fakefile]), read_by_paragraph());
+     sequence(
+      tubes => [files(files => [\$fakefile]), read_by_paragraph()]);
    {
       my $outcome = $sequence->();
       is ref($outcome), 'HASH', 'outcome is a hash';
@@ -132,7 +133,8 @@ END
 }
 
 {
-   my $sequence = sequence(files(), read_by_separator(separator => '---'));
+   my $sequence =
+     sequence(tubes => [files(), read_by_separator(separator => '---')]);
    my $fakefile = 'ciao---a---tutti';
    my $outcome  = $sequence->([\$fakefile]);
    is ref($outcome), 'HASH', 'outcome is a hash';
@@ -151,8 +153,8 @@ END
 
 {
    my $sequence =
-     sequence(files(),
-      read_by_separator(separator => '---', emit_eof => 1));
+     sequence(tubes =>
+        [files(), read_by_separator(separator => '---', emit_eof => 1)]);
    my $fakefile = 'ciao---a---tutti';
    my $outcome  = $sequence->([\$fakefile]);
    is ref($outcome), 'HASH', 'outcome is a hash';

@@ -8,7 +8,7 @@ summon({'+Plumbing' => 'sequence'});
 ok __PACKAGE__->can('sequence'), 'summoned sequence';
 
 {
-   my $sequence = sequence(\&first, \&second);
+   my $sequence = sequence(tubes => [\&first, \&second]);
    my $output = $sequence->({});
    ok exists($output->{iterator}), 'sequence returned an iterator';
 
@@ -24,7 +24,7 @@ ok __PACKAGE__->can('sequence'), 'summoned sequence';
 }
 
 {
-   my $sequence = sequence(\&first, \&second, \&third);
+   my $sequence = sequence(tubes => [\&first, \&second, \&third]);
    my $output = $sequence->({});
    ok exists($output->{iterator}), 'sequence returned an iterator';
 
@@ -46,7 +46,7 @@ ok __PACKAGE__->can('sequence'), 'summoned sequence';
 }
 
 {
-   my $sequence = sequence(\&first, \&second, \&iter_third);
+   my $sequence = sequence(tubes => [\&first, \&second, \&iter_third]);
    my $output = $sequence->({});
    ok exists($output->{iterator}), 'sequence returned an iterator';
 
