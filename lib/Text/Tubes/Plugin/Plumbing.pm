@@ -6,7 +6,6 @@ use Data::Dumper;
 use Scalar::Util qw< blessed >;
 
 use Log::Log4perl::Tiny qw< :easy :dead_if_first get_logger LOGLEVEL >;
-use Text::Tubes::Tube;
 use Text::Tubes::Util qw< normalize_args traverse >;
 use Text::Tubes::Plugin::Util qw< identify log_helper >;
 

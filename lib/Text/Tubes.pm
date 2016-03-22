@@ -7,13 +7,11 @@ use English qw< -no_match_vars >;
 use Exporter qw< import >;
 
 use Log::Log4perl::Tiny qw< :easy :dead_if_first LOGLEVEL >;
-use Text::Tubes::Tube;
 
 our @EXPORT_OK = (
    qw<
      loglevel
      summon
-     tube
      >
 );
 our %EXPORT_TAGS = (all => \@EXPORT_OK,);
@@ -45,14 +43,6 @@ sub summon {                       # sort-of import
       }
    } ## end for my $r (@_)
 } ## end sub summon
-
-sub tube {
-   my ($name, $operation) = @_;
-   return Text::Tubes::Tube(
-      name      => $name,
-      operation => $operation,
-   );
-} ## end sub tube
 
 1;
 __END__

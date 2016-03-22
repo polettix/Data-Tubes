@@ -45,12 +45,6 @@ set the log level, see L<Log::Log4perl::Tiny>.
 
 create a sequence of tubes.
 
-=item B<< tube >>
-
-   my $tube = tube($name, $operation);
-
-sugar for creating a L<Text::Tubes::Tube>.
-
 =back
 
 =head1 BUGS AND LIMITATIONS
