@@ -5,8 +5,33 @@ use English qw< -no_match_vars >;
 use Data::Dumper;
 use Scalar::Util qw< blessed >;
 
-use Log::Log4perl::Tiny qw< :easy :dead_if_first >;
+use Log::Log4perl::Tiny qw< :easy :dead_if_first get_logger >;
 use Text::Tubes::Tube;
+use Text::Tubes::Plugin::Util qw< identify logger >;
+
+sub array_source {
+   my %args = normalize_args(@_, {name => 'array source'});
+   identify(\%args);
+   my $logger = logger(\%args);
+   my $array = $args{array} || [];
+   my $i = 0;
+   return sub {
+      return if $i > $#$array;
+      return {record => $array->[$i++]};
+   };
+}
+
+sub iterator_source {
+   my %args = normalize_args(@_, {name => 'iterator source'});
+   identify(\%args);
+   my $logger = logger(\%args);
+   my $iterator = $args{array} || sub { return };
+   return sub {
+      my @items = $iterator->();
+      return unless @items;
+      return {record => $items[0]};
+   };
+}
 
 sub sequence {
    my $args = (@_ && ref($_[0]) eq 'HASH') ? shift : {};
@@ -71,5 +96,52 @@ sub sequence {
       };
    };
 } ## end sub sequence
+
+sub sink {
+   my %args = normalize_args(@_, {name => 'sink'});
+   identify(\%args);
+   my $logger = logger(\%args);
+   return sub {
+      my $record = shift;
+      $logger->($record, \%args) if $logger;
+      return {skip => 1};
+   };
+} ## end sub sink
+
+sub unwrap {
+   my %args = normalize_args(@_,
+      {name => 'unwrap', missing_ok => 0, missing_is_skip => 0});
+   identify(\%args);
+
+   my $logger = logger(\%args);
+   my $name   = $args{name};
+   my $key    = $args{key};
+   LOGDIE "$name needs a key" unless defined $key;
+   my $missing_ok      = $args{missing_ok};
+   my $missing_is_skip = $args{missing_is_skip};
+   return sub {
+      my $record = shift;
+      $logger->($record, \%args) if $logger;
+      die {message => "$name: not a hash reference", record => $record}
+        unless ref($record) eq 'HASH';
+      return {record => $record->{$key}} if exists($record->{$key});
+      return {skip   => 1}               if $missing_is_skip;
+      return {record => undef}           if $missing_ok;
+      die {message => "$name: no '$key' in record", record => $record};
+   };
+} ## end sub unwrap
+
+sub wrap {
+   my %args = normalize_args(@_, {name => 'wrap'});
+   identify(\%args);
+   my $logger = logger(\%args);
+   my $key    = $args{key};
+   LOGDIE "$name needs a key" unless defined $key;
+   return sub {
+      my $record = shift;
+      $logger->($record, \%args) if $logger;
+      return {record => {$key => $record}};
+   };
+} ## end sub wrap
 
 1;
