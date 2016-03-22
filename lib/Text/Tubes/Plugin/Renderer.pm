@@ -11,7 +11,7 @@ my %global_defaults = (
    output => 'rendered',
 );
 
-sub render_template_perlish {
+sub render_with_template_perlish {
    my %args = normalize_args(
       @_,
       {
