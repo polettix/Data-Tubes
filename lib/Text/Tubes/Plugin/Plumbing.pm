@@ -81,7 +81,7 @@ sub logger {
 sub sequence {
    my %args = normalize_args(@_, {name => 'sequence'});
    identify(\%args);
-   my $logger = log_helper($args{logger}, \%args);
+   my $logger = log_helper(\%args);
    my $name = $args{name};
 
    my @tubes = @{$args{tubes}};
@@ -148,7 +148,7 @@ sub sequence {
 sub sink {
    my %args = normalize_args(@_, {name => 'sink'});
    identify(\%args);
-   my $logger = log_helper($args{logger}, \%args);
+   my $logger = log_helper(\%args);
    return sub {
       my $record = shift;
       $logger->($record, \%args) if $logger;
@@ -160,7 +160,7 @@ sub unwrap {
    my %args = normalize_args(@_,
       {name => 'unwrap', missing_ok => 0, missing_is_skip => 0});
    identify(\%args);
-   my $logger = log_helper($args{logger}, \%args);
+   my $logger = log_helper(\%args);
    my $name   = $args{name};
    my $key    = $args{key};
    LOGDIE "$name needs a key" unless defined $key;
@@ -181,7 +181,7 @@ sub unwrap {
 sub wrap {
    my %args = normalize_args(@_, {name => 'wrap'});
    identify(\%args);
-   my $logger = log_helper($args{logger}, \%args);
+   my $logger = log_helper(\%args);
    my $name   = $args{name};
    my $key    = $args{key};
    LOGDIE "$name needs a key" unless defined $key;

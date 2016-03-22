@@ -10,13 +10,18 @@ use Log::Log4perl::Tiny qw< :easy :dead_if_first LOGLEVEL >;
 
 our @EXPORT_OK = (
    qw<
-     loglevel
+     drain
      summon
      >
 );
 our %EXPORT_TAGS = (all => \@EXPORT_OK,);
 
-sub loglevel { LOGLEVEL(@_) }
+sub drain {
+   my $tube = shift;
+   my $outcome = $tube->();
+   my $iterator = $outcome->{iterator} // return;
+   while (my @items = $iterator->()) {}
+}
 
 sub summon {    # sort-of import
    my ($cpack) = caller(0);

@@ -2,6 +2,7 @@ package Text::Tubes::Plugin::Util;
 use strict;
 use warnings;
 use English qw< -no_match_vars >;
+use Data::Dumper;
 
 use Template::Perlish;
 use Log::Log4perl::Tiny qw< :easy :dead_if_first get_logger >;
@@ -31,8 +32,9 @@ sub identify {
      hintsh
    >;
    my %caller;
+
    if (exists $opts->{caller}) {
-      @caller{@caller_fields} = @{$opts->{caller}}
+      @caller{@caller_fields} = @{$opts->{caller}};
    }
    else {
       my $level = $opts->{level};
@@ -73,12 +75,12 @@ sub log_helper {
    $name = '*unknown*' unless defined $name;
 
    my $message = $opts->{message};
-   $message = '==> [% name %]' unless defined $message;
+   $message = '==> [% args.name %]' unless defined $message;
 
    my $tp = Template::Perlish->new(%{$opts->{tp_opts} || {}});
    $message = $tp->compile($message);
 
-   my $logger = get_logger();
+   my $logger   = get_logger();
    my $loglevel = $opts->{loglevel};
    $loglevel = $DEBUG unless defined $loglevel;
 
@@ -86,10 +88,11 @@ sub log_helper {
       my $level = $logger->level();
       return if $level < $loglevel;
       my $record = shift;
-      my $rendered = $tp->evaluate($message, {record => $record});
+      my $rendered =
+        $tp->evaluate($message, {record => $record, args => $args});
       $logger->log($loglevel, $rendered);
    };
-}
+} ## end sub log_helper
 
 sub read_file {
    my %args = normalize_args(

@@ -19,14 +19,14 @@ sub iterate_array {
    my $n_global = @$global_array;
    return sub {
       my $local_array = shift || [];
-      $logger->($local_array, \%args) if $logger;
       my $n_local = @$local_array;
       my $i = 0;
       return { iterator => sub {
-         return $global_array->[$i++] if $i < $n_global;
-         return $local_array->[($i++) - $n_global]
-            if $i < $n_global + $n_local;
-         return;
+         return if $i >= $n_global + $n_local;
+         my $element = ($i < $n_global) ? $global_array->[$i++]
+            : $local_array->[($i++) - $n_global];
+         $logger->($element, \%args) if $logger;
+         return $element;
       },};
    };
 }
@@ -63,7 +63,16 @@ sub open_file {
             name  => "handle\:$name",
          };
       } ## end if (ref($file) eq 'GLOB')
+      elsif ($file eq '-') {
+         $record->{$output} = {
+            fh    => \*STDIN,
+            input => $file,
+            type  => 'handle',
+            name  => "handle\:STDIN",
+         };
+      }
       else {
+         $file =~ s{\Afile:}{}mxs;
          open my $fh, '<', $file
            or die "open('$file'): $OS_ERROR";
          binmode $fh, $binmode;

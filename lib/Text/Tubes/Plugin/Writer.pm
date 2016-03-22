@@ -115,13 +115,21 @@ sub write_to_file {
       # open filehandle if not already available
       if (!defined $fh) {
          my $fname = $filename->();
-         open $fh, '>',
-           $fname
-           or die {
-            message => "$name: open('$fname'): $OS_ERROR",
-            record  => $record,
-            input   => $input,
-           };
+         if (ref($fname) eq 'GLOB') {
+            $fh = $fname;
+         }
+         elsif ($fname eq '-') {
+            $fh = \*STDOUT;
+         }
+         else {
+            $fname =~ s{\Afile:}{}mxs;
+            open $fh, '>', $fname    #
+            or die {
+               message => "$name: open('$fname'): $OS_ERROR",
+               record  => $record,
+               input   => $input,
+            };
+         }
          binmode $fh, $binmode if $binmode;
       } ## end if (!defined $fh)
 
@@ -132,7 +140,6 @@ sub write_to_file {
          $records++;
          $chars += length($record->{$input});
          if (($tr && ($records >= $tr)) || ($tc && ($chars >= $tc))) {
-            close $fh;
             $fh = undef;
          }
       } ## end if ($tr || $tc)
