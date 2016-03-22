@@ -18,30 +18,37 @@ our %EXPORT_TAGS = (all => \@EXPORT_OK,);
 
 sub loglevel { LOGLEVEL(@_) }
 
-sub summon {                       # sort-of import
+sub summon {    # sort-of import
    my ($cpack) = caller(0);
    for my $r (@_) {
-      my $hash;
-      if (ref($r) ne 'HASH') {
-         my ($rpack, $rname) = $r=~ m{\A(.*)::(\w+)\z}mxs;
-         $hash = {$rpack => $rname};
+      my @parts;
+      if (ref($r) eq 'ARRAY') {
+         @parts = $r;
       }
-      else {
-         $hash = {%$r};
-      }
-      while (my ($pack, $names) = each %$hash) {
-         $pack = 'Text::Tubes::Plugin::' . substr($pack, 1)
-            if substr($pack, 0, 1) eq '+';
-         (my $fpack = "$pack.pm") =~ s{::}{/}gmxs;
-         require $fpack;
-         for my $name (ref($names) ? @$names : $names) {
-            my $sub = $pack->can($name)
-               or LOGDIE "package '$pack' has no '$name' inside";
-            no strict 'refs';
-            *{$cpack . '::' . $name} = $sub;
+      elsif (ref($r) eq 'HASH') {
+         while (my ($pack, $names) = each %$r) {
+            my @names = ref($names) ? @$names : $names;
+            push @parts, [$pack, @names];
          }
       }
-   } ## end for my $r (@_)
+      else {
+         my ($pack, $name) = $r =~ m{\A(.*)::(\w+)\z}mxs;
+         @parts = [$pack, $name];
+      }
+      for my $part (@parts) {
+         my ($pack, @names) = @$part;
+         $pack = 'Text::Tubes::Plugin::' . substr($pack, 1)
+         if substr($pack, 0, 1) eq '+';
+         (my $fpack = "$pack.pm") =~ s{::}{/}gmxs;
+         require $fpack;
+         for my $name (@names) {
+            my $sub = $pack->can($name)
+            or LOGDIE "package '$pack' has no '$name' inside";
+            no strict 'refs';
+            *{$cpack . '::' . $name} = $sub;
+         } ## end for my $name (@names)
+      } ## end for my $r (map { my $i ...})
+   }
 } ## end sub summon
 
 1;

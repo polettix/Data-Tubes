@@ -23,17 +23,54 @@ transformation subroutines over records.
 
     set the log level, see [Log::Log4perl::Tiny](https://metacpan.org/pod/Log::Log4perl::Tiny).
 
-- **sequence**
+- **summon**
 
-        my $sequence_sub = sequence(@subs_or_tubes);
-        my $iterator = $sequence_sub->($some_record);
-        1 while defined $iterator->(); # not interested in outputs...
+        # Direct function import
+        summon('Some::Package::subroutine');
 
-        my $seq_tube = tube(my_sequence => $sequence_sub);
-        my $it = $seq_tube->operate($some_other_record);
-        # use $it to extract outputs from the sequence
+        # DWIM, treat 'em as plugins under Text::Tubes::Plugin
+        summon(
+           {
+              '+Source' => [ qw< iterate_array open_file > ],
+           },
+           [ qw< +Plumbing sequence logger > ],
+           '+Reader::read_by_line',
+        );
 
-    create a sequence of tubes.
+    summon operations, most likely from plugins.  This is pretty much the
+    same as a regular `import` done by `use`, only supposed to be easier
+    to use in a script.
+
+    You can pass different things:
+
+    - _array_
+
+        the first item in the array will be considered the package name, the
+        following ones sub names inside that package;
+
+    - _hash_
+
+        each key will be considered a package name, pointing to either a string
+        (considered a sub name) or an array (each item considered a sub name);
+
+    - _string_
+
+        this will be considered a fully qualified sub name, i.e. including the
+        package name at the beginning.
+
+    In every case, if the package name starts with a `+` plus sign, the
+    package name will be considered relative to `Text::Tubes::Plugin`, so
+    the `+` plus sign will be substitued with `Text::Tubes::Plugin::`. For
+    example:
+
+        +Plumbing => Text::Tubes::Plugin::Plumbing
+        +Reader => Text::Tubes::Plugin::Reader
+
+    and so on.
+
+    It's probable that the `import` method will be overridden to make this
+    import easy directly upon `use`-ing this module, instead of explicitly
+    calling `summon`.
 
 # BUGS AND LIMITATIONS
 
