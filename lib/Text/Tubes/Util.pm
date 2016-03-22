@@ -9,6 +9,7 @@ our @EXPORT_OK = qw<
   assert_all_different
   metadata
   normalize_args
+  sprintffy
   test_all_equal
   traverse
   unzip
@@ -72,6 +73,33 @@ sub split_pair {
    $first =~ s{\\(.)}{$1}gmxs;    # unescape metadata
    return ($first, $second);
 } ## end sub split_pair
+
+sub sprintffy {
+   my ($template, $substitutions) = @_;
+   my $len = length $template;
+   pos($template) = 0;               # initialize
+   my @chunks;
+ QUEST:
+   while (pos($template) < $len) {
+      $template =~ m{\G (.*?) (% | \z)}mxscg;
+      my ($plain, $term) = ($1, $2);
+      my $pos = pos($template);
+      push @chunks, $plain;
+      last unless $term;             # got a percent, have to continue
+    CANDIDATE:
+      for my $candidate ([qr{%} => '%'], @$substitutions) {
+         my ($regex, $value) = @$candidate;
+         $template =~ m{\G$regex}cg or next CANDIDATE;
+         $value = $value->() if ref($value) eq 'CODE';
+         push @chunks, $value;
+         next QUEST;
+      } ## end CANDIDATE: for my $candidate ([qr{%}...])
+
+      # didn't find a matchin thing... time to complain
+      die {message => "invalid sprintffy template '$template'"};
+   } ## end QUEST: while (pos($template) < $len)
+   return join '', @chunks;
+} ## end sub sprintffy
 
 sub test_all_equal {
    my $reference = shift;
