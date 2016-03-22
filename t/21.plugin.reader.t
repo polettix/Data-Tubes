@@ -3,18 +3,31 @@ use Test::More;
 use Data::Dumper;
 
 use Text::Tubes qw< summon >;
-
 summon(
    {
-      '+Plumbing' => 'sequence',
-      '+Reader' =>
-        [qw< read_by_line read_by_paragraph read_by_separator files >],
+      '+Plumbing' => [
+         qw<
+           array_iterator
+           sequence
+           >
+      ],
+      '+Reader' => [
+         qw<
+           files
+           open_file
+           read_by_line
+           read_by_paragraph
+           read_by_separator
+           >
+      ],
    }
 );
 ok __PACKAGE__->can('read_by_line'),      'summoned by_line';
 ok __PACKAGE__->can('read_by_paragraph'), 'summoned by_paragraph';
 ok __PACKAGE__->can('read_by_separator'), 'summoned by_separator';
+ok __PACKAGE__->can('open_file'),         'summoned open_file';
 ok __PACKAGE__->can('files'),             'summoned files';
+ok __PACKAGE__->can('array_iterator'),    'summoned array_iterator';
 ok __PACKAGE__->can('sequence'),          'summoned sequence';
 
 my $fakefile = <<'END';
@@ -27,7 +40,7 @@ END
 
 {
    my $files = files();
-   my $outcome = $files->(\$fakefile, \*STDIN, __FILE__);
+   my $outcome = $files->([\$fakefile, \*STDIN, __FILE__]);
    is ref($outcome), 'HASH', 'outcome is a hash';
    my $it = $outcome->{iterator};
    is ref($it), 'CODE', 'outcome contains an iterator';
@@ -63,8 +76,8 @@ END
 }
 
 {
-   my $sequence = sequence(tubes => [files(), read_by_line()]);
-   my $outcome = $sequence->([\$fakefile]);
+   my $sequence = sequence(tubes => [open_file(), read_by_line()]);
+   my $outcome = $sequence->(\$fakefile);
    is ref($outcome), 'HASH', 'outcome is a hash';
    my $it = $outcome->{iterator};
    is ref($it), 'CODE', 'outcome contains an iterator';
@@ -80,8 +93,8 @@ END
 }
 
 {
-   my $sequence = sequence(tubes => [files(), read_by_paragraph()]);
-   my $outcome = $sequence->([\$fakefile]);
+   my $sequence = sequence(tubes => [open_file(), read_by_paragraph()]);
+   my $outcome = $sequence->(\$fakefile);
    is ref($outcome), 'HASH', 'outcome is a hash';
    my $it = $outcome->{iterator};
    is ref($it), 'CODE', 'outcome contains an iterator';
@@ -97,9 +110,12 @@ END
 }
 
 {
-   my $sequence =
-     sequence(
-      tubes => [files(files => [\$fakefile]), read_by_paragraph()]);
+   my $sequence = sequence(
+      tubes => [
+         array_iterator(array => [\$fakefile]), open_file(),
+         read_by_paragraph()
+      ]
+   );
    {
       my $outcome = $sequence->();
       is ref($outcome), 'HASH', 'outcome is a hash';
@@ -134,9 +150,10 @@ END
 
 {
    my $sequence =
-     sequence(tubes => [files(), read_by_separator(separator => '---')]);
+     sequence(
+      tubes => [open_file(), read_by_separator(separator => '---')]);
    my $fakefile = 'ciao---a---tutti';
-   my $outcome  = $sequence->([\$fakefile]);
+   my $outcome  = $sequence->(\$fakefile);
    is ref($outcome), 'HASH', 'outcome is a hash';
    my $it = $outcome->{iterator};
    is ref($it), 'CODE', 'outcome contains an iterator';
@@ -152,11 +169,13 @@ END
 }
 
 {
-   my $sequence =
-     sequence(tubes =>
-        [files(), read_by_separator(separator => '---', emit_eof => 1)]);
+   my $sequence = sequence(
+      tubes => [
+         open_file(), read_by_separator(separator => '---', emit_eof => 1)
+      ]
+   );
    my $fakefile = 'ciao---a---tutti';
-   my $outcome  = $sequence->([\$fakefile]);
+   my $outcome  = $sequence->(\$fakefile);
    is ref($outcome), 'HASH', 'outcome is a hash';
    my $it = $outcome->{iterator};
    is ref($it), 'CODE', 'outcome contains an iterator';

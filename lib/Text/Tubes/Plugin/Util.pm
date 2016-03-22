@@ -7,7 +7,7 @@ use Template::Perlish;
 use Log::Log4perl::Tiny qw< :easy :dead_if_first get_logger >;
 
 use Exporter qw< import >;
-our @EXPORT_OK = qw< identify logger read_file >;
+our @EXPORT_OK = qw< identify log_helper read_file >;
 
 sub identify {
    my ($args, $opts) = @_;
@@ -17,8 +17,6 @@ sub identify {
    my $name = $args->{name};
    $name = '*unknown*' unless defined $name;
 
-   my $level = $opts->{level};
-   $level = 1 unless defined $level;
    my @caller_fields = qw<
      package
      filename
@@ -33,7 +31,14 @@ sub identify {
      hintsh
    >;
    my %caller;
-   @caller{@caller_fields} = caller($level);
+   if (exists $opts->{caller}) {
+      @caller{@caller_fields} = @{$opts->{caller}}
+   }
+   else {
+      my $level = $opts->{level};
+      $level = 1 unless defined $level;
+      @caller{@caller_fields} = caller($level);
+   }
 
    my $message = $opts->{message};
    $message = 'building [% name %] as [% subroutine %]'
@@ -50,18 +55,17 @@ sub identify {
       }
    );
 
-   my $loglevel = $args->{loglevel};
-   $loglevel = 'DEBUG' unless defined $loglevel;
+   my $loglevel = $opts->{loglevel};
+   $loglevel = $DEBUG unless defined $loglevel;
    get_logger->log($loglevel, $message);
 
    return;
 } ## end sub identify
 
-sub logger {
-   my ($args) = @_;
-   return unless $args->{logger};
+sub log_helper {
+   my ($opts, $args) = @_;
+   return unless $opts;
 
-   my $opts = $args->{logger};
    return $opts if ref($opts) eq 'CODE';
 
    # generate one
@@ -75,14 +79,8 @@ sub logger {
    $message = $tp->compile($message);
 
    my $logger = get_logger();
-   my $loglevel = $args->{loglevel};
-   $loglevel = 'DEBUG' unless defined $loglevel;
-
-   # resolve $loglevel into numeric loglevel
-   my $previous = $logger->level();
-   $logger->level($loglevel);
-   $loglevel = $logger->level();
-   $logger->level($previous);
+   my $loglevel = $opts->{loglevel};
+   $loglevel = $DEBUG unless defined $loglevel;
 
    return sub {
       my $level = $logger->level();

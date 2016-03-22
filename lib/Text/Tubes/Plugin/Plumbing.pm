@@ -5,15 +5,35 @@ use English qw< -no_match_vars >;
 use Data::Dumper;
 use Scalar::Util qw< blessed >;
 
-use Log::Log4perl::Tiny qw< :easy :dead_if_first get_logger >;
+use Log::Log4perl::Tiny qw< :easy :dead_if_first get_logger LOGLEVEL >;
 use Text::Tubes::Tube;
-use Text::Tubes::Util qw< normalize_args >;
-use Text::Tubes::Plugin::Util qw< identify logger >;
+use Text::Tubes::Util qw< normalize_args traverse >;
+use Text::Tubes::Plugin::Util qw< identify log_helper >;
+
+sub array_iterator {
+   my %args = normalize_args(@_, {name => 'array iterator'});
+   identify(\%args);
+   my $logger = log_helper($args{logger}, \%args);
+   my $global_array = $args{array} || [];
+   my $n_global = @$global_array;
+   return sub {
+      my $local_array = shift || [];
+      $logger->($local_array, \%args) if $logger;
+      my $n_local = @$local_array;
+      my $i = 0;
+      return { iterator => sub {
+         return $global_array->[$i++] if $i < $n_global;
+         return $local_array->[($i++) - $n_global]
+            if $i < $n_global + $n_local;
+         return;
+      },};
+   };
+}
 
 sub array_source {
    my %args = normalize_args(@_, {name => 'array source'});
    identify(\%args);
-   my $logger = logger(\%args);
+   my $logger = log_helper($args{logger}, \%args);
    my $array = $args{array} || [];
    my $i = 0;
    return sub {
@@ -25,7 +45,7 @@ sub array_source {
 sub iterator_source {
    my %args = normalize_args(@_, {name => 'iterator source'});
    identify(\%args);
-   my $logger = logger(\%args);
+   my $logger = log_helper($args{logger}, \%args);
    my $iterator = $args{array} || sub { return };
    return sub {
       my @items = $iterator->();
@@ -34,14 +54,36 @@ sub iterator_source {
    };
 }
 
+sub logger {
+   my %args = normalize_args(@_, {name => 'log pipe', loglevel => 'INFO'});
+   identify(\%args);
+   my $loglevel = $args{loglevel};
+   my $mangler = $args{target};
+   if (! defined $mangler) {
+      $mangler = sub { return shift; }
+   }
+   elsif (ref($mangler) ne 'CODE') {
+      my @keys = ref($mangler) ? @$mangler : ($mangler);
+      $mangler = sub {
+         my $record = shift;
+         return traverse($record, @keys);
+      };
+   }
+   my $logger = get_logger();
+   return sub {
+      my $record = shift;
+      $logger->log($loglevel, $mangler->($record));
+      return {record => $record};
+   };
+}
+
 sub sequence {
    my %args = normalize_args(@_, {name => 'sequence'});
    identify(\%args);
-   my $logger = logger(\%args);
+   my $logger = log_helper($args{logger}, \%args);
+   my $name = $args{name};
 
-   my @tubes =
-     map { blessed($_) ? $_ : Text::Tubes::Tube->new(operation => $_); }
-     @{$args{tubes}};
+   my @tubes = @{$args{tubes}};
 
    return sub {
       my $record = shift;
@@ -71,7 +113,8 @@ sub sequence {
                }
 
                if (!$has_record) {    # no more at this level...
-                  DEBUG 'no more records';
+                  my $n = @stack;
+                  TRACE "$name: level $n backtracking, no more records";
                   pop @stack;
                   next STEP;
                }
@@ -83,10 +126,7 @@ sub sequence {
                };
 
                # something must be done...
-               my $tube = $tubes[$pos];
-               DEBUG 'calling', sub { $tube->name() };
-
-               my $o = $tube->operate($record);
+               my $o = $tubes[$pos]->($record);
                TRACE sub {
                   local $Data::Dumper::Indent = 1;
                   Dumper('output: ', $o);
@@ -107,7 +147,7 @@ sub sequence {
 sub sink {
    my %args = normalize_args(@_, {name => 'sink'});
    identify(\%args);
-   my $logger = logger(\%args);
+   my $logger = log_helper($args{logger}, \%args);
    return sub {
       my $record = shift;
       $logger->($record, \%args) if $logger;
@@ -119,7 +159,7 @@ sub unwrap {
    my %args = normalize_args(@_,
       {name => 'unwrap', missing_ok => 0, missing_is_skip => 0});
    identify(\%args);
-   my $logger = logger(\%args);
+   my $logger = log_helper($args{logger}, \%args);
    my $name   = $args{name};
    my $key    = $args{key};
    LOGDIE "$name needs a key" unless defined $key;
@@ -140,7 +180,7 @@ sub unwrap {
 sub wrap {
    my %args = normalize_args(@_, {name => 'wrap'});
    identify(\%args);
-   my $logger = logger(\%args);
+   my $logger = log_helper($args{logger}, \%args);
    my $name   = $args{name};
    my $key    = $args{key};
    LOGDIE "$name needs a key" unless defined $key;

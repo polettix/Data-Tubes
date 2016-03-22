@@ -10,6 +10,7 @@ our @EXPORT_OK = qw<
   metadata
   normalize_args
   test_all_equal
+  traverse
   unzip
 >;
 
@@ -79,6 +80,23 @@ sub test_all_equal {
    }
    return 1;
 } ## end sub test_all_equal
+
+sub traverse {
+   my ($data, @keys) = @_;
+   for my $key (@keys) {
+      if (ref($data) eq 'HASH') {
+         $data = $data->{$key};
+      }
+      elsif (ref($data) eq 'ARRAY') {
+         $data = $data->[$key];
+      }
+      else {
+         return undef;
+      }
+      return undef unless defined $data;
+   }
+   return $data;
+}
 
 sub unzip {
    my $items = (@_ && ref($_[0])) ? $_[0] : \@_;
