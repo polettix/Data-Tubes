@@ -2,11 +2,13 @@ package Text::Tubes::Plugin::Parser;
 use strict;
 use warnings;
 use English qw< -no_match_vars >;
+use Data::Dumper;
 
 use Log::Log4perl::Tiny qw< :easy :dead_if_first >;
 
 use Text::Tubes::Util
   qw< assert_all_different metadata normalize_args test_all_equal unzip >;
+use Text::Tubes::Plugin::Util qw< identify >;
 my %global_defaults = (
    input  => 'raw',
    output => 'structured',
@@ -30,32 +32,41 @@ sub parse_by_format {
      . "has duplicate key $EVAL_ERROR->{message}";
 
    # a simple split will do if all separators are the same
-   return parse_by_split(%args, keys => $keys,
-      separator => $separators->[0])
-     if test_all_equal(@$separators);
+   return parse_by_split(
+      %args,
+      keys      => $keys,
+      separator => $separators->[0]
+   ) if test_all_equal(@$separators);
 
-   return parse_by_regexes(%args, keys => $keys,
-      separators => $separators);
+   return parse_by_regexes(
+      %args,
+      keys       => $keys,
+      separators => $separators
+   );
 } ## end sub parse_by_format
 
 sub parse_by_regex {
-   my %args = normalize_args(@_, {%global_defaults,});
+   my %args =
+     normalize_args(@_, {%global_defaults, name => 'parse by regex'});
+   identify(\%args);
+
+   my $name  = $args{name};
    my $regex = $args{regex};
    LOGDIE "parse_by_regex needs a regex"
      unless defined $regex;
 
    $regex = qr{$regex};
-   my $input      = $args{input};
-   my $has_input  = defined($input) && length($input);
-   my $output     = $args{output};
-   my $has_output = defined($output) && length($output);
+   my $input  = $args{input};
+   my $output = $args{output};
    return sub {
       my $record = shift;
-      ($has_input ? $record->{$input} : $record) =~ m{$regex}
-        or die {message => "invalid record"};
+      $record->{$input} =~ m{$regex}
+        or die {
+         message => "'$name': invalid record, regex is $regex",
+         input   => $input,
+         record  => $record,
+        };
       my $retval = {%+};
-      return {record => $retval} unless $has_output;
-      $record = {} unless $has_input;
       $record->{$output} = $retval;
       return {record => $record};
    };
@@ -113,46 +124,46 @@ sub parse_by_regexes {
 } ## end sub parse_by_regexes
 
 sub parse_by_split {
-   my %args = normalize_args(@_, {%global_defaults,});
+   my %args =
+     normalize_args(@_, {%global_defaults, name => 'parse by split'});
+   identify(\%args);
+
+   my $name      = $args{name};
    my $separator = $args{separator};
    LOGDIE "parse_by_split needs a separator"
      unless defined $separator;
-   if (! ref $separator) {
+   if (!ref $separator) {
       $separator = quotemeta($separator);
       $separator = qr{$separator};
    }
 
-   my $keys       = $args{keys};
-   my $n_keys     = defined($keys) ? scalar(@$keys) : 0;
-   my $input      = $args{input};
-   my $has_input  = defined($input) && length($input);
-   my $output     = $args{output};
-   my $has_output = defined($output) && length($output);
+   my $keys   = $args{keys};
+   my $n_keys = defined($keys) ? scalar(@$keys) : 0;
+   my $input  = $args{input};
+   my $output = $args{output};
 
    return sub {
       my $record = shift;
-      my $text = $has_input ? $record->{$input} : $record;
 
-      my @values = split /$separator/, $text, $n_keys;
-      die {message => "invalid record, wrong number of items"}
-        if scalar(@values) != $n_keys;
+      my @values = split /$separator/, $record->{$input}, $n_keys;
+      my $n_values = @values;
+      die {
+         message => "'$name': invalid record, expected $n_keys items, "
+           . "got $n_values",
+         input  => $input,
+         record => $record,
+        }
+        if $n_values != $n_keys;
 
-      my %retval;
+      $record->{$output} = \my %retval;
       @retval{@$keys} = @values;
-
-      return {record => \%retval} unless $has_output;
-      $record = {} unless $has_input;
-      $record->{$output} = \%retval;
       return {record => $record};
      }
      if $n_keys;
 
    return sub {
       my $record = shift;
-      my $text   = $has_input ? $record->{$input} : $record;
-      my @retval = split /$separator/, $text;
-      return {record => \@retval} unless $has_output;
-      $record = {} unless $has_input;
+      my @retval = split /$separator/, $record->{$input};
       $record->{$output} = \@retval;
       return {record => $record};
    };
@@ -169,19 +180,14 @@ sub parse_hashy {
          %global_defaults,
       }
    );
-   my %defaults   = %{$args{defaults} || {}};
-   my $input      = $args{input};
-   my $has_input  = defined($input) && length($input);
-   my $output     = $args{output};
-   my $has_output = defined($output) && length($output);
+   identify(\%args);
+   my %defaults = %{$args{defaults} || {}};
+   my $input    = $args{input};
+   my $output   = $args{output};
    return sub {
       my $record = shift;
-      my $parsed =
-        metadata(($has_input ? $record->{$input} : $record), \%args);
-      my $retval = {%defaults, %$parsed};
-      return {record => $retval} unless $has_output;
-      $record = {} unless $has_input;
-      $record->{$output} = $retval;
+      my $parsed = metadata($record->{$input}, %args);
+      $record->{$output} = {%defaults, %$parsed};
       return {record => $record};
    };
 } ## end sub parse_hashy
@@ -194,19 +200,15 @@ sub parse_single {
          %global_defaults,
       }
    );
-   my $key        = $args{key};
-   my $has_key    = defined($key) && length($key);
-   my $input      = $args{input};
-   my $has_input  = defined($input) && length($input);
-   my $output     = $args{output};
-   my $has_output = defined($output) && length($output);
+   identify(\%args);
+   my $key     = $args{key};
+   my $has_key = defined($key) && length($key);
+   my $input   = $args{input};
+   my $output  = $args{output};
    return sub {
       my $record = shift;
-      my $parsed = $has_input ? $record->{$input} : $record;
-      my $retval = $has_key ? {$key => $parsed} : $parsed;
-      return {record => $retval} unless $has_output;
-      $record = {} unless $has_input;
-      $record->{$output} = $retval;
+      $record->{$output} =
+        $has_key ? {$key => $record->{$input}} : $record->{$input};
       return {record => $record};
      }
 } ## end sub parse_single

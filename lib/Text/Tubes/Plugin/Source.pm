@@ -14,7 +14,7 @@ my %global_defaults = (
 sub iterate_array {
    my %args = normalize_args(@_, {name => 'array iterator'});
    identify(\%args);
-   my $logger = log_helper($args{logger}, \%args);
+   my $logger = log_helper(\%args);
    my $global_array = $args{array} || [];
    my $n_global = @$global_array;
    return sub {
@@ -40,7 +40,7 @@ sub open_file {
          name    => 'open file',
       }
    );
-   identify(\%args, $args{identification});
+   identify(\%args);
 
    # valid "output" sub-fields must be defined and at least one char long
    # otherwise output will be ignored
@@ -98,7 +98,7 @@ sub iterate_files {
          },
       }
    );
-   identify(\%args, $args{identification});
+   identify(\%args);
 
    use Text::Tubes::Plugin::Plumbing;
    return Text::Tubes::Plugin::Plumbing::sequence(

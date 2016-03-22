@@ -77,8 +77,8 @@ package name will be considered relative to C<Text::Tubes::Plugin>, so
 the C<+> plus sign will be substitued with C<Text::Tubes::Plugin::>. For
 example:
 
-   +Plumbing => Text::Tubes::Plugin::Plumbing
-   +Reader => Text::Tubes::Plugin::Reader
+   +Plumbing becomes Text::Tubes::Plugin::Plumbing
+   +Reader   becomes Text::Tubes::Plugin::Reader
 
 and so on.
 

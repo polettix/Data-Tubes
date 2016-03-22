@@ -11,8 +11,8 @@ our @EXPORT_OK = qw< identify log_helper read_file >;
 
 sub identify {
    my ($args, $opts) = @_;
-   $args = {} unless defined $args;
-   $opts = {} unless defined $opts;
+   $args //= {};
+   $opts //= $args->{identification} // {};
 
    my $name = $args->{name};
    $name = '*unknown*' unless defined $name;
@@ -63,9 +63,9 @@ sub identify {
 } ## end sub identify
 
 sub log_helper {
-   my ($opts, $args) = @_;
+   my ($args, $opts) = @_;
+   $opts //= $args->{logger};
    return unless $opts;
-
    return $opts if ref($opts) eq 'CODE';
 
    # generate one

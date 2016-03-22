@@ -63,8 +63,8 @@ transformation subroutines over records.
     the `+` plus sign will be substitued with `Text::Tubes::Plugin::`. For
     example:
 
-        +Plumbing => Text::Tubes::Plugin::Plumbing
-        +Reader => Text::Tubes::Plugin::Reader
+        +Plumbing becomes Text::Tubes::Plugin::Plumbing
+        +Reader   becomes Text::Tubes::Plugin::Reader
 
     and so on.
 

@@ -47,7 +47,7 @@ sub read_by_record_reader {
          identification => {caller => [caller(0)]},
       },
    );
-   identify(\%args, $args{identification});
+   identify(\%args);
    my $emit_eof      = $args{emit_eof};
    my $input         = $args{input};
    my $has_input     = defined($input) && length($input);

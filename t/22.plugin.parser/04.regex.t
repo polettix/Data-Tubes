@@ -21,38 +21,6 @@ my $regex  = qr{(?mxs:
    \z)};
 
 {
-   my $parser =
-     parse_by_regex(input => undef, output => undef, regex => $regex);
-   my $outcome = $parser->($string);
-   is ref($outcome), 'HASH', 'outcome is a hash';
-   ok exists($outcome->{record}), 'outcome has a record field';
-   my $record = $outcome->{record};
-   is ref($record), 'HASH', 'record is a hash';
-   is_deeply $record, $expected, 'hash was parsed via regex';
-}
-
-{
-   my $parser = parse_by_regex(output => undef, regex => $regex);
-   my $outcome = $parser->({raw => $string});
-   is ref($outcome), 'HASH', 'outcome is a hash';
-   ok exists($outcome->{record}), 'outcome has a record field';
-   my $record = $outcome->{record};
-   is ref($record), 'HASH', 'record is a hash';
-   is_deeply $record, $expected, 'hash was parsed via regex';
-}
-
-{
-   my $parser =
-     parse_by_regex(input => 'karb', output => undef, regex => $regex);
-   my $outcome = $parser->({karb => $string});
-   is ref($outcome), 'HASH', 'outcome is a hash';
-   ok exists($outcome->{record}), 'outcome has a record field';
-   my $record = $outcome->{record};
-   is ref($record), 'HASH', 'record is a hash';
-   is_deeply $record, $expected, 'hash was parsed via regex';
-}
-
-{
    my $parser = parse_by_regex(regex => $regex);
    my $outcome = $parser->({raw => $string});
    is ref($outcome), 'HASH', 'outcome is a hash';
@@ -60,6 +28,18 @@ my $regex  = qr{(?mxs:
    my $record = $outcome->{record};
    is ref($record), 'HASH', 'record is a hash';
    is_deeply $record, {structured => $expected, raw => $string},
+     'hash was parsed via regex';
+}
+
+{
+   my $parser =
+     parse_by_regex(regex => $regex, input => 'foo', output => 'bar');
+   my $outcome = $parser->({foo => $string});
+   is ref($outcome), 'HASH', 'outcome is a hash';
+   ok exists($outcome->{record}), 'outcome has a record field';
+   my $record = $outcome->{record};
+   is ref($record), 'HASH', 'record is a hash';
+   is_deeply $record, {bar => $expected, foo => $string},
      'hash was parsed via regex';
 }
 
