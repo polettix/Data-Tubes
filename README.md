@@ -35,12 +35,6 @@ transformation subroutines over records.
 
     create a sequence of tubes.
 
-- **tube**
-
-        my $tube = tube($name, $operation);
-
-    sugar for creating a [Text::Tubes::Tube](https://metacpan.org/pod/Text::Tubes::Tube).
-
 # BUGS AND LIMITATIONS
 
 Report bugs either through RT or GitHub (patches welcome).

@@ -11,11 +11,11 @@ summon('+Plumbing::sequence');
 $files = __PACKAGE__->can('sequence');
 ok $files, 'sub "sequence" summoned';
 
-my $tube = __PACKAGE__->can('tube');
-ok !$tube, 'sub "tube" does not exist initially';
+my $tube = __PACKAGE__->can('traverse');
+ok !$tube, 'sub "traverse" does not exist initially';
 
-summon('Text::Tubes::tube');
-$tube = __PACKAGE__->can('tube');
-ok $tube, 'sub "tube" summoned';
+summon('Text::Tubes::Util::traverse');
+$tube = __PACKAGE__->can('traverse');
+ok $tube, 'sub "traverse" summoned';
 
 done_testing();
