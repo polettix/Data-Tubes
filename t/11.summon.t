@@ -4,12 +4,12 @@ use Data::Dumper;
 
 use Text::Tubes qw< summon >;
 
-my $files = __PACKAGE__->can('files');
-ok !$files, 'sub "files" does not exist initially';
+my $files = __PACKAGE__->can('sequence');
+ok !$files, 'sub "sequence" does not exist initially';
 
-summon('+Reader::files');
-$files = __PACKAGE__->can('files');
-ok $files, 'sub "files" summoned';
+summon('+Plumbing::sequence');
+$files = __PACKAGE__->can('sequence');
+ok $files, 'sub "sequence" summoned';
 
 my $tube = __PACKAGE__->can('tube');
 ok !$tube, 'sub "tube" does not exist initially';
