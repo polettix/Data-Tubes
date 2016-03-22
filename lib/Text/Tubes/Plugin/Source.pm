@@ -11,7 +11,7 @@ my %global_defaults = (
    output => 'raw',
 );
 
-sub array_iterator {
+sub iterate_array {
    my %args = normalize_args(@_, {name => 'array iterator'});
    identify(\%args);
    my $logger = log_helper($args{logger}, \%args);
@@ -80,7 +80,7 @@ sub open_file {
    };
 } ## end sub open_file
 
-sub files {
+sub iterate_files {
    my %args = normalize_args(
       @_,
       {
@@ -103,7 +103,7 @@ sub files {
    use Text::Tubes::Plugin::Plumbing;
    return Text::Tubes::Plugin::Plumbing::sequence(
       tubes => [
-         array_iterator(
+         iterate_array(
             %{$args{array_iterator}},
             array => ($args{files} || []),
          ),

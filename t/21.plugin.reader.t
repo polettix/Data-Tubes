@@ -19,8 +19,8 @@ summon(
       ],
       '+Source' => [
          qw<
-           array_iterator
-           files
+           iterate_array
+           iterate_files
            open_file
            >
       ],
@@ -30,8 +30,8 @@ ok __PACKAGE__->can('read_by_line'),      'summoned by_line';
 ok __PACKAGE__->can('read_by_paragraph'), 'summoned by_paragraph';
 ok __PACKAGE__->can('read_by_separator'), 'summoned by_separator';
 ok __PACKAGE__->can('open_file'),         'summoned open_file';
-ok __PACKAGE__->can('files'),             'summoned files';
-ok __PACKAGE__->can('array_iterator'),    'summoned array_iterator';
+ok __PACKAGE__->can('iterate_files'),     'summoned iterate_files';
+ok __PACKAGE__->can('iterate_array'),     'summoned iterate_array';
 ok __PACKAGE__->can('sequence'),          'summoned sequence';
 
 my $fakefile = <<'END';
@@ -43,7 +43,7 @@ fifth line
 END
 
 {
-   my $files = files();
+   my $files = iterate_files();
    my $outcome = $files->([\$fakefile, \*STDIN, __FILE__]);
    is ref($outcome), 'HASH', 'outcome is a hash';
    my $it = $outcome->{iterator};
@@ -116,7 +116,7 @@ END
 {
    my $sequence = sequence(
       tubes => [
-         array_iterator(array => [\$fakefile]), open_file(),
+         iterate_array(array => [\$fakefile]), open_file(),
          read_by_paragraph()
       ]
    );
