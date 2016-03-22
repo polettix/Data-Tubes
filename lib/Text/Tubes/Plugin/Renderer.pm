@@ -1,4 +1,4 @@
-package Text::Tubes::Plugin::Parser;
+package Text::Tubes::Plugin::Renderer;
 use strict;
 use warnings;
 use English qw< -no_match_vars >;
@@ -19,8 +19,12 @@ sub render_with_template_perlish {
          start     => '[%',
          stop      => '%]',
          variables => {},
+         name => 'render with Template::Perlish',
       }
    );
+   my $name = $args{name};
+   LOGDIE "$name: template is mandatory"
+      unless defined $args{template};
 
    require Template::Perlish;
    my $tp = Template::Perlish->new(
