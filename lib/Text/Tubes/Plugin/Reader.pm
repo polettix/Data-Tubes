@@ -2,7 +2,7 @@ package Text::Tubes::Plugin::Reader;
 use strict;
 use warnings;
 use English qw< -no_match_vars >;
-use Log::Log4perl::Tiny qw< :easy :dead_if_first >;
+use Log::Log4perl::Tiny qw< :easy :dead_if_first LOGLEVEL >;
 
 use Text::Tubes::Util qw< normalize_args >;
 use Text::Tubes::Plugin::Util qw< identify >;
@@ -99,79 +99,5 @@ sub read_by_separator {
       },
    );
 } ## end sub read_by_separator
-
-sub open_file {
-   my %args = normalize_args(
-      @_,
-      {
-         binmode => ':encoding(UTF-8)',
-         output  => 'source',
-         name    => 'open file',
-      }
-   );
-   identify(\%args, $args{identification});
-
-   # valid "output" sub-fields must be defined and at least one char long
-   # otherwise output will be ignored
-   my $binmode   = $args{binmode};
-   my $output    = $args{output};
-   my $input     = $args{input};
-   my $has_input = defined($input) && length($input);
-
-   return sub {
-      my ($record, $file) =
-        $has_input ? ($_[0], $_[0]{$input}) : ({}, $_[0]);
-
-      if (ref($file) eq 'GLOB') {
-         my $is_stdin = fileno($file) == fileno(\*STDIN);
-         my $name = $is_stdin ? 'STDIN' : "$file";
-         $record->{$output} = {
-            fh    => $file,
-            input => $file,
-            type  => 'handle',
-            name  => "handle\:$name",
-         };
-      } ## end if (ref($file) eq 'GLOB')
-      else {
-         open my $fh, '<', $file
-           or die "open('$file'): $OS_ERROR";
-         binmode $fh, $binmode;
-         my $type = (ref($file) eq 'SCALAR') ? 'scalar' : 'file';
-         $record->{$output} = {
-            fh    => $fh,
-            input => $file,
-            type  => $type,
-            name  => "$type\:$file",
-         };
-      } ## end else [ if (ref($file) eq 'GLOB')]
-
-      return {record => $record};
-   };
-} ## end sub open_file
-
-sub files {
-   my %args = normalize_args(
-      @_,
-      {
-         binmode => ':encoding(UTF-8)',
-         output  => 'source',
-         files   => [],
-         name    => 'files',
-      }
-   );
-   identify(\%args, $args{identification});
-
-   use Text::Tubes::Plugin::Plumbing;
-   my $ai = Text::Tubes::Plugin::Plumbing::array_iterator(
-      %args,
-      array => ($args{files} || []),
-   );
-   return Text::Tubes::Plugin::Plumbing::sequence(
-      tubes => [
-         $ai,
-         open_file(%args),
-      ]
-   );
-} ## end sub files
 
 1;

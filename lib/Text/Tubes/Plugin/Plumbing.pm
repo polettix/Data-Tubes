@@ -10,52 +10,8 @@ use Text::Tubes::Tube;
 use Text::Tubes::Util qw< normalize_args traverse >;
 use Text::Tubes::Plugin::Util qw< identify log_helper >;
 
-sub array_iterator {
-   my %args = normalize_args(@_, {name => 'array iterator'});
-   identify(\%args);
-   my $logger = log_helper($args{logger}, \%args);
-   my $global_array = $args{array} || [];
-   my $n_global = @$global_array;
-   return sub {
-      my $local_array = shift || [];
-      $logger->($local_array, \%args) if $logger;
-      my $n_local = @$local_array;
-      my $i = 0;
-      return { iterator => sub {
-         return $global_array->[$i++] if $i < $n_global;
-         return $local_array->[($i++) - $n_global]
-            if $i < $n_global + $n_local;
-         return;
-      },};
-   };
-}
-
-sub array_source {
-   my %args = normalize_args(@_, {name => 'array source'});
-   identify(\%args);
-   my $logger = log_helper($args{logger}, \%args);
-   my $array = $args{array} || [];
-   my $i = 0;
-   return sub {
-      return if $i > $#$array;
-      return {record => $array->[$i++]};
-   };
-}
-
-sub iterator_source {
-   my %args = normalize_args(@_, {name => 'iterator source'});
-   identify(\%args);
-   my $logger = log_helper($args{logger}, \%args);
-   my $iterator = $args{array} || sub { return };
-   return sub {
-      my @items = $iterator->();
-      return unless @items;
-      return {record => $items[0]};
-   };
-}
-
 sub logger {
-   my %args = normalize_args(@_, {name => 'log pipe', loglevel => 'INFO'});
+   my %args = normalize_args(@_, {name => 'log pipe', loglevel => $INFO});
    identify(\%args);
    my $loglevel = $args{loglevel};
    my $mangler = $args{target};

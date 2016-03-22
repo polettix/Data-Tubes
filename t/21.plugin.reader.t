@@ -7,17 +7,21 @@ summon(
    {
       '+Plumbing' => [
          qw<
-           array_iterator
            sequence
            >
       ],
       '+Reader' => [
          qw<
-           files
-           open_file
            read_by_line
            read_by_paragraph
            read_by_separator
+           >
+      ],
+      '+Source' => [
+         qw<
+           array_iterator
+           files
+           open_file
            >
       ],
    }
