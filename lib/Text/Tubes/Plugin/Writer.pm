@@ -71,13 +71,13 @@ sub dispatch_to_files {
 
    $args{factory} //= sub {
       my $filename = $factory->(@_);
-      return write_to_file(%args, filename => $filename);
+      return write_to_files(%args, filename => $filename);
    };
 
    return Text::Tubes::Plugin::Plumbing::dispatch(%args);
 } ## end sub dispatch_to_files
 
-sub write_to_file {
+sub write_to_files {
    my %args = normalize_args(
       @_,
       {
@@ -91,62 +91,23 @@ sub write_to_file {
    LOGDIE "$name: need a filename" unless defined $args{filename};
    LOGDIE "$name: need an input"   unless defined $args{input};
 
-   my $filename = $args{filename};
-   my $tr       = $args{records_threshold} // 0;
-   my $tc       = $args{characters_threshold} // 0;
-   if (ref($filename) ne 'CODE') {
-      if ($tr || $tc) {
-         $filename = _filenames_generator($filename);
-      }
-      else {    # only one single filename will be needed...
-         my $name = $filename;
-         $filename = sub { return $name };
-      }
-   } ## end if (ref($filename) ne ...)
+   my $factory = $args{filename};
+   $factory = _filenames_generator($factory)
+     unless ref($factory) eq 'CODE';
+   require Text::Tubes::Util::Output;
+   my $output_handler = Text::Tubes::Util::Output->new(
+      output => $factory,
+      map { ($_ => $args{$_}) }
+        grep { exists $args{$_} } qw< binmode footer header policy >
+   );
 
    my $input   = $args{input};
-   my $binmode = $args{binmode};
-   my $records = 0;
-   my $chars   = 0;
-   my $fh;
    return sub {
       my $record = shift;
-
-      # open filehandle if not already available
-      if (!defined $fh) {
-         my $fname = $filename->();
-         if (ref($fname) eq 'GLOB') {
-            $fh = $fname;
-         }
-         elsif ($fname eq '-') {
-            $fh = \*STDOUT;
-         }
-         else {
-            $fname =~ s{\Afile:}{}mxs;
-            open $fh, '>', $fname    #
-            or die {
-               message => "$name: open('$fname'): $OS_ERROR",
-               record  => $record,
-               input   => $input,
-            };
-         }
-         binmode $fh, $binmode if $binmode;
-      } ## end if (!defined $fh)
-
-      print {$fh} $record->{$input};
-
-      # possibly get rid of current filehandle if thresholds are overcome
-      if ($tr || $tc) {
-         $records++;
-         $chars += length($record->{$input});
-         if (($tr && ($records >= $tr)) || ($tc && ($chars >= $tc))) {
-            $fh = undef;
-         }
-      } ## end if ($tr || $tc)
-
+      $output_handler->print($record->{$input});
       return {record => $record};    # relaunch for further processing
    };
-} ## end sub write_to_file
+} ## end sub write_to_files
 
 sub write_to_handle {
    my %args = normalize_args(

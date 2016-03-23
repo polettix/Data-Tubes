@@ -8,7 +8,7 @@ use Text::Tubes qw< summon >;
 my @functions = qw<
   dispatch_to_files
   write_to_handle
-  write_to_file
+  write_to_files
 >;
 summon({'+Writer' => \@functions,});
 ok __PACKAGE__->can($_), "summoned $_" for @functions;
@@ -28,19 +28,23 @@ ok __PACKAGE__->can($_), "summoned $_" for @functions;
 
 {
    my @buffers;
-   my $wtf = write_to_file(
+   my $wtf = write_to_files(
       filename => sub {
          push @buffers, '';
          return \$buffers[-1];
       },
-      records_threshold => 1,
+      policy => {
+         records_threshold => 1,
+      },
+      header => '>>>',
+      footer => '<<<',
    );
    $wtf->({rendered => "hello\n"});
    $wtf->({rendered => "you"});
    $wtf = undef;    # ensure all buffers are flushed and handles are closed
    is scalar(@buffers), 2, 'two "files" generated';
-   is $buffers[0], "hello\n", 'content of first "file"';
-   is $buffers[1], 'you',     'content of second "file"';
+   is $buffers[0], ">>>hello\n<<<", 'content of first "file"';
+   is $buffers[1], '>>>you<<<',     'content of second "file"';
 }
 
 my $me = path(__FILE__);
@@ -52,7 +56,7 @@ $td->mkpath();
 {
    my $filename = $td->child('first.txt');
    {
-      my $wtf = write_to_file(filename => $filename->stringify(),);
+      my $wtf = write_to_files(filename => $filename->stringify(),);
       $wtf->({rendered => "hello\n"});
       $wtf->({rendered => "you"});
    }
@@ -66,9 +70,11 @@ $td->mkpath();
 {
    my $template = $td->child('second%02d.txt');
    {
-      my $wtf = write_to_file(
+      my $wtf = write_to_files(
          filename          => $template->stringify(),
-         records_threshold => 1
+         policy => {
+            records_threshold => 1
+         },
       );
       $wtf->({rendered => "hello\n"});
       $wtf->({rendered => "you"});
@@ -88,9 +94,11 @@ $td->mkpath();
 {
    my $template = $td->child('third.txt');
    {
-      my $wtf = write_to_file(
+      my $wtf = write_to_files(
          filename          => $template->stringify(),
-         records_threshold => 1
+         policy => {
+            records_threshold => 1
+         },
       );
       $wtf->({rendered => "hello\n"});
       $wtf->({rendered => "you"});
@@ -114,7 +122,11 @@ $td->mkpath();
          key => [qw< structured class >],
          filename_template =>
            $td->child('fourth-[% key %]-%02d.txt')->stringify(),
-         records_threshold => 1
+         policy => {
+            records_threshold => 1
+         },
+         header => '{{{',
+         footer => '}}}',
       );
       $dtf->({rendered => "hello\n", structured => {class => 'whatever'}});
       $dtf->({rendered => "you",     structured => {class => 'hey'}});
@@ -126,20 +138,20 @@ $td->mkpath();
    is scalar(@children), 4, 'four files created';
 
    my $content = $children[0]->slurp_raw();
-   is $content, "you", 'content of first file';
+   is $content, '{{{you}}}', 'content of first file';
    is $children[0]->basename(), 'fourth-hey-00.txt', 'name of first file';
 
    my $content = $children[1]->slurp_raw();
-   is $content, "tube", 'content of second file';
+   is $content, '{{{tube}}}', 'content of second file';
    is $children[1]->basename(), 'fourth-hey-01.txt', 'name of second file';
 
    my $content = $children[2]->slurp_raw();
-   is $content, "hello\n", 'content of third file';
+   is $content, "{{{hello\n}}}", 'content of third file';
    is $children[2]->basename(), 'fourth-whatever-00.txt',
      'name of third file';
 
    my $content = $children[3]->slurp_raw();
-   is $content, "ciao", 'content of fourth file';
+   is $content, '{{{ciao}}}', 'content of fourth file';
    is $children[3]->basename(), 'fourth-whatever-01.txt',
      'name of fourth file';
 
