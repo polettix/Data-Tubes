@@ -13,29 +13,24 @@ This document describes Data::Tubes version 0.01.
     # Load components from relevant plugins
     summon(
        qw<
-          +Plumbing::sequence
-          +Source::iterate_files
-          +Reader::read_by_line
-          +Parser::parse_hashy
-          +Renderer::render_with_template:perlish
-          +Writer::write_to_file
-       >
+         +Plumbing::sequence
+         +Source::iterate_files
+         +Reader::read_by_line
+         +Parser::parse_hashy
+         +Renderer::render_with_template_perlish
+         +Writer::write_to_files
+         >
     );
-
-    # define a simple Template::Perlish template
-    my $template = <<'END';
-    Hello [% name %], [% question %]?
-    END
 
     # define a tube made of a sequence of tubes, each of the relevant
     # type and doing its specific job.
     my $sequence = sequence(
        tubes => [
-          iterate_files(files => \@inputs),
+          iterate_files(files => [\"n=Flavio|q=how are you\nn=X|q=Y"]),
           read_by_line(),
           parse_hashy(chunks_separator => '|'),
-          render_with_template_perlish(template => $template),
-          write_to_file(filename => $output),
+          render_with_template_perlish(template => "Hi [% n %], [% q %]?\n"),
+          write_to_files(filename => \*STDOUT),
        ],
     );
 
