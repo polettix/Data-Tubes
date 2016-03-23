@@ -21,5 +21,5 @@ while (my $path = $iter->()) {
      or BAIL_OUT("can't load $module");
 } ## end while (my $path = $iter->...)
 
-diag("Testing Text::Tubes $Text::Tubes::VERSION");
+diag("Testing Data::Tubes $Data::Tubes::VERSION");
 done_testing();

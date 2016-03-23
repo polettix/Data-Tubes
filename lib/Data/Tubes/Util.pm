@@ -1,4 +1,4 @@
-package Text::Tubes::Util;
+package Data::Tubes::Util;
 use strict;
 use warnings;
 use Exporter 'import';

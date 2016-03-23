@@ -2,7 +2,7 @@ use strict;
 use Test::More;
 use Data::Dumper;
 
-use Text::Tubes qw< summon >;
+use Data::Tubes qw< summon >;
 
 my @functions = qw<
   parse_by_format

@@ -2,7 +2,7 @@ use strict;
 use Test::More;
 use Data::Dumper;
 
-use Text::Tubes qw< summon >;
+use Data::Tubes qw< summon >;
 
 summon('+Parser::parse_by_regex');
 ok __PACKAGE__->can('parse_by_regex'), "summoned parse_by_regex";

@@ -1,11 +1,11 @@
-package Text::Tubes::Plugin::Source;
+package Data::Tubes::Plugin::Source;
 use strict;
 use warnings;
 use English qw< -no_match_vars >;
 use Log::Log4perl::Tiny qw< :easy :dead_if_first LOGLEVEL >;
 
-use Text::Tubes::Util qw< normalize_args >;
-use Text::Tubes::Plugin::Util qw< identify log_helper >;
+use Data::Tubes::Util qw< normalize_args >;
+use Data::Tubes::Plugin::Util qw< identify log_helper >;
 my %global_defaults = (
    input  => 'source',
    output => 'raw',
@@ -109,15 +109,15 @@ sub iterate_files {
    );
    identify(\%args);
 
-   use Text::Tubes::Plugin::Plumbing;
-   return Text::Tubes::Plugin::Plumbing::sequence(
+   use Data::Tubes::Plugin::Plumbing;
+   return Data::Tubes::Plugin::Plumbing::sequence(
       tubes => [
          iterate_array(
             %{$args{array_iterator}},
             array => ($args{files} || []),
          ),
          open_file(%{$args{open_file}}),
-         Text::Tubes::Plugin::Plumbing::logger(%{$args{logger}}),
+         Data::Tubes::Plugin::Plumbing::logger(%{$args{logger}}),
       ]
    );
 } ## end sub files

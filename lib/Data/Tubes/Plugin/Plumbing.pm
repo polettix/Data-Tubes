@@ -1,4 +1,4 @@
-package Text::Tubes::Plugin::Plumbing;
+package Data::Tubes::Plugin::Plumbing;
 use strict;
 use warnings;
 use English qw< -no_match_vars >;
@@ -6,8 +6,8 @@ use Data::Dumper;
 use Scalar::Util qw< blessed >;
 
 use Log::Log4perl::Tiny qw< :easy :dead_if_first get_logger LOGLEVEL >;
-use Text::Tubes::Util qw< normalize_args traverse >;
-use Text::Tubes::Plugin::Util qw< identify log_helper >;
+use Data::Tubes::Util qw< normalize_args traverse >;
+use Data::Tubes::Plugin::Util qw< identify log_helper >;
 
 sub dispatch {
    my %args = normalize_args(@_,

@@ -1,14 +1,50 @@
 # NAME
 
-Text::Tubes - Text and data canalising
+Data::Tubes - Text and data canalising
 
 # VERSION
 
-This document describes Text::Tubes version 0.01.
+This document describes Data::Tubes version 0.01.
 
 # SYNOPSIS
 
-    use Text::Tubes;
+    use Data::Tubes qw< drain summon >;
+
+    # Load components from relevant plugins
+    summon(
+       qw<
+          +Plumbing::sequence
+          +Source::iterate_files
+          +Reader::read_by_line
+          +Parser::parse_hashy
+          +Renderer::render_with_template:perlish
+          +Writer::write_to_file
+       >
+    );
+
+    # define a simple Template::Perlish template
+    my $template = <<'END';
+    Hello [% name %], [% question %]?
+    END
+
+    # define a tube made of a sequence of tubes, each of the relevant
+    # type and doing its specific job.
+    my $sequence = sequence(
+       tubes => [
+          iterate_files(files => \@inputs),
+          read_by_line(),
+          parse_hashy(chunks_separator => '|'),
+          render_with_template_perlish(template => $template),
+          write_to_file(filename => $output),
+       ],
+    );
+
+    # just "drain" whatever comes out of the tube, we're not really
+    # interesting in collecting output records as they are already
+    # written by write_to_file. This is necessary so that the actions are
+    # actually "run", as of now $sequence is only a promise to do some
+    # work.
+    drain($sequence);
 
 # DESCRIPTION
 
@@ -17,18 +53,20 @@ transformation subroutines over records.
 
 # FUNCTIONS
 
-- **loglevel**
+- **drain**
 
-        loglevel('DEBUG');
+        drain($tube, @tube_inputs);
 
-    set the log level, see [Log::Log4perl::Tiny](https://metacpan.org/pod/Log::Log4perl::Tiny).
+    drain whatever comes out of a tube. The tube is run with the provided
+    inputs, and if an iterator comes out of it, it is repeatedly run until
+    it provides no more output records.
 
 - **summon**
 
         # Direct function import
         summon('Some::Package::subroutine');
 
-        # DWIM, treat 'em as plugins under Text::Tubes::Plugin
+        # DWIM, treat 'em as plugins under Data::Tubes::Plugin
         summon(
            {
               '+Source' => [ qw< iterate_array open_file > ],
@@ -59,12 +97,12 @@ transformation subroutines over records.
         package name at the beginning.
 
     In every case, if the package name starts with a `+` plus sign, the
-    package name will be considered relative to `Text::Tubes::Plugin`, so
-    the `+` plus sign will be substitued with `Text::Tubes::Plugin::`. For
+    package name will be considered relative to `Data::Tubes::Plugin`, so
+    the `+` plus sign will be substitued with `Data::Tubes::Plugin::`. For
     example:
 
-        +Plumbing becomes Text::Tubes::Plugin::Plumbing
-        +Reader   becomes Text::Tubes::Plugin::Reader
+        +Plumbing becomes Data::Tubes::Plugin::Plumbing
+        +Reader   becomes Data::Tubes::Plugin::Reader
 
     and so on.
 

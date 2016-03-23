@@ -7,15 +7,15 @@
 
 =head1 NAME
 
-Text::Tubes - Text and data canalising
+Data::Tubes - Text and data canalising
 
 =head1 VERSION
 
-This document describes Text::Tubes version 0.01.
+This document describes Data::Tubes version 0.01.
 
 =head1 SYNOPSIS
 
-   use Text::Tubes qw< drain summon >;
+   use Data::Tubes qw< drain summon >;
 
    # Load components from relevant plugins
    summon(
@@ -75,7 +75,7 @@ it provides no more output records.
    # Direct function import
    summon('Some::Package::subroutine');
 
-   # DWIM, treat 'em as plugins under Text::Tubes::Plugin
+   # DWIM, treat 'em as plugins under Data::Tubes::Plugin
    summon(
       {
          '+Source' => [ qw< iterate_array open_file > ],
@@ -110,12 +110,12 @@ package name at the beginning.
 =back
 
 In every case, if the package name starts with a C<+> plus sign, the
-package name will be considered relative to C<Text::Tubes::Plugin>, so
-the C<+> plus sign will be substitued with C<Text::Tubes::Plugin::>. For
+package name will be considered relative to C<Data::Tubes::Plugin>, so
+the C<+> plus sign will be substitued with C<Data::Tubes::Plugin::>. For
 example:
 
-   +Plumbing becomes Text::Tubes::Plugin::Plumbing
-   +Reader   becomes Text::Tubes::Plugin::Reader
+   +Plumbing becomes Data::Tubes::Plugin::Plumbing
+   +Reader   becomes Data::Tubes::Plugin::Reader
 
 and so on.
 

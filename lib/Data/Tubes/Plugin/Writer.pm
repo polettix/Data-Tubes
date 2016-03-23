@@ -1,4 +1,4 @@
-package Text::Tubes::Plugin::Writer;
+package Data::Tubes::Plugin::Writer;
 use strict;
 use warnings;
 use English qw< -no_match_vars >;
@@ -7,9 +7,9 @@ use POSIX qw< strftime >;
 use Log::Log4perl::Tiny qw< :easy :dead_if_first LOGLEVEL >;
 use Template::Perlish;
 
-use Text::Tubes::Util qw< normalize_args sprintffy >;
-use Text::Tubes::Plugin::Util qw< identify log_helper >;
-use Text::Tubes::Plugin::Plumbing;
+use Data::Tubes::Util qw< normalize_args sprintffy >;
+use Data::Tubes::Plugin::Util qw< identify log_helper >;
+use Data::Tubes::Plugin::Plumbing;
 my %global_defaults = (input => 'rendered',);
 
 sub _filenames_generator {
@@ -74,7 +74,7 @@ sub dispatch_to_files {
       return write_to_files(%args, filename => $filename);
    };
 
-   return Text::Tubes::Plugin::Plumbing::dispatch(%args);
+   return Data::Tubes::Plugin::Plumbing::dispatch(%args);
 } ## end sub dispatch_to_files
 
 sub write_to_files {
@@ -94,8 +94,8 @@ sub write_to_files {
    my $factory = $args{filename};
    $factory = _filenames_generator($factory)
      unless ref($factory) eq 'CODE';
-   require Text::Tubes::Util::Output;
-   my $output_handler = Text::Tubes::Util::Output->new(
+   require Data::Tubes::Util::Output;
+   my $output_handler = Data::Tubes::Util::Output->new(
       output => $factory,
       map { ($_ => $args{$_}) }
         grep { exists $args{$_} } qw< binmode footer header policy >

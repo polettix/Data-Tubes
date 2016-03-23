@@ -1,4 +1,4 @@
-package Text::Tubes::Util::Output;
+package Data::Tubes::Util::Output;
 use strict;
 use warnings;
 use English qw< -no_match_vars >;

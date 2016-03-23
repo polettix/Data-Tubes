@@ -2,7 +2,7 @@ use strict;
 use Test::More;
 use Data::Dumper;
 
-use Text::Tubes qw< summon >;
+use Data::Tubes qw< summon >;
 
 summon({'+Plumbing' => 'sequence'});
 ok __PACKAGE__->can('sequence'), 'summoned sequence';

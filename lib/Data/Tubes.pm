@@ -1,4 +1,4 @@
-package Text::Tubes;
+package Data::Tubes;
 
 use strict;
 use warnings;
@@ -42,7 +42,7 @@ sub summon {    # sort-of import
       }
       for my $part (@parts) {
          my ($pack, @names) = @$part;
-         $pack = 'Text::Tubes::Plugin::' . substr($pack, 1)
+         $pack = 'Data::Tubes::Plugin::' . substr($pack, 1)
          if substr($pack, 0, 1) eq '+';
          (my $fpack = "$pack.pm") =~ s{::}{/}gmxs;
          require $fpack;

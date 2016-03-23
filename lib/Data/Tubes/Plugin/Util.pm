@@ -1,4 +1,4 @@
-package Text::Tubes::Plugin::Util;
+package Data::Tubes::Plugin::Util;
 use strict;
 use warnings;
 use English qw< -no_match_vars >;

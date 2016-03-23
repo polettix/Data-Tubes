@@ -3,7 +3,7 @@ use Test::More;
 use Data::Dumper;
 use Path::Tiny;
 
-use Text::Tubes qw< summon >;
+use Data::Tubes qw< summon >;
 
 my @functions = qw<
   dispatch_to_files

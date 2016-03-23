@@ -1,11 +1,11 @@
-package Text::Tubes::Plugin::Renderer;
+package Data::Tubes::Plugin::Renderer;
 use strict;
 use warnings;
 use English qw< -no_match_vars >;
 
 use Log::Log4perl::Tiny qw< :easy :dead_if_first >;
 
-use Text::Tubes::Util qw< normalize_args >;
+use Data::Tubes::Util qw< normalize_args >;
 my %global_defaults = (
    input  => 'structured',
    output => 'rendered',

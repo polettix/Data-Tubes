@@ -1,11 +1,11 @@
-package Text::Tubes::Plugin::Reader;
+package Data::Tubes::Plugin::Reader;
 use strict;
 use warnings;
 use English qw< -no_match_vars >;
 use Log::Log4perl::Tiny qw< :easy :dead_if_first LOGLEVEL >;
 
-use Text::Tubes::Util qw< normalize_args >;
-use Text::Tubes::Plugin::Util qw< identify >;
+use Data::Tubes::Util qw< normalize_args >;
+use Data::Tubes::Plugin::Util qw< identify >;
 my %global_defaults = (
    input  => 'source',
    output => 'raw',

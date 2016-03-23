@@ -1,4 +1,4 @@
-package Text::Tubes::Plugin::Parser;
+package Data::Tubes::Plugin::Parser;
 use strict;
 use warnings;
 use English qw< -no_match_vars >;
@@ -6,9 +6,9 @@ use Data::Dumper;
 
 use Log::Log4perl::Tiny qw< :easy :dead_if_first >;
 
-use Text::Tubes::Util
+use Data::Tubes::Util
   qw< assert_all_different metadata normalize_args test_all_equal unzip >;
-use Text::Tubes::Plugin::Util qw< identify >;
+use Data::Tubes::Plugin::Util qw< identify >;
 my %global_defaults = (
    input  => 'raw',
    output => 'structured',

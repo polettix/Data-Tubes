@@ -2,7 +2,7 @@ use strict;
 use Test::More;
 use Data::Dumper;
 
-use Text::Tubes qw< summon >;
+use Data::Tubes qw< summon >;
 
 summon('+Parser::parse_single');
 ok __PACKAGE__->can('parse_single'), "summoned parse_single";
