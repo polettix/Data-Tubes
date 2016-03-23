@@ -1,10 +1,13 @@
 package Data::Tubes::Plugin::Source;
+
+# vim: ts=3 sts=3 sw=3 et ai :
+
 use strict;
 use warnings;
 use English qw< -no_match_vars >;
 use Log::Log4perl::Tiny qw< :easy :dead_if_first LOGLEVEL >;
 
-use Data::Tubes::Util qw< normalize_args >;
+use Data::Tubes::Util qw< normalize_args args_array_with_options >;
 use Data::Tubes::Plugin::Util qw< identify log_helper >;
 my %global_defaults = (
    input  => 'source',
@@ -94,16 +97,17 @@ sub open_file {
 } ## end sub open_file
 
 sub iterate_files {
-   my %args = normalize_args(
+   my ($files, $args) = args_array_with_options(
       @_,
-      {
-         binmode        => ':encoding(UTF-8)',
-         output         => 'source',
-         name           => 'files',
-         files          => [],
-         array_iterator => {},
-         open_file      => {},
-         logger         => {
+      {    # these are the default options
+         binmode => ':encoding(UTF-8)',
+         output  => 'source',
+         name    => 'files',
+
+         # options specific for sub-tubes
+         iterate_array => {},
+         open_file     => {},
+         logger        => {
             target => sub {
                my $record = shift;
                return 'reading from ' . $record->{source}{name},;
@@ -111,16 +115,15 @@ sub iterate_files {
          },
       }
    );
-   identify(\%args);
+   identify($args);
 
    use Data::Tubes::Plugin::Plumbing;
    return Data::Tubes::Plugin::Plumbing::sequence(
       iterate_array(
-         %{$args{array_iterator}},
-         array => ($args{files} || []),
+         %{$args->{iterate_array}}, array => $files,
       ),
-      open_file(%{$args{open_file}}),
-      Data::Tubes::Plugin::Plumbing::logger(%{$args{logger}}),
+      open_file(%{$args->{open_file}}),
+      Data::Tubes::Plugin::Plumbing::logger(%{$args->{logger}}),
    );
 } ## end sub iterate_files
 
