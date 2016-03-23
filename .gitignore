@@ -1,0 +1,5 @@
+.build/
+*.swp
+/local/
+/Text-Tubes-*.tar.gz
+/Text-Tubes-*/
