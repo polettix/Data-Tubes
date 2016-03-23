@@ -40,7 +40,7 @@ my $output = normalize_filename($config{output}, \*STDOUT);
 INFO 'starting';
 
 summon(
-   [qw< +Plumbing sequence sink >],
+   [qw< +Plumbing sequence >],
    [qw< +Source iterate_files >],
    [qw< +Reader read_by_line >],
    [qw< +Parser parse_hashy >],
