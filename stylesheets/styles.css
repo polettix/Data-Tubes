@@ -85,8 +85,8 @@ a:hover {
 	text-decoration: underline;
 }
 
-a small {
-	font-size: 10px;
+a small, small>a, small {
+	font-size: 12px;
 }
 
 em {
