@@ -54,7 +54,7 @@ END
 
 drain(
    sequence(
-      iterate_files(files => \@inputs),
+      iterate_files(@inputs),
       read_by_line(),
       parse_hashy(chunks_separator => '|'),
       render_with_template_perlish(template => $template),

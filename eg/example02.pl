@@ -15,13 +15,11 @@ summon(
 # define a tube made of a sequence of tubes, each of the relevant
 # type and doing its specific job.
 my $sequence = sequence(
-   tubes => [
-      iterate_files(files => [\"n=Flavio|q=how are you\nn=X|q=Y"]),
-      read_by_line(),
-      parse_hashy(chunks_separator => '|'),
-      render_with_template_perlish(template => "Hi [% n %], [% q %]?\n"),
-      write_to_files(filename => \*STDOUT),
-   ],
+   iterate_files(\"n=Flavio|q=how are you\nn=X|q=Y"),
+   read_by_line(),
+   parse_hashy(chunks_separator => '|'),
+   render_with_template_perlish(template => "Hi [% n %], [% q %]?\n"),
+   write_to_files(filename => \*STDOUT),
 );
 
 # just "drain" whatever comes out of the tube, we're not really
