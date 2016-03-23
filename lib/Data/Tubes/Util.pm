@@ -9,6 +9,7 @@ our @EXPORT_OK = qw<
   assert_all_different
   metadata
   normalize_args
+  normalize_filename
   sprintffy
   test_all_equal
   traverse
@@ -64,6 +65,22 @@ sub normalize_args {
    return \%retval;
 } ## end sub normalize_args
 
+sub normalize_filename {
+   my ($filename, $default_handle) = @_;
+   return $filename if ref($filename) eq 'GLOB';
+   return $default_handle if $filename eq '-';
+   return $filename if $filename =~ s{\Afile:}{}mxs;
+   if (my ($handlename) = $filename =~ m{\Ahandle:(?:std)?(.*)\z}imxs) {
+      $handlename = lc $handlename;
+      return \*STDOUT if $handlename eq 'out';
+      return \*STDIN  if $handlename eq 'err';
+      return \*STDERR if $handlename eq 'in';
+      LOGDIE "normalize_filename: invalid filename '$filename', " .
+        "use 'file:$filename' if name is correct";
+   } ## end if (my ($handlename) =...)
+   return $filename;
+} ## end sub normalize_filename
+
 sub split_pair {
    my ($input, $separator) = @_;
    my $qs     = quotemeta($separator);
@@ -77,7 +94,7 @@ sub split_pair {
 sub sprintffy {
    my ($template, $substitutions) = @_;
    my $len = length $template;
-   pos($template) = 0;               # initialize
+   pos($template) = 0;            # initialize
    my @chunks;
  QUEST:
    while (pos($template) < $len) {
@@ -85,7 +102,7 @@ sub sprintffy {
       my ($plain, $term) = ($1, $2);
       my $pos = pos($template);
       push @chunks, $plain;
-      last unless $term;             # got a percent, have to continue
+      last unless $term;          # got a percent, have to continue
     CANDIDATE:
       for my $candidate ([qr{%} => '%'], @$substitutions) {
          my ($regex, $value) = @$candidate;
@@ -122,9 +139,9 @@ sub traverse {
          return undef;
       }
       return undef unless defined $data;
-   }
+   } ## end for my $key (@keys)
    return $data;
-}
+} ## end sub traverse
 
 sub unzip {
    my $items = (@_ && ref($_[0])) ? $_[0] : \@_;
