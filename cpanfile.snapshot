@@ -45,6 +45,30 @@ DISTRIBUTIONS
       Log::Log4perl::Tiny 1.002007
     requirements:
       ExtUtils::MakeMaker 6.30
+  Mo-0.39
+    pathname: I/IN/INGY/Mo-0.39.tar.gz
+    provides:
+      Attr::Trait 0.39
+      Mo 0.39
+      Mo::Golf 0.39
+      Mo::Inline 0.39
+      Mo::Moose 0.39
+      Mo::Mouse 0.39
+      Mo::build 0.39
+      Mo::builder 0.39
+      Mo::chain 0.39
+      Mo::coerce 0.39
+      Mo::default 0.39
+      Mo::exporter 0.39
+      Mo::import 0.39
+      Mo::importer 0.39
+      Mo::is 0.39
+      Mo::nonlazy 0.39
+      Mo::option 0.39
+      Mo::required 0.39
+      Mo::xs 0.39
+    requirements:
+      ExtUtils::MakeMaker 6.30
   Module-Build-Tiny-0.039
     pathname: L/LE/LEONT/Module-Build-Tiny-0.039.tar.gz
     provides:
