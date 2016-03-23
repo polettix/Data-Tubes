@@ -4,10 +4,6 @@ layout: page
 author: 'polettix'
 tagline: 'Text and data canalising'
 ---
-This module allows you to define _Tubes_, which are little more than
-transformation subroutines over records.
-
-One example, fast!
 
 ```perl
 use Data::Tubes qw< drain summon >;
