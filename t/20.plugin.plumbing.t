@@ -8,7 +8,7 @@ summon({'+Plumbing' => 'sequence'});
 ok __PACKAGE__->can('sequence'), 'summoned sequence';
 
 {
-   my $sequence = sequence(tubes => [\&first, \&second]);
+   my $sequence = sequence(\&first, \&second);
    my $output = $sequence->({});
    ok exists($output->{iterator}), 'sequence returned an iterator';
 
@@ -24,7 +24,7 @@ ok __PACKAGE__->can('sequence'), 'summoned sequence';
 }
 
 {
-   my $sequence = sequence(tubes => [\&first, \&second, \&third]);
+   my $sequence = sequence(\&first, \&second, \&third);
    my $output = $sequence->({});
    ok exists($output->{iterator}), 'sequence returned an iterator';
 
@@ -46,7 +46,7 @@ ok __PACKAGE__->can('sequence'), 'summoned sequence';
 }
 
 {
-   my $sequence = sequence(tubes => [\&first, \&second, \&iter_third]);
+   my $sequence = sequence(\&first, \&second, \&iter_third);
    my $output = $sequence->({});
    ok exists($output->{iterator}), 'sequence returned an iterator';
 
@@ -81,23 +81,20 @@ sub second {
 
 sub third {
    my $record = shift;
-   return {
-      records => [
-         {%$record, third => 'some'},
-         {%$record, third => 'thing'},
-      ],
+   return {records =>
+        [{%$record, third => 'some'}, {%$record, third => 'thing'},],
    };
-}
+} ## end sub third
 
 sub iter_third {
-   my $record = shift;
+   my $record  = shift;
    my $counter = 2;
    return {
       iterator => sub {
          return unless $counter;
          return {%$record, third => $counter--};
-      }
+        }
    };
-}
+} ## end sub iter_third
 
 done_testing();

@@ -14,22 +14,26 @@ my %global_defaults = (
 sub iterate_array {
    my %args = normalize_args(@_, {name => 'array iterator'});
    identify(\%args);
-   my $logger = log_helper(\%args);
+   my $logger       = log_helper(\%args);
    my $global_array = $args{array} || [];
-   my $n_global = @$global_array;
+   my $n_global     = @$global_array;
    return sub {
       my $local_array = shift || [];
-      my $n_local = @$local_array;
-      my $i = 0;
-      return { iterator => sub {
-         return if $i >= $n_global + $n_local;
-         my $element = ($i < $n_global) ? $global_array->[$i++]
-            : $local_array->[($i++) - $n_global];
-         $logger->($element, \%args) if $logger;
-         return $element;
-      },};
+      my $n_local     = @$local_array;
+      my $i           = 0;
+      return {
+         iterator => sub {
+            return if $i >= $n_global + $n_local;
+            my $element =
+              ($i < $n_global)
+              ? $global_array->[$i++]
+              : $local_array->[($i++) - $n_global];
+            $logger->($element, \%args) if $logger;
+            return $element;
+         },
+      };
    };
-}
+} ## end sub iterate_array
 
 sub open_file {
    my %args = normalize_args(
@@ -70,7 +74,7 @@ sub open_file {
             type  => 'handle',
             name  => "handle\:STDIN",
          };
-      }
+      } ## end elsif ($file eq '-')
       else {
          $file =~ s{\Afile:}{}mxs;
          open my $fh, '<', $file
@@ -93,16 +97,16 @@ sub iterate_files {
    my %args = normalize_args(
       @_,
       {
-         binmode => ':encoding(UTF-8)',
-         output  => 'source',
-         name    => 'files',
-         files   => [],
+         binmode        => ':encoding(UTF-8)',
+         output         => 'source',
+         name           => 'files',
+         files          => [],
          array_iterator => {},
-         open_file => {},
-         logger => {
+         open_file      => {},
+         logger         => {
             target => sub {
                my $record = shift;
-               return 'reading from ' . $record->{source}{name},
+               return 'reading from ' . $record->{source}{name},;
             },
          },
       }
@@ -111,15 +115,13 @@ sub iterate_files {
 
    use Data::Tubes::Plugin::Plumbing;
    return Data::Tubes::Plugin::Plumbing::sequence(
-      tubes => [
-         iterate_array(
-            %{$args{array_iterator}},
-            array => ($args{files} || []),
-         ),
-         open_file(%{$args{open_file}}),
-         Data::Tubes::Plugin::Plumbing::logger(%{$args{logger}}),
-      ]
+      iterate_array(
+         %{$args{array_iterator}},
+         array => ($args{files} || []),
+      ),
+      open_file(%{$args{open_file}}),
+      Data::Tubes::Plugin::Plumbing::logger(%{$args{logger}}),
    );
-} ## end sub files
+} ## end sub iterate_files
 
 1;

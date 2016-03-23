@@ -54,13 +54,11 @@ END
 
 drain(
    sequence(
-      tubes => [
-         iterate_files(files => \@inputs),
-         read_by_line(),
-         parse_hashy(chunks_separator => '|'),
-         render_with_template_perlish(template => $template),
-         write_to_files(filename => $output),
-      ],
+      iterate_files(files => \@inputs),
+      read_by_line(),
+      parse_hashy(chunks_separator => '|'),
+      render_with_template_perlish(template => $template),
+      write_to_files(filename => $output),
    )
 );
 

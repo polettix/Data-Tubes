@@ -1,4 +1,6 @@
 package Data::Tubes::Plugin::Plumbing;
+# vim: ts=3 sts=3 sw=3 et ai :
+
 use strict;
 use warnings;
 use English qw< -no_match_vars >;
@@ -79,13 +81,18 @@ sub logger {
 } ## end sub logger
 
 sub sequence {
-   my %args = normalize_args(@_, {name => 'sequence'});
+   my @tubes = @_;
+
+   my %args = (name => 'sequence');
+   %args = (%args, %{pop @tubes})
+      if @tubes && (ref($tubes[-1]) eq 'HASH');
    identify(\%args);
+
+   # cope with empty list of tubes
+   return sub { return { skip => 1 } } unless @tubes;
+
    my $logger = log_helper(\%args);
    my $name = $args{name};
-
-   my @tubes = @{$args{tubes}};
-
    return sub {
       my $record = shift;
       $logger->($record, \%args) if $logger;
