@@ -6,6 +6,7 @@ use Exporter 'import';
 use Log::Log4perl::Tiny qw< :easy :dead_if_first >;
 
 our @EXPORT_OK = qw<
+  args_array_with_options
   assert_all_different
   metadata
   normalize_args
@@ -64,6 +65,13 @@ sub normalize_args {
    return %retval if wantarray();
    return \%retval;
 } ## end sub normalize_args
+
+sub args_array_with_options {
+   my %defaults = %{pop @_};
+   %defaults = (%defaults, %{pop @_})
+      if @_ && (ref($_[-1]) eq 'HASH');
+   return ([@_], \%defaults);
+}
 
 sub normalize_filename {
    my ($filename, $default_handle) = @_;
