@@ -1,4 +1,7 @@
 use strict;
+
+# vim: ts=3 sts=3 sw=3 et ai :
+
 use Test::More;
 use Data::Dumper;
 
@@ -10,10 +13,7 @@ ok __PACKAGE__->can('parse_hashy'), "summoned parse_hashy";
 my $raw     = 'what=ever you=like whatever';
 {
    my $parser  = parse_hashy(default_key => 'mu');
-   my $outcome = $parser->({raw => $raw});
-   is ref($outcome), 'HASH', 'outcome is a hash';
-   ok exists($outcome->{record}), 'outcome has a record field';
-   my $record = $outcome->{record};
+   my $record = $parser->({raw => $raw});
    is ref($record), 'HASH', 'record is a hash';
    is_deeply $record,
      {structured => {qw< what ever you like mu whatever >}, raw => $raw},
@@ -23,10 +23,7 @@ my $raw     = 'what=ever you=like whatever';
 {
    my $parser =
      parse_hashy(input => 'karb', output => 'what', default_key => 'mu');
-   my $outcome = $parser->({karb => $raw});
-   is ref($outcome), 'HASH', 'outcome is a hash';
-   ok exists($outcome->{record}), 'outcome has a record field';
-   my $record = $outcome->{record};
+   my $record = $parser->({karb => $raw});
    is ref($record), 'HASH', 'record is a hash';
    is_deeply $record,
      {what => {qw< what ever you like mu whatever >}, karb => $raw},

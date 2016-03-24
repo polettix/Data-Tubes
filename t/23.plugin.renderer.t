@@ -1,4 +1,7 @@
 use strict;
+
+# vim: ts=3 sts=3 sw=3 et ai :
+
 use Test::More;
 use Data::Dumper;
 
@@ -22,10 +25,7 @@ my $target_string = "Have you ever felt like you have to do something?\n";
 Have you [% what %] felt [% you %] you have to [% please %] something?
 END
    my $rend = render_with_template_perlish(template => $template);
-   my $outcome = $rend->({structured => $structured});
-   is ref($outcome), 'HASH', 'outcome is a hash';
-   ok exists($outcome->{record}), 'outcome is a record';
-   my $record = $outcome->{record};
+   my $record = $rend->({structured => $structured});
    is ref($record), 'HASH', 'record is a hash';
    is_deeply $record,
      {structured => $structured, rendered => $target_string},
@@ -47,10 +47,7 @@ END
          new  => 'something',    # preserved
       },
    );
-   my $outcome = $rend->({foo => $structured});
-   is ref($outcome), 'HASH', 'outcome is a hash';
-   ok exists($outcome->{record}), 'outcome is a record';
-   my $record = $outcome->{record};
+   my $record = $rend->({foo => $structured});
    is ref($record), 'HASH', 'record is a hash';
    is_deeply $record,
      {foo => $structured, bar => $target_string},

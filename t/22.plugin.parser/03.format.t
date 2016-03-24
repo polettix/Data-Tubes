@@ -1,4 +1,7 @@
 use strict;
+
+# vim: ts=3 sts=3 sw=3 et ai :
+
 use Test::More;
 use Data::Dumper;
 
@@ -22,10 +25,7 @@ for my $pair (
 
    {
       my $parser = parse_by_format(format => $format);
-      my $outcome = $parser->({raw => $string});
-      is ref($outcome), 'HASH', 'outcome is a hash';
-      ok exists($outcome->{record}), 'outcome has a record field';
-      my $record = $outcome->{record};
+      my $record = $parser->({raw => $string});
       is ref($record), 'HASH', 'record is a hash';
       is_deeply $record, {structured => $expected, raw => $string},
         'parsed by format';
@@ -37,10 +37,7 @@ for my $pair (
          input  => 'foo',
          output => 'bar'
       );
-      my $outcome = $parser->({foo => $string});
-      is ref($outcome), 'HASH', 'outcome is a hash';
-      ok exists($outcome->{record}), 'outcome has a record field';
-      my $record = $outcome->{record};
+      my $record = $parser->({foo => $string});
       is ref($record), 'HASH', 'record is a hash';
       is_deeply $record, {bar => $expected, foo => $string},
         'parsed by format';

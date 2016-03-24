@@ -1,4 +1,7 @@
 use strict;
+
+# vim: ts=3 sts=3 sw=3 et ai :
+
 use Test::More;
 use Data::Dumper;
 
