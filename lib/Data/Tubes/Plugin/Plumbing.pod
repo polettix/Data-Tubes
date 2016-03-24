@@ -1,0 +1,99 @@
+=pod
+
+=for vim
+   vim: tw=72 ts=3 sts=3 sw=3 et ai :
+
+=encoding utf8
+
+=head1 NAME
+
+Data::Tubes::Plugin::Plumbing
+
+=head1 DESCRIPTION
+
+This module contains I<tubes> for handling general plumbing
+requirements, e.g. put some other I<tubes> in a sequence.
+
+=head1 FUNCTIONS
+
+=over
+
+=item B<< dispatch >>
+
+=item B<< logger >>
+
+=item B<< sequence >>
+
+   my $tube = sequence(@tubes); # OR
+   my $tube = sequence(@tubes, \%options);
+
+this function takes a sequence of I<tubes> (i.e. functions that are
+compliant with the I<tube> definition) and returns a I<tube> that
+provides serialization of the operations, in the order as the passed
+list.
+
+The last element in the argument list can be a hash reference with
+options; the following options are supported:
+
+=over
+
+=item C<name>
+
+set a name for the sequence, which might come handy when debugging.
+Defaults to C<sequence>.
+
+=back
+
+The sequence makes no assumption as to the input record, although the
+first element in the provided list might do.
+
+When run on an input record, this tube always returns an iterator (i.e.
+a hash with one key C<iterator> associated to an iterator function). You
+will be able to retrieve the output records accessing the iterator.
+
+Note that the last I<tube> in the sequence might actually return an
+output record with an C<undef> or otherwise false value (Perl-wise). To
+cope with this, when called in list context, the iterator is guaranteed
+to either return one single output record, or the empty list when the
+iterator is exhausted.
+
+The suggested idiom for taking items from the iterator is then the
+following:
+
+   my $it1 = $sequence1->($input_record)->{iterator};
+   while (my @output_record = $it1->()) {
+      # work with $output_record[0] here, it's your output record!
+   }
+
+   # if you're waiting for a single output record, use if
+   my $it2 = $sequence2->($input_record)->{iterator};
+   if (my @output_record = $it2->()) {
+      # work with $output_record[0] here, it's your output record!
+   }
+
+=item B<< unwrap >>
+
+=item B<< wrap >>
+
+=back
+
+=head1 BUGS AND LIMITATIONS
+
+Report bugs either through RT or GitHub (patches welcome).
+
+=head1 AUTHOR
+
+Flavio Poletti <polettix@cpan.org>
+
+=head1 COPYRIGHT AND LICENSE
+
+Copyright (C) 2016 by Flavio Poletti <polettix@cpan.org>
+
+This module is free software. You can redistribute it and/or modify it
+under the terms of the Artistic License 2.0.
+
+This program is distributed in the hope that it will be useful, but
+without any warranty; without even the implied warranty of
+merchantability or fitness for a particular purpose.
+
+=cut
