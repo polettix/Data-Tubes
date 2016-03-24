@@ -15,8 +15,6 @@ our @EXPORT_OK = (
    qw<
      drain
      summon
-     tub
-     tuba
      tube
      >
 );
@@ -64,8 +62,6 @@ sub summon {    # sort-of import
    } ## end for my $r (@_)
 } ## end sub summon
 
-sub tub(&) { return tube(shift) }
-
 sub tube {
    my $sub = shift;
 
@@ -73,7 +69,7 @@ sub tube {
 
    # optional arguments handling
    my $n = scalar @_;
-   LOGDIE 'tub(): wrong number of arguments' if ($n % 2) && ($n != 1);
+   LOGDIE 'tube(): wrong number of arguments' if ($n % 2) && ($n != 1);
    my %args = normalize_args(
       (
            ($n != 1)              ? @_
