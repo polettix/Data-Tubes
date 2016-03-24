@@ -41,10 +41,10 @@ sub render_with_template_perlish {
       my $record    = shift;
       my $variables = $has_input ? $record->{$input} : $record;
       my $retval    = $tp->evaluate($template, $variables);
-      return {record => $retval} unless $has_output;
+      return $retval unless $has_output;
       $record = {} unless $has_input;
       $record->{$output} = $retval;
-      return {record => $record};
+      return $record;
    };
 } ## end sub render_template_perlish
 

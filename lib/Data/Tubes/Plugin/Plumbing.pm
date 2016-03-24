@@ -80,7 +80,7 @@ sub logger {
    return sub {
       my $record = shift;
       $logger->log($loglevel, $mangler->($record));
-      return {record => $record};
+      return $record;
    };
 } ## end sub logger
 
@@ -95,16 +95,18 @@ sub sequence {
    # auto-generate tubes if you get definitions
    my @tubes = map {
       my $ref = ref $_;
-      ($ref eq 'CODE') ? $_
-      : tube(($ref eq 'ARRAY') ? @$_ : $_)
+      ($ref eq 'CODE')
+        ? $_
+        : tube(($ref eq 'ARRAY') ? @$_ : $_)
    } @$tubes;
 
    my $tap = $args->{tap};
    $tap = sub {
       my $iterator = shift;
-      while (my @items = $iterator->()) {}
+      while (my @items = $iterator->()) { }
       return;
-   } if defined($tap) && ($tap eq 'sink');
+     }
+     if defined($tap) && ($tap eq 'sink');
 
    if ((!defined($tap)) && (defined($args->{pump}))) {
       my $pump = $args->{pump};
@@ -114,10 +116,10 @@ sub sequence {
             $pump->($items[0]);
          }
          return;
-      }
-   }
+        }
+   } ## end if ((!defined($tap)) &&...)
    LOGDIE 'invalid tap or pump'
-      if $tap && ref($tap) ne 'CODE';
+     if $tap && ref($tap) ne 'CODE';
 
    my $logger = log_helper($args);
    my $name   = $args->{name};
@@ -127,56 +129,38 @@ sub sequence {
 
       my @stack = ({record => $record});
       my $iterator = sub {
-          STEP:
-            while (@stack) {
-               my $pos   = $#stack;
-               my $frame = $stack[$pos];
+       STEP:
+         while (@stack) {
+            my $pos = $#stack;
 
-               my ($has_record, $record);
-               if (exists $frame->{record}) {
-                  $record     = delete $frame->{record};
-                  $has_record = 1;
-               }
-               elsif (exists $frame->{records}) {
-                  $record = shift @{$frame->{records}}
-                    if $has_record = @{$frame->{records}};
-               }
-               elsif (exists $frame->{iterator}) {
-                  my @buffer = $frame->{iterator}->();
-                  $record = shift @buffer
-                    if $has_record = @buffer;
-               }
+            my $f = $stack[$pos];
+            my @record =
+                exists($f->{record})   ? delete $f->{record}
+              : exists($f->{iterator}) ? $f->{iterator}->()
+              : @{$f->{records} || []} ? shift @{$f->{records}}
+              :                          ();
+            if (!@record) {    # no more at this level...
+               my $n = @stack;
+               TRACE "$name: level $n backtracking, no more records";
+               pop @stack;
+               next STEP;
+            } ## end if (!@record)
 
-               if (!$has_record) {    # no more at this level...
-                  my $n = @stack;
-                  TRACE "$name: level $n backtracking, no more records";
-                  pop @stack;
-                  next STEP;
-               } ## end if (!$has_record)
-               return $record if @stack > @tubes;    # output cache
+            my $record = $record[0];
+            return $record if @stack > @tubes;    # output cache
 
-               TRACE sub {
-                  local $Data::Dumper::Indent = 1;
-                  Dumper('record: ', $record);
-               };
+            # something must be done...
+            my @outcome = $tubes[$pos]->($record)
+              or next STEP;
 
-               # something must be done...
-               my $o = $tubes[$pos]->($record);
-               TRACE sub {
-                  local $Data::Dumper::Indent = 1;
-                  Dumper('output: ', $o);
-               };
+            unshift @outcome, 'record' if @outcome == 1;
+            push @stack, {@outcome};              # and go to next level
+         } ## end STEP: while (@stack)
 
-               next STEP
-                 if (!defined $o) || (exists $o->{skip});
-
-               push @stack, $o;    # and go to next level
-            } ## end STEP: while (@stack)
-
-            return;                # end of output, empty list
-         };
-      return { iterator => $iterator } unless $tap;
-      return $tap->($iterator);
+         return;    # end of output, empty list
+      };
+      return $tap->($iterator) if $tap;
+      return (iterator => $iterator);
    };
 } ## end sub sequence
 
@@ -195,9 +179,9 @@ sub unwrap {
       $logger->($record, \%args) if $logger;
       die {message => "$name: not a hash reference", record => $record}
         unless ref($record) eq 'HASH';
-      return {record => $record->{$key}} if exists($record->{$key});
-      return {skip   => 1}               if $missing_is_skip;
-      return {record => undef}           if $missing_ok;
+      return $record->{$key} if exists($record->{$key});
+      return if $missing_is_skip;
+      return undef if $missing_ok;
       die {message => "$name: no '$key' in record", record => $record};
    };
 } ## end sub unwrap
@@ -212,7 +196,7 @@ sub wrap {
    return sub {
       my $record = shift;
       $logger->($record, \%args) if $logger;
-      return {record => {$key => $record}};
+      return {$key => $record};
    };
 } ## end sub wrap
 

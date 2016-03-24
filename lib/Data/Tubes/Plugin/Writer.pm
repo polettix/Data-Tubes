@@ -105,7 +105,7 @@ sub write_to_files {
    return sub {
       my $record = shift;
       $output_handler->print($record->{$input});
-      return {record => $record};    # relaunch for further processing
+      return $record;    # relaunch for further processing
    };
 } ## end sub write_to_files
 
@@ -137,7 +137,7 @@ sub write_to_handle {
    return sub {
       my $record = shift;
       print {$fh} $record->{$input};
-      return {record => $record};    # relaunch for further processing
+      return $record;    # relaunch for further processing
    };
 } ## end sub write_to_handle
 

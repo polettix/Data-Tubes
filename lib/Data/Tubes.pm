@@ -24,8 +24,10 @@ our %EXPORT_TAGS = (all => \@EXPORT_OK,);
 
 sub drain {
    my $tube     = shift;
-   my $outcome  = $tube->(@_);
-   my $iterator = $outcome->{iterator} // return;
+   my @outcome  = $tube->(@_) or return;
+   return if @outcome == 1;
+   return if $outcome[0] eq 'records';
+   my $iterator = $outcome[1];
    while (my @items = $iterator->()) { }
 } ## end sub drain
 
@@ -84,9 +86,11 @@ sub tube {
    );
 
    my $type = $args{as};
+   $type = undef if ($type // '') eq 'record';
    return sub {
       my $outcome = $sub->(@_);
-      return {$type => $outcome};
+      return $outcome unless $type;
+      return ($type => $outcome);
    };
 } ## end sub tube
 
