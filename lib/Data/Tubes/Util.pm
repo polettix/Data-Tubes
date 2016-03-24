@@ -1,4 +1,7 @@
 package Data::Tubes::Util;
+
+# vim: ts=3 sts=3 sw=3 et ai :
+
 use strict;
 use warnings;
 use Exporter 'import';
@@ -9,8 +12,12 @@ our @EXPORT_OK = qw<
   args_array_with_options
   assert_all_different
   metadata
+  load_module
+  load_sub
   normalize_args
   normalize_filename
+  resolve_module
+  shorter_sub_names
   sprintffy
   test_all_equal
   traverse
@@ -25,6 +32,47 @@ sub assert_all_different {
    }
    return 1;
 } ## end sub assert_all_different
+
+sub resolve_module {
+   my ($module, $prefix) = @_;
+
+   my ($first) = substr $module, 0, 1;
+   return substr $module, 1 if $first eq '!';
+
+   $prefix //= 'Data::Tubes::Plugin';
+   if ($first eq '+') {
+      $module = substr $module, 1;
+   }
+   elsif ($module =~ m{::}mxs) {
+      $prefix = undef;
+   }
+   return $module unless defined $prefix;
+   return $prefix . '::' . $module;
+} ## end sub resolve_module
+
+sub _load_module {
+   my $module = shift;
+   (my $packfile = $module . '.pm') =~ s{::}{/}gmxs;
+   require $packfile;
+   return $module;
+} ## end sub load_module
+
+sub load_module {
+   my $module = resolve_module(@_);
+   (my $packfile = $module . '.pm') =~ s{::}{/}gmxs;
+   require $packfile;
+   return $module;
+} ## end sub load_module
+
+sub load_sub {
+   my ($locator, $prefix) = @_;
+   my ($module, $sub) =
+     ref($locator) ? @$locator : $locator =~ m{\A(.*)::(\w+)\z}mxs;
+   $module = resolve_module($module, $prefix);
+
+   # optimistic first
+   return $module->can($sub) // _load_module($module)->can($sub);
+} ## end sub load_sub
 
 sub metadata {
    my $input = shift;
@@ -69,25 +117,48 @@ sub normalize_args {
 sub args_array_with_options {
    my %defaults = %{pop @_};
    %defaults = (%defaults, %{pop @_})
-      if @_ && (ref($_[-1]) eq 'HASH');
+     if @_ && (ref($_[-1]) eq 'HASH');
    return ([@_], \%defaults);
-}
+} ## end sub args_array_with_options
 
 sub normalize_filename {
    my ($filename, $default_handle) = @_;
-   return $filename if ref($filename) eq 'GLOB';
+   return $filename       if ref($filename) eq 'GLOB';
    return $default_handle if $filename eq '-';
-   return $filename if $filename =~ s{\Afile:}{}mxs;
+   return $filename       if $filename =~ s{\Afile:}{}mxs;
    if (my ($handlename) = $filename =~ m{\Ahandle:(?:std)?(.*)\z}imxs) {
       $handlename = lc $handlename;
       return \*STDOUT if $handlename eq 'out';
       return \*STDIN  if $handlename eq 'err';
       return \*STDERR if $handlename eq 'in';
-      LOGDIE "normalize_filename: invalid filename '$filename', " .
-        "use 'file:$filename' if name is correct";
+      LOGDIE "normalize_filename: invalid filename '$filename', "
+        . "use 'file:$filename' if name is correct";
    } ## end if (my ($handlename) =...)
    return $filename;
 } ## end sub normalize_filename
+
+sub shorter_sub_names {
+   my $stash = shift . '::';
+
+   no strict 'refs';
+
+   # isolate all subs
+   my %sub_for = map {
+      *{$stash . $_}{CODE} ? ($_ => *{$stash . $_}{CODE}) : ();
+   } keys %$stash;
+
+   # iterate through inputs, work only on isolated subs and don't
+   # consider shortened ones
+   for my $prefix (@_) {
+      while (my ($name, $sub) = each %sub_for) {
+         next if index($name, $prefix) < 0;
+         my $shortname = substr $name, length($prefix);
+         *{$stash . $shortname} = $sub;
+      }
+   }
+
+   return;
+}
 
 sub split_pair {
    my ($input, $separator) = @_;

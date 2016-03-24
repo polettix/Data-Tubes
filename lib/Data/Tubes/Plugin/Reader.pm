@@ -4,7 +4,7 @@ use warnings;
 use English qw< -no_match_vars >;
 use Log::Log4perl::Tiny qw< :easy :dead_if_first LOGLEVEL >;
 
-use Data::Tubes::Util qw< normalize_args >;
+use Data::Tubes::Util qw< normalize_args shorter_sub_names >;
 use Data::Tubes::Plugin::Util qw< identify >;
 my %global_defaults = (
    input  => 'source',
@@ -99,5 +99,7 @@ sub read_by_separator {
       },
    );
 } ## end sub read_by_separator
+
+shorter_sub_names(__PACKAGE__, 'read_');
 
 1;

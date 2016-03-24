@@ -5,7 +5,7 @@ use English qw< -no_match_vars >;
 
 use Log::Log4perl::Tiny qw< :easy :dead_if_first >;
 
-use Data::Tubes::Util qw< normalize_args >;
+use Data::Tubes::Util qw< normalize_args shorter_sub_names >;
 my %global_defaults = (
    input  => 'structured',
    output => 'rendered',
@@ -47,3 +47,7 @@ sub render_with_template_perlish {
       return {record => $record};
    };
 } ## end sub render_template_perlish
+
+shorter_sub_names(__PACKAGE__, 'render_');
+
+1;

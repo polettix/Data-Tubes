@@ -1,8 +1,11 @@
 use strict;
+
+# vim: ts=3 sts=3 sw=3 et ai :
+
 use Test::More;
 use Data::Dumper;
 
-use Data::Tubes qw< summon >;
+use Data::Tubes qw< summon tub tube >;
 
 summon({'+Plumbing' => 'sequence'});
 ok __PACKAGE__->can('sequence'), 'summoned sequence';
@@ -24,7 +27,7 @@ ok __PACKAGE__->can('sequence'), 'summoned sequence';
 }
 
 {
-   my $sequence = sequence(\&first, \&second, \&third);
+   my $sequence = sequence([qw< !main::factory foo >], \&second, \&third);
    my $output = $sequence->({});
    ok exists($output->{iterator}), 'sequence returned an iterator';
 
@@ -46,7 +49,14 @@ ok __PACKAGE__->can('sequence'), 'summoned sequence';
 }
 
 {
-   my $sequence = sequence(\&first, \&second, \&iter_third);
+   my $pt1 = tub { return shift };
+   my $pt2 = tube sub {
+      my @items = @_;
+      return sub { return unless @items; return shift @items; };
+   }, as => 'iterator';
+   my $pt3 = tube sub { return [@_] }, as => 'records';
+   my $sequence =
+     sequence('!main::factory', \&second, $pt1, $pt2, $pt3, \&iter_third);
    my $output = $sequence->({});
    ok exists($output->{iterator}), 'sequence returned an iterator';
 
@@ -73,6 +83,10 @@ sub first {
    return {record => $record};
 }
 
+sub factory {
+   return \&first;
+}
+
 sub second {
    my $record = shift;
    $record->{second} = 'you';
@@ -96,5 +110,10 @@ sub iter_third {
         }
    };
 } ## end sub iter_third
+
+sub fourth {
+   my $record = shift;
+   return $record;
+}
 
 done_testing();

@@ -1,3 +1,6 @@
+#!/usr/bin/env perl
+use lib '../lib';
+
 use Data::Tubes qw< drain summon >;
 
 # Load components from relevant plugins

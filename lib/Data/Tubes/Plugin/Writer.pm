@@ -7,7 +7,7 @@ use POSIX qw< strftime >;
 use Log::Log4perl::Tiny qw< :easy :dead_if_first LOGLEVEL >;
 use Template::Perlish;
 
-use Data::Tubes::Util qw< normalize_args sprintffy >;
+use Data::Tubes::Util qw< normalize_args shorter_sub_names sprintffy >;
 use Data::Tubes::Plugin::Util qw< identify log_helper >;
 use Data::Tubes::Plugin::Plumbing;
 my %global_defaults = (input => 'rendered',);
@@ -140,5 +140,7 @@ sub write_to_handle {
       return {record => $record};    # relaunch for further processing
    };
 } ## end sub write_to_handle
+
+shorter_sub_names(__PACKAGE__, 'write_');
 
 1;

@@ -9,6 +9,7 @@ use Data::Dumper;
 use Scalar::Util qw< blessed >;
 
 use Log::Log4perl::Tiny qw< :easy :dead_if_first get_logger LOGLEVEL >;
+use Data::Tubes qw< tube >;
 use Data::Tubes::Util
   qw< normalize_args traverse args_array_with_options >;
 use Data::Tubes::Plugin::Util qw< identify log_helper >;
@@ -91,6 +92,33 @@ sub sequence {
    return sub { return {skip => 1} }
      unless @$tubes;
 
+   # auto-generate tubes if you get definitions
+   my @tubes = map {
+      my $ref = ref $_;
+      ($ref eq 'CODE') ? $_
+      : tube(($ref eq 'ARRAY') ? @$_ : $_)
+   } @$tubes;
+
+   my $tap = $args->{tap};
+   $tap = sub {
+      my $iterator = shift;
+      while (my @items = $iterator->()) {}
+      return;
+   } if defined($tap) && ($tap eq 'sink');
+
+   if ((!defined($tap)) && (defined($args->{pump}))) {
+      my $pump = $args->{pump};
+      $tap = sub {
+         my $iterator = shift;
+         while (my @items = $iterator->()) {
+            $pump->($items[0]);
+         }
+         return;
+      }
+   }
+   LOGDIE 'invalid tap or pump'
+      if $tap && ref($tap) ne 'CODE';
+
    my $logger = log_helper($args);
    my $name   = $args->{name};
    return sub {
@@ -98,8 +126,7 @@ sub sequence {
       $logger->($record, $args) if $logger;
 
       my @stack = ({record => $record});
-      return {
-         iterator => sub {
+      my $iterator = sub {
           STEP:
             while (@stack) {
                my $pos   = $#stack;
@@ -126,7 +153,7 @@ sub sequence {
                   pop @stack;
                   next STEP;
                } ## end if (!$has_record)
-               return $record if @stack > @$tubes;    # output cache
+               return $record if @stack > @tubes;    # output cache
 
                TRACE sub {
                   local $Data::Dumper::Indent = 1;
@@ -134,7 +161,7 @@ sub sequence {
                };
 
                # something must be done...
-               my $o = $tubes->[$pos]->($record);
+               my $o = $tubes[$pos]->($record);
                TRACE sub {
                   local $Data::Dumper::Indent = 1;
                   Dumper('output: ', $o);
@@ -147,21 +174,11 @@ sub sequence {
             } ## end STEP: while (@stack)
 
             return;                # end of output, empty list
-         },
-      };
+         };
+      return { iterator => $iterator } unless $tap;
+      return $tap->($iterator);
    };
 } ## end sub sequence
-
-sub sink {
-   my %args = normalize_args(@_, {name => 'sink'});
-   identify(\%args);
-   my $logger = log_helper(\%args);
-   return sub {
-      my $record = shift;
-      $logger->($record, \%args) if $logger;
-      return {skip => 1};
-   };
-} ## end sub sink
 
 sub unwrap {
    my %args = normalize_args(@_,

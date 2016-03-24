@@ -6,8 +6,14 @@ use Data::Dumper;
 
 use Log::Log4perl::Tiny qw< :easy :dead_if_first >;
 
-use Data::Tubes::Util
-  qw< assert_all_different metadata normalize_args test_all_equal unzip >;
+use Data::Tubes::Util qw<
+  assert_all_different
+  metadata
+  normalize_args
+  shorter_sub_names
+  test_all_equal
+  unzip
+>;
 use Data::Tubes::Plugin::Util qw< identify >;
 my %global_defaults = (
    input  => 'raw',
@@ -212,5 +218,7 @@ sub parse_single {
       return {record => $record};
      }
 } ## end sub parse_single
+
+shorter_sub_names(__PACKAGE__, 'parse_');
 
 1;
