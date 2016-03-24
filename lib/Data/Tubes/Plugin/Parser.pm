@@ -74,7 +74,7 @@ sub parse_by_regex {
         };
       my $retval = {%+};
       $record->{$output} = $retval;
-      return {record => $record};
+      return $record;
    };
 } ## end sub parse_by_regex
 
@@ -125,7 +125,7 @@ sub parse_by_regexes {
       return {record => \%retval} unless $has_output;
       $record = {} unless $has_input;
       $record->{$output} = \%retval;
-      return {record => $record};
+      return $record;
    };
 } ## end sub parse_by_regexes
 
@@ -163,7 +163,7 @@ sub parse_by_split {
 
       $record->{$output} = \my %retval;
       @retval{@$keys} = @values;
-      return {record => $record};
+      return $record;
      }
      if $n_keys;
 
@@ -171,7 +171,7 @@ sub parse_by_split {
       my $record = shift;
       my @retval = split /$separator/, $record->{$input};
       $record->{$output} = \@retval;
-      return {record => $record};
+      return $record;
    };
 
 } ## end sub parse_by_split
@@ -194,7 +194,7 @@ sub parse_hashy {
       my $record = shift;
       my $parsed = metadata($record->{$input}, %args);
       $record->{$output} = {%defaults, %$parsed};
-      return {record => $record};
+      return $record;
    };
 } ## end sub parse_hashy
 
@@ -215,7 +215,7 @@ sub parse_single {
       my $record = shift;
       $record->{$output} =
         $has_key ? {$key => $record->{$input}} : $record->{$input};
-      return {record => $record};
+      return $record;
      }
 } ## end sub parse_single
 

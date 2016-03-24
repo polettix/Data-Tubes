@@ -24,7 +24,7 @@ sub iterate_array {
       my $local_array = shift || [];
       my $n_local     = @$local_array;
       my $i           = 0;
-      return {
+      return (
          iterator => sub {
             return if $i >= $n_global + $n_local;
             my $element =
@@ -34,7 +34,7 @@ sub iterate_array {
             $logger->($element, \%args) if $logger;
             return $element;
          },
-      };
+      );
    };
 } ## end sub iterate_array
 
@@ -92,7 +92,7 @@ sub open_file {
          };
       } ## end else [ if (ref($file) eq 'GLOB')]
 
-      return {record => $record};
+      return $record;
    };
 } ## end sub open_file
 

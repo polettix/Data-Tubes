@@ -58,7 +58,7 @@ sub read_by_record_reader {
       my $source = $has_input ? $record->{$input} : $record;
       my $fh     = $source->{fh};
 
-      return {
+      return (
          iterator => sub {
             my $read = $record_reader->($fh);
             my $retval = {%$record, $output => $read};
@@ -69,7 +69,7 @@ sub read_by_record_reader {
             }
             return;
          },
-      };
+      );
    };
 } ## end sub read_by_record_reader
 

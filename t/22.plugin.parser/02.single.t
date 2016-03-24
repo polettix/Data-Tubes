@@ -1,4 +1,7 @@
 use strict;
+
+# vim: ts=3 sts=3 sw=3 et ai :
+
 use Test::More;
 use Data::Dumper;
 
@@ -10,10 +13,7 @@ ok __PACKAGE__->can('parse_single'), "summoned parse_single";
 my $string = 'what=ever you=like whatever';
 {
    my $parser = parse_single(key => 'mu');
-   my $outcome = $parser->({raw => $string});
-   is ref($outcome), 'HASH', 'outcome is a hash';
-   ok exists($outcome->{record}), 'outcome has a record field';
-   my $record = $outcome->{record};
+   my $record = $parser->({raw => $string});
    is ref($record), 'HASH', 'record is a hash';
    is_deeply $record,
      {structured => {mu => $string}, raw => $string}, 'single was parsed';
@@ -21,10 +21,7 @@ my $string = 'what=ever you=like whatever';
 
 {
    my $parser = parse_single(input => 'foo', output => 'bar', key => 'mu');
-   my $outcome = $parser->({foo => $string});
-   is ref($outcome), 'HASH', 'outcome is a hash';
-   ok exists($outcome->{record}), 'outcome has a record field';
-   my $record = $outcome->{record};
+   my $record = $parser->({foo => $string});
    is ref($record), 'HASH', 'record is a hash';
    is_deeply $record,
      {bar => {mu => $string}, foo => $string}, 'single was parsed';

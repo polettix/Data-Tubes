@@ -3,7 +3,7 @@
 # vim: ts=3 sts=3 sw=3 et ai :
 use feature 'state';
 use lib '../lib';
-use Data::Tubes qw< tub tube >;
+use Data::Tubes qw< tube >;
 
 my $input = <<'END';
 a=Harry b=Sally
@@ -29,14 +29,6 @@ tube(
       my $record = shift;
       state $id = 0;
       $record->{structured}{sequence_id} = $id++;
-
-      # here's the important thing with tube
-      return {record => $record};
-   },
-
-   # use 'tub' instead of 'sub' to make a generic sub "tube"-compliant
-   tub {
-      my $record = shift;
       escape_html(values %{$record->{structured}});
       return $record;
    },

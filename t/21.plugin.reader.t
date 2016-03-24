@@ -1,4 +1,7 @@
 use strict;
+
+# vim: ts=3 sts=3 sw=3 et ai :
+
 use Test::More;
 use Data::Dumper;
 
@@ -44,9 +47,8 @@ END
 
 {
    my $files = iterate_files();
-   my $outcome = $files->([\$fakefile, \*STDIN, __FILE__]);
-   is ref($outcome), 'HASH', 'outcome is a hash';
-   my $it = $outcome->{iterator};
+   my ($type, $it) = $files->([\$fakefile, \*STDIN, __FILE__]);
+   is $type, 'iterator', 'outcome is a hash';
    is ref($it), 'CODE', 'outcome contains an iterator';
 
    my $first = $it->();
@@ -81,9 +83,8 @@ END
 
 {
    my $sequence = sequence(open_file(), read_by_line());
-   my $outcome = $sequence->(\$fakefile);
-   is ref($outcome), 'HASH', 'outcome is a hash';
-   my $it = $outcome->{iterator};
+   my ($type, $it) = $sequence->(\$fakefile);
+   is $type, 'iterator', 'outcome is a hash';
    is ref($it), 'CODE', 'outcome contains an iterator';
    my @lines = split /\n/, $fakefile;
    for my $expected (@lines) {
@@ -98,9 +99,8 @@ END
 
 {
    my $sequence = sequence(open_file(), read_by_paragraph());
-   my $outcome = $sequence->(\$fakefile);
-   is ref($outcome), 'HASH', 'outcome is a hash';
-   my $it = $outcome->{iterator};
+   my ($type, $it) = $sequence->(\$fakefile);
+   is $type, 'iterator', 'outcome is a hash';
    is ref($it), 'CODE', 'outcome contains an iterator';
    my @pars = map { s{\n+\z}{}mxs; $_ } split /\n\n/, $fakefile;
    for my $expected (@pars) {
@@ -117,9 +117,8 @@ END
    my $sequence = sequence(iterate_array(array => [\$fakefile]),
       open_file(), read_by_paragraph());
    {
-      my $outcome = $sequence->();
-      is ref($outcome), 'HASH', 'outcome is a hash';
-      my $it = $outcome->{iterator};
+      my ($type, $it) = $sequence->();
+      is $type, 'iterator', 'outcome is a hash';
       is ref($it), 'CODE', 'outcome contains an iterator';
       my @pars = map { s{\n+\z}{}mxs; $_ } split /\n\n/, $fakefile;
       for my $expected (@pars) {
@@ -132,9 +131,8 @@ END
       ok !@rest, 'nothing more left';
    }
    {
-      my $outcome = $sequence->([]);
-      is ref($outcome), 'HASH', 'outcome is a hash';
-      my $it = $outcome->{iterator};
+      my ($type, $it) = $sequence->([]);
+      is $type, 'iterator', 'outcome is a hash';
       is ref($it), 'CODE', 'outcome contains an iterator';
       my @pars = map { s{\n+\z}{}mxs; $_ } split /\n\n/, $fakefile;
       for my $expected (@pars) {
@@ -152,9 +150,8 @@ END
    my $sequence =
      sequence(open_file(), read_by_separator(separator => '---'));
    my $fakefile = 'ciao---a---tutti';
-   my $outcome  = $sequence->(\$fakefile);
-   is ref($outcome), 'HASH', 'outcome is a hash';
-   my $it = $outcome->{iterator};
+   my ($type, $it) = $sequence->(\$fakefile);
+   is $type, 'iterator', 'outcome is a hash';
    is ref($it), 'CODE', 'outcome contains an iterator';
    my @lines = split /---/, $fakefile;
    for my $expected (@lines) {
@@ -172,9 +169,8 @@ END
      sequence(open_file(),
       read_by_separator(separator => '---', emit_eof => 1));
    my $fakefile = 'ciao---a---tutti';
-   my $outcome  = $sequence->(\$fakefile);
-   is ref($outcome), 'HASH', 'outcome is a hash';
-   my $it = $outcome->{iterator};
+   my ($type, $it) = $sequence->(\$fakefile);
+   is $type, 'iterator', 'outcome is a hash';
    is ref($it), 'CODE', 'outcome contains an iterator';
    my @lines = split /---/, $fakefile;
    for my $expected (@lines) {

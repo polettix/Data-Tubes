@@ -12,10 +12,8 @@ ok __PACKAGE__->can('sequence'), 'summoned sequence';
 
 {
    my $sequence = sequence(\&first, \&second);
-   my $output = $sequence->({});
-   ok exists($output->{iterator}), 'sequence returned an iterator';
-
-   my $iterator = $output->{iterator};
+   my ($type, $iterator) = $sequence->({});
+   is $type, 'iterator', 'sequence returned an iterator';
    is ref($iterator), 'CODE', 'iterator is a code reference';
 
    my $record = $iterator->();
@@ -28,10 +26,8 @@ ok __PACKAGE__->can('sequence'), 'summoned sequence';
 
 {
    my $sequence = sequence([qw< !main::factory foo >], \&second, \&third);
-   my $output = $sequence->({});
-   ok exists($output->{iterator}), 'sequence returned an iterator';
-
-   my $iterator = $output->{iterator};
+   my ($type, $iterator) = $sequence->({});
+   is $type, 'iterator', 'sequence returned an iterator';
    is ref($iterator), 'CODE', 'iterator is a code reference';
 
    my $record = $iterator->();
@@ -57,10 +53,8 @@ ok __PACKAGE__->can('sequence'), 'summoned sequence';
    my $pt3 = tube sub { return [@_] }, as => 'records';
    my $sequence =
      sequence('!main::factory', \&second, $pt1, $pt2, $pt3, \&iter_third);
-   my $output = $sequence->({});
-   ok exists($output->{iterator}), 'sequence returned an iterator';
-
-   my $iterator = $output->{iterator};
+   my ($type, $iterator) = $sequence->({});
+   is $type, 'iterator', 'sequence returned an iterator';
    is ref($iterator), 'CODE', 'iterator is a code reference';
 
    my $record = $iterator->();
@@ -80,7 +74,7 @@ ok __PACKAGE__->can('sequence'), 'summoned sequence';
 sub first {
    my $record = shift;
    $record->{first} = 'hey';
-   return {record => $record};
+   return $record;
 }
 
 sub factory {
@@ -90,30 +84,25 @@ sub factory {
 sub second {
    my $record = shift;
    $record->{second} = 'you';
-   return {record => $record};
+   return $record;
 }
 
 sub third {
    my $record = shift;
-   return {records =>
+   return (records =>
         [{%$record, third => 'some'}, {%$record, third => 'thing'},],
-   };
+     );
 } ## end sub third
 
 sub iter_third {
    my $record  = shift;
    my $counter = 2;
-   return {
+   return (
       iterator => sub {
          return unless $counter;
          return {%$record, third => $counter--};
         }
-   };
+     );
 } ## end sub iter_third
-
-sub fourth {
-   my $record = shift;
-   return $record;
-}
 
 done_testing();
