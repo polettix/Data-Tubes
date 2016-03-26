@@ -2,10 +2,10 @@
 use strict;
 use warnings;
 use lib '../lib';
-use Data::Tubes qw< tube >;
+use Data::Tubes qw< pipeline >;
 
 my $id   = 0;
-my $tube = tube(
+my $tube = pipeline(
 
    # automatic loading for simple cases
    (

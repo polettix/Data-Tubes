@@ -24,6 +24,13 @@ our @EXPORT_OK = qw<
   unzip
 >;
 
+sub args_array_with_options {
+   my %defaults = %{pop @_};
+   %defaults = (%defaults, %{pop @_})
+     if @_ && (ref($_[-1]) eq 'HASH');
+   return ([@_], \%defaults);
+} ## end sub args_array_with_options
+
 sub assert_all_different {
    my $keys = (@_ && ref($_[0])) ? $_[0] : \@_;
    my %flag_for;
@@ -113,13 +120,6 @@ sub normalize_args {
    return %retval if wantarray();
    return \%retval;
 } ## end sub normalize_args
-
-sub args_array_with_options {
-   my %defaults = %{pop @_};
-   %defaults = (%defaults, %{pop @_})
-     if @_ && (ref($_[-1]) eq 'HASH');
-   return ([@_], \%defaults);
-} ## end sub args_array_with_options
 
 sub normalize_filename {
    my ($filename, $default_handle) = @_;

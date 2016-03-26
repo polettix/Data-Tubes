@@ -5,13 +5,13 @@ use strict;
 use Test::More;
 use Data::Dumper;
 
-use Data::Tubes qw< summon tub tube >;
+use Data::Tubes qw< summon tube >;
 
-summon({'+Plumbing' => 'sequence'});
+summon('+Plumbing::sequence');
 ok __PACKAGE__->can('sequence'), 'summoned sequence';
 
 {
-   my $sequence = sequence(\&first, \&second);
+   my $sequence = sequence(tubes => [\&first, \&second]);
    my ($type, $iterator) = $sequence->({});
    is $type, 'iterator', 'sequence returned an iterator';
    is ref($iterator), 'CODE', 'iterator is a code reference';
@@ -25,7 +25,8 @@ ok __PACKAGE__->can('sequence'), 'summoned sequence';
 }
 
 {
-   my $sequence = sequence([qw< !main::factory foo >], \&second, \&third);
+   my $sequence =
+     sequence(tubes => [[qw< !main::factory foo >], \&second, \&third]);
    my ($type, $iterator) = $sequence->({});
    is $type, 'iterator', 'sequence returned an iterator';
    is ref($iterator), 'CODE', 'iterator is a code reference';
@@ -45,14 +46,15 @@ ok __PACKAGE__->can('sequence'), 'summoned sequence';
 }
 
 {
-   my $pt1 = tub { return shift };
-   my $pt2 = tube sub {
+   my $pt1 = sub { return shift };
+   my $pt2 = sub {
       my @items = @_;
-      return sub { return unless @items; return shift @items; };
-   }, as => 'iterator';
-   my $pt3 = tube sub { return [@_] }, as => 'records';
+      return (iterator => sub { return unless @items; return shift @items; });
+   };
+   my $pt3 = sub { return (records => [@_]) };
    my $sequence =
-     sequence('!main::factory', \&second, $pt1, $pt2, $pt3, \&iter_third);
+     sequence(tubes =>
+        ['!main::factory', \&second, $pt1, $pt2, $pt3, \&iter_third]);
    my ($type, $iterator) = $sequence->({});
    is $type, 'iterator', 'sequence returned an iterator';
    is ref($iterator), 'CODE', 'iterator is a code reference';
@@ -90,9 +92,8 @@ sub second {
 sub third {
    my $record = shift;
    return (records =>
-        [{%$record, third => 'some'}, {%$record, third => 'thing'},],
-     );
-} ## end sub third
+        [{%$record, third => 'some'}, {%$record, third => 'thing'},],);
+}
 
 sub iter_third {
    my $record  = shift;
@@ -101,8 +102,8 @@ sub iter_third {
       iterator => sub {
          return unless $counter;
          return {%$record, third => $counter--};
-        }
-     );
+      }
+   );
 } ## end sub iter_third
 
 done_testing();

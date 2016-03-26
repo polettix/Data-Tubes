@@ -15,7 +15,7 @@ my @functions = qw<
   parse_hashy
   parse_single
 >;
-summon({'+Parser' => \@functions,});
+summon([Parser => @functions]);
 ok __PACKAGE__->can($_), "summoned $_" for @functions;
 
 done_testing();

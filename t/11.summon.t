@@ -23,7 +23,7 @@ ok __PACKAGE__->can('read_by_line'),      'summoned by_line';
 ok __PACKAGE__->can('read_by_paragraph'), 'summoned by_paragraph';
 ok __PACKAGE__->can('read_by_separator'), 'summoned by_separator';
 
-summon({'+Source' => [qw< open_file iterate_files iterate_array >]});
+summon([qw< +Source open_file iterate_files iterate_array >]);
 ok __PACKAGE__->can('open_file'),      'summoned open_file';
 ok __PACKAGE__->can('iterate_files'), 'summoned iterate_files';
 ok __PACKAGE__->can('iterate_array'), 'summoned iterate_array';
