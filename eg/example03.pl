@@ -3,7 +3,7 @@
 # vim: ts=3 sts=3 sw=3 et ai :
 use feature 'state';
 use lib '../lib';
-use Data::Tubes qw< tube >;
+use Data::Tubes qw< pipeline >;
 
 my $input = <<'END';
 a=Harry b=Sally
@@ -12,12 +12,11 @@ a=Flavio b=Silvia
 a=so{m}e b=<thin="g">
 END
 
-tube(
+pipeline(
 
    # automatic loading for simple cases
    (
       qw<
-        Plumbing::sequence
         Source::iterate_files
         Reader::by_line
         Parser::hashy
