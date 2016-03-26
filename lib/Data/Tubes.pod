@@ -15,6 +15,50 @@ This document describes Data::Tubes version 0.01.
 
 =head1 SYNOPSIS
 
+   use Data::Tubes qw< tube >;
+
+   my $id = 0;
+   my $tube = tube(
+      'Plumbing::sequence', # "factory" of this tube, following args
+                            # are for creating a "sequence" instance
+
+      # automatic loading for simple cases
+      'Source::iterate_files',
+      'Reader::by_line',
+      'Parser::hashy',
+
+      # a tube is a sub with a contract on the return value
+      sub {
+         my $record = shift;
+         $record->{structured}{id} = $id++;
+         return $record;
+      },
+
+      # automatic loading, but with arguments
+      [
+         'Renderer::with_template_perlish',
+         template => "[% a %]:\n  id: [% id %]\n  meet: [% b %]\n",
+      ],
+      [
+         'Writer::to_files',
+         filename => \*STDOUT,
+         header   => "---\n",
+         footer   => "...\n"
+      ],
+
+      # options for tube, in this case just pour into the sink
+      {tap => 'sink'}
+   );
+
+   my $input = <<'END';
+   a=Harry b=Sally
+   a=Jekyll b=Hide
+   a=Flavio b=Silvia
+   a=some b=thing
+   END
+   $tube->([\$input]);
+
+   # a somewhat similar example, with different facilities
    use Data::Tubes qw< drain summon >;
 
    # load components from relevant plugins
@@ -43,8 +87,164 @@ This document describes Data::Tubes version 0.01.
 
 =head1 DESCRIPTION
 
-This module allows you to define I<Tubes>, which are little more than
+This module allows you to define and manage I<tubes>, which are
 transformation subroutines over records.
+
+=head2 First Things First: What's a I<Tube> Anyway?
+
+A sort of operative definition in code:
+
+   my @outcome = $tube->($input_record);
+   if (scalar(@outcome) == 0) {
+      print "nothing came out, input record was digested!\n";
+   }
+   elsif (scalar(@outcome) == 1) {
+      my $output_record = shift @outcome;
+   }
+   else {
+      my ($type, $value) = @outcome;
+      if ($type eq 'records') {
+         my @output_records = @$value;
+      }
+      elsif ($type eq 'iterator') {
+         while (my ($output_record) = $iterator->()) {}
+      }
+      else {
+         die "sorry, this tube's output was not valid!\n";
+      }
+   }
+
+A I<tube> is a reference to a subroutine that accepts a single, scalar
+C<$input_record> and can return zero, one or two (or more) values.
+
+In particular:
+
+=over
+
+=item *
+
+if it returns zero values, then the I<tube> just hasn't anything to
+emit for that particular input record. The reasons depend on the tube,
+but this is a perfectly valid outcome;
+
+=item *
+
+if it returns one single value, that is the C<$output_record>
+corresponding to the C<$input_record>. This is probably the most common
+case;
+
+=item *
+
+if it returns two (or more) values, the first one will tell you what is
+returned (i.e. its I<type>, and the second will be some way to get the
+return value(s). This is what you would use if a single C<$input_record>
+can potentially give birth to multiple output records, like this:
+
+=over
+
+=item -
+
+if you can/want to compute all the output records right away (e.g. you
+just to need to C<split> something in the input record), you can use
+C<records> for I<type> and pass a reference to an array as the second
+output value (each of them will be considered an output record);
+
+=item -
+
+if you cannot (or don't want to) compute all the output records, e.g.
+because they might just blow out your process' memory, you can use
+I<type> C<iterator> and return a subroutine reference back. This
+subroutine MUST be such that repeatingly calling it can yield two
+possible results:
+
+=over
+
+=item o
+
+one single element, that is the I<next> output record, OR
+
+=item o
+
+the empty list, that signals that the iterator has been emptied.
+
+=back
+
+=back
+
+=back
+
+This is all that is assumed about tubes in the general case. Some
+plugins will make further assumptions about what's expected as an input
+record (e.g. a hash reference in most of the cases) or what is provided
+as output records, but the generic case is all in the above definition.
+
+A few examples will help at this point.
+
+=head3 A simple I<filter> tube
+
+This is probably the most common type of tube: one record comes in, one
+comes out. In the example, we will assume the input record is a string,
+and will transform sequences of spacing characters into single spaces:
+
+   my $tube = sub {
+      my $text = shift;
+      $text =~ s{\s+}{ }gmxs;
+      return $text;
+   };
+
+=head3 A C<grep>-like tube
+
+This is a tube that might potentially I<digest> the input record,
+providing nothing out. In the example, we will assume that we're
+focusing on valid non-negative integers only, and we will ignore
+everything else:
+
+   my $tube = sub {
+      my $number = shift;
+
+      # caution! A simple "return" is much more different than
+      # "return undef", the first one is what we need to provide
+      # "nothing" as output in the list context!
+      return unless defined $number; # ignore input undef:s
+      return unless $number =~ m{\A (?: 0 | [1-9]\d* ) \z}mxs;
+
+      # this record passed all check, let's return it
+      return $number;
+   };
+
+
+=head3 A few little children out of your input
+
+This is a tube that will typically generate a few output records from an
+input one. It's best suited to be used when you know that you have
+control over the number of output records, and they will not make your
+memory consumption explode. In the example, we will provide "words" from
+a text as output records:
+
+   my $tube = sub {
+      my $text = shift;
+      my @words = split /\W+/mxs, $text;
+      return (records => \@words);
+   };
+
+=head3 Turning a filename into lines
+
+This is a tube that might generate a lot of records out of a single
+input one, so it's your best choice when you don't feel too confortable
+with using the C<records> alternative above. In the example, we will
+turn an input file name into a sequence of lines from that file:
+
+   my $tube = sub {
+      my $filename = shift;
+      open my $fh, '<', $filename or die "open('$filename'): $!";
+
+      # the iterator is a reference to a sub, no input parameters
+      my $iterator = sub {
+         my ($line) = <$fh> or return;
+         return $line;
+      };
+   };
+
 
 =head1 FUNCTIONS
 
