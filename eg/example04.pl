@@ -1,0 +1,50 @@
+#!/usr/bin/env perl
+use strict;
+use warnings;
+use lib '../lib';
+use Data::Tubes qw< tube >;
+
+my $id   = 0;
+my $tube = tube(
+
+   # automatic loading for simple cases
+   (
+      qw<
+        Plumbing::sequence
+        Source::iterate_files
+        Reader::by_line
+        Parser::hashy
+        >,
+   ),
+
+   # a tube is a sub with a contract on the return value
+   sub {
+      my $record = shift;
+      $record->{structured}{id} = $id++;
+      return $record;
+   },
+
+   # automatic loading with arguments
+   [
+      'Renderer::with_template_perlish',
+      template => "[% a %]:\n  id: [% id %]\n  meet: [% b %]\n",
+   ],
+   [
+      'Writer::to_files',
+      filename => \*STDOUT,
+      header   => "---\n",
+      footer   => "...\n"
+   ],
+
+   # options for tube, in this case just pour into the sink
+   {tap => 'sink'}
+);
+
+my $input = <<'END';
+a=Harry b=Sally
+a=Jekyll b=Hide
+a=Flavio b=Silvia
+a=some b=thing
+END
+$tube->([\$input]);
+
