@@ -11,9 +11,9 @@ use Log::Log4perl::Tiny qw< :easy :dead_if_first >;
 our @EXPORT_OK = qw<
   args_array_with_options
   assert_all_different
-  metadata
   load_module
   load_sub
+  metadata
   normalize_args
   normalize_filename
   resolve_module
@@ -23,6 +23,13 @@ our @EXPORT_OK = qw<
   traverse
   unzip
 >;
+
+sub _load_module {
+   my $module = shift;
+   (my $packfile = $module . '.pm') =~ s{::}{/}gmxs;
+   require $packfile;
+   return $module;
+} ## end sub load_module
 
 sub args_array_with_options {
    my %defaults = %{pop @_};
@@ -39,30 +46,6 @@ sub assert_all_different {
    }
    return 1;
 } ## end sub assert_all_different
-
-sub resolve_module {
-   my ($module, $prefix) = @_;
-
-   my ($first) = substr $module, 0, 1;
-   return substr $module, 1 if $first eq '!';
-
-   $prefix //= 'Data::Tubes::Plugin';
-   if ($first eq '+') {
-      $module = substr $module, 1;
-   }
-   elsif ($module =~ m{::}mxs) {
-      $prefix = undef;
-   }
-   return $module unless defined $prefix;
-   return $prefix . '::' . $module;
-} ## end sub resolve_module
-
-sub _load_module {
-   my $module = shift;
-   (my $packfile = $module . '.pm') =~ s{::}{/}gmxs;
-   require $packfile;
-   return $module;
-} ## end sub load_module
 
 sub load_module {
    my $module = resolve_module(@_);
@@ -136,6 +119,23 @@ sub normalize_filename {
    } ## end if (my ($handlename) =...)
    return $filename;
 } ## end sub normalize_filename
+
+sub resolve_module {
+   my ($module, $prefix) = @_;
+
+   my ($first) = substr $module, 0, 1;
+   return substr $module, 1 if $first eq '!';
+
+   $prefix //= 'Data::Tubes::Plugin';
+   if ($first eq '+') {
+      $module = substr $module, 1;
+   }
+   elsif ($module =~ m{::}mxs) {
+      $prefix = undef;
+   }
+   return $module unless defined $prefix;
+   return $prefix . '::' . $module;
+} ## end sub resolve_module
 
 sub shorter_sub_names {
    my $stash = shift . '::';
