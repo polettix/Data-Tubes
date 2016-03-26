@@ -10,7 +10,7 @@ my @functions = qw<
   write_to_handle
   write_to_files
 >;
-summon({'+Writer' => \@functions,});
+summon([Writer => @functions]);
 ok __PACKAGE__->can($_), "summoned $_" for @functions;
 
 {

@@ -15,19 +15,17 @@ This document describes Data::Tubes version 0.01.
 
 =head1 SYNOPSIS
 
-   use Data::Tubes qw< tube >;
+   use Data::Tubes qw< pipeline >;
 
    my $id = 0;
-   my $tube = tube(
-      'Plumbing::sequence', # "factory" of this tube, following args
-                            # are for creating a "sequence" instance
-
+   my $tube = sequence(
       # automatic loading for simple cases
-      'Source::iterate_files',
-      'Reader::by_line',
-      'Parser::hashy',
+      'Source::iterate_files', # plugin to handle input files
+      'Reader::by_line',       # plugin to read line by line
+      'Parser::hashy',         # plugin to parse hashes
 
-      # a tube is a sub with a contract on the return value
+      # some operations will require some explicit coding of a tube
+      # which is a sub ref with a contract on the return value
       sub {
          my $record = shift;
          $record->{structured}{id} = $id++;
@@ -35,18 +33,18 @@ This document describes Data::Tubes version 0.01.
       },
 
       # automatic loading, but with arguments
-      [
+      [ # plugin to render stuff using Template::Perlish
          'Renderer::with_template_perlish',
          template => "[% a %]:\n  id: [% id %]\n  meet: [% b %]\n",
       ],
-      [
+      [ # plugin to write stuff into output files, flexibly
          'Writer::to_files',
          filename => \*STDOUT,
          header   => "---\n",
          footer   => "...\n"
       ],
 
-      # options for tube, in this case just pour into the sink
+      # options for pipeline, in this case just pour into the sink
       {tap => 'sink'}
    );
 
@@ -57,6 +55,8 @@ This document describes Data::Tubes version 0.01.
    a=some b=thing
    END
    $tube->([\$input]);
+
+   ###############################################################
 
    # a somewhat similar example, with different facilities
    use Data::Tubes qw< drain summon >;
@@ -90,7 +90,7 @@ This document describes Data::Tubes version 0.01.
 This module allows you to define and manage I<tubes>, which are
 transformation subroutines over records.
 
-=head2 First Things First: What's a I<Tube> Anyway?
+=head2 First Things First: What's a I<Tube>?
 
 A sort of operative definition in code:
 
@@ -244,6 +244,35 @@ turn an input file name into a sequence of lines from that file:
          return $line;
       };
    };
+
+=head2 How Can Data::Tubes Help Me Then?
+
+Data::Tubes can help you out in different ways:
+
+=over
+
+=item *
+
+it provides you with a definition of tube (i.e. a I<transforming
+function>) that will help you control what you're doing. We already
+talked about this format, just take a look at
+L<< /First Things First: What's a I<Tube> >>
+
+=item *
+
+it gives you some I<plumbing> facilities to easily perform some common
+actions over tubes, e.g. put them in sequence or dispatch an input
+record to the right tube. This is the kind of stuff that you can find in
+L<Data::Tubes::Plugin::Plumbing>;
+
+=item *
+
+it gives you a library of pre-defined tube types that will help you with
+common tasks related to transforming input data in output data (e.g. in
+some kind of I<Extract-Transform-Load> process). This is what you can
+find in the I<Data::Tubes::Plugin> namespace!
+
+
 
 
 =head1 FUNCTIONS

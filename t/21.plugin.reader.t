@@ -7,27 +7,23 @@ use Data::Dumper;
 
 use Data::Tubes qw< summon >;
 summon(
-   {
-      '+Plumbing' => [
-         qw<
-           sequence
-           >
-      ],
-      '+Reader' => [
-         qw<
-           read_by_line
-           read_by_paragraph
-           read_by_separator
-           >
-      ],
-      '+Source' => [
-         qw<
-           iterate_array
-           iterate_files
-           open_file
-           >
-      ],
-   }
+   'Plumbing::sequence',
+   [
+      qw<
+         Reader
+         read_by_line
+         read_by_paragraph
+         read_by_separator
+         >
+   ],
+   [
+      qw<
+         Source
+         iterate_array
+         iterate_files
+         open_file
+         >
+   ],
 );
 ok __PACKAGE__->can('read_by_line'),      'summoned by_line';
 ok __PACKAGE__->can('read_by_paragraph'), 'summoned by_paragraph';
@@ -82,7 +78,7 @@ END
 }
 
 {
-   my $sequence = sequence(open_file(), read_by_line());
+   my $sequence = sequence(tubes => [open_file(), read_by_line()]);
    my ($type, $it) = $sequence->(\$fakefile);
    is $type, 'iterator', 'outcome is a hash';
    is ref($it), 'CODE', 'outcome contains an iterator';
@@ -98,7 +94,7 @@ END
 }
 
 {
-   my $sequence = sequence(open_file(), read_by_paragraph());
+   my $sequence = sequence(tubes => [open_file(), read_by_paragraph()]);
    my ($type, $it) = $sequence->(\$fakefile);
    is $type, 'iterator', 'outcome is a hash';
    is ref($it), 'CODE', 'outcome contains an iterator';
@@ -114,8 +110,12 @@ END
 }
 
 {
-   my $sequence = sequence(iterate_array(array => [\$fakefile]),
-      open_file(), read_by_paragraph());
+   my $sequence = sequence(
+      tubes => [
+         iterate_array(array => [\$fakefile]), open_file(),
+         read_by_paragraph()
+      ]
+   );
    {
       my ($type, $it) = $sequence->();
       is $type, 'iterator', 'outcome is a hash';
@@ -148,7 +148,8 @@ END
 
 {
    my $sequence =
-     sequence(open_file(), read_by_separator(separator => '---'));
+     sequence(
+      tubes => [open_file(), read_by_separator(separator => '---')]);
    my $fakefile = 'ciao---a---tutti';
    my ($type, $it) = $sequence->(\$fakefile);
    is $type, 'iterator', 'outcome is a hash';
@@ -165,9 +166,11 @@ END
 }
 
 {
-   my $sequence =
-     sequence(open_file(),
-      read_by_separator(separator => '---', emit_eof => 1));
+   my $sequence = sequence(
+      tubes => [
+         open_file(), read_by_separator(separator => '---', emit_eof => 1)
+      ]
+   );
    my $fakefile = 'ciao---a---tutti';
    my ($type, $it) = $sequence->(\$fakefile);
    is $type, 'iterator', 'outcome is a hash';

@@ -85,12 +85,21 @@ sub logger {
 } ## end sub logger
 
 sub sequence {
-   my ($tubes, $args) = args_array_with_options(@_, {name => 'sequence'});
-   identify($args);
+   my %args = normalize_args(@_, {name => 'sequence'});
+   identify(\%args);
 
-   # cope with empty list of tubes
-   return sub { return {skip => 1} }
-     unless @$tubes;
+   # cope with an empty list of tubes - equivalent to an "id" function but
+   # always returning an iterator for consistency
+   my $tubes = $args{tubes} || [];
+   return sub {
+      my @record = shift;
+      return (
+         iterator => sub {
+            return unless @record;
+            return shift @record;
+         }
+      );
+   } unless @$tubes;
 
    # auto-generate tubes if you get definitions
    my @tubes = map {
@@ -100,32 +109,11 @@ sub sequence {
         : tube(($ref eq 'ARRAY') ? @$_ : $_)
    } @$tubes;
 
-   my $tap = $args->{tap};
-   $tap = sub {
-      my $iterator = shift;
-      while (my @items = $iterator->()) { }
-      return;
-     }
-     if defined($tap) && ($tap eq 'sink');
-
-   if ((!defined($tap)) && (defined($args->{pump}))) {
-      my $pump = $args->{pump};
-      $tap = sub {
-         my $iterator = shift;
-         while (my @items = $iterator->()) {
-            $pump->($items[0]);
-         }
-         return;
-        }
-   } ## end if ((!defined($tap)) &&...)
-   LOGDIE 'invalid tap or pump'
-     if $tap && ref($tap) ne 'CODE';
-
-   my $logger = log_helper($args);
-   my $name   = $args->{name};
+   my $logger = log_helper(\%args);
+   my $name   = $args{name};
    return sub {
       my $record = shift;
-      $logger->($record, $args) if $logger;
+      $logger->($record, \%args) if $logger;
 
       my @stack = ({record => $record});
       my $iterator = sub {
@@ -159,7 +147,6 @@ sub sequence {
 
          return;    # end of output, empty list
       };
-      return $tap->($iterator) if $tap;
       return (iterator => $iterator);
    };
 } ## end sub sequence
