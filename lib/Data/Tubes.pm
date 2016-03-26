@@ -102,31 +102,8 @@ sub summon {    # sort-of import
 } ## end sub summon
 
 sub tube {
-   my $sub = shift;
-
-   return load_sub($sub)->(@_) unless ref($sub) eq 'CODE';
-
-   # optional arguments handling
-   my $n = scalar @_;
-   LOGDIE 'tube(): wrong number of arguments' if ($n % 2) && ($n != 1);
-   my %args = normalize_args(
-      (
-           ($n != 1)              ? @_
-         : (ref($_[0]) eq 'HASH') ? %{$_[0]}
-         :                          @{$_[0]}
-      ),
-      {
-         as => 'record',
-      }
-   );
-
-   my $type = $args{as};
-   $type = undef if ($type // '') eq 'record';
-   return sub {
-      my $outcome = $sub->(@_);
-      return $outcome unless $type;
-      return ($type => $outcome);
-   };
+   my $locator = shift;
+   return load_sub($locator)->(@_);
 } ## end sub tube
 
 1;

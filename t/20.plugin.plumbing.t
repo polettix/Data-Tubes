@@ -47,11 +47,11 @@ ok __PACKAGE__->can('sequence'), 'summoned sequence';
 
 {
    my $pt1 = sub { return shift };
-   my $pt2 = tube sub {
+   my $pt2 = sub {
       my @items = @_;
-      return sub { return unless @items; return shift @items; };
-   }, as => 'iterator';
-   my $pt3 = tube sub { return [@_] }, as => 'records';
+      return (iterator => sub { return unless @items; return shift @items; });
+   };
+   my $pt3 = sub { return (records => [@_]) };
    my $sequence =
      sequence(tubes =>
         ['!main::factory', \&second, $pt1, $pt2, $pt3, \&iter_third]);
