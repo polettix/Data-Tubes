@@ -223,7 +223,7 @@ Data::Tubes can help you out in different ways:
 - it provides you with a definition of tube (i.e. a _transforming
 function_) that will help you control what you're doing. We already
 talked about this format, just take a look at
-["First Things First: What's a _Tube_"](#first-things-first-what-s-a-tube)
+["First Things First: What's a _Tube_?"](#first-things-first-what-s-a-tube)
 - it gives you some _plumbing_ facilities to easily perform some common
 actions over tubes, e.g. put them in sequence or dispatch an input
 record to the right tube. This is the kind of stuff that you can find in
@@ -233,6 +233,24 @@ common tasks related to transforming input data in output data (e.g. in
 some kind of _Extract-Transform-Load_ process). This is what you can
 find in the _Data::Tubes::Plugin_ namespace!
 
+This module provides you a few useful facilities to make using tubes
+easier. In particular:
+
+- most of the times you should be interested into ["pipeline"](#pipeline), as it will
+help you building a sequence of tubes and manage the output of the
+overall sequence automatically (e.g. just drain it into the _sink_,
+after all records have been processed by the different tubes in the
+sequence;
+- if for some reason you need to load a tube's factory, you can use
+["summon"](#summon), that basically does what `import` usually does, but with
+some additional DWIM-mery;
+- if you have a tube and you want to call it on some input, but you don't
+care about what will get out, you can use ["drain"](#drain). This is
+particularly useful if you know (or suspect) that the tube will return
+an iterator (like a `sequence` in [Data::Tubes::Plugin::Plumbing](https://metacpan.org/pod/Data::Tubes::Plugin::Plumbing))
+because ["drain"](#drain) will ensure that the iterator is run until it is
+exhausted.
+
 # FUNCTIONS
 
 - **drain**
@@ -241,7 +259,90 @@ find in the _Data::Tubes::Plugin_ namespace!
 
     drain whatever comes out of a tube. The tube is run with the provided
     inputs, and if an iterator comes out of it, it is repeatedly run until
-    it provides no more output records.
+    it provides no more output records. This is useful if the tube returns
+    an iterator, as it will be exhausted.
+
+    Returns nothing.
+
+- **pipeline**
+
+        $pl = pipeline(@tubes); # OR
+        $pl = pipeline(@tubes, \%args);
+
+    build up a pipeline (sequence) of `@tubes`, possibly with options in
+    `%args`. This is actually only little more than a wrapper around
+    `sequence` in [Data::Tubes::Plugin::Plumbing](https://metacpan.org/pod/Data::Tubes::Plugin::Plumbing).
+
+    The `@tubes` are passed to `sequence` (see
+    [Data::Tubes::Plugin::Plumbing](https://metacpan.org/pod/Data::Tubes::Plugin::Plumbing)) as parameter `tubes`. Basically,
+    Each item in it must be either a tube itself or something that can be
+    transformed into a tube via ["tube"](#tube) below.
+
+    An optional last parameter allows you to specify additional options:
+
+    - `pump`
+
+        set a sub ref that will be called on the output stream from the
+        sequence. In particular, the output iterator from the `sequence` is
+        repeatedly called to get an output record, and this record is fed into
+        the `pump` sub ref.
+
+    - `tap`
+
+        set to either the string `sink` or to a subroutine ref. In the first
+        case, whatever iterator returned by the sequence will be exhausted. In
+        the second case, the output iterator will be fed into the provided
+        subroutine reference, that will have to use it as it sees fit.
+
+        Note that this `tap` will always be provided with an iterator, which
+        means that it MUST be exhausted in order to actually make the whole
+        pipeline work.
+
+    If `tap` is present, `pump` is ignored.
+
+    The returned value is always a subroutine reference. If neither `tap`
+    nor `pump` are present, the returned sub reference is a tube resulting
+    from the sequence or provided tubes, so you can use it as any other
+    tube. Otherwise, the returned sub reference will take care of invoking
+    the sequence for you with the parameters you provide, and will then pass
+    the iterator to the provided `tap`/`pump` as explained above.
+
+    Examples (the following alternatives all do the same thing, mostly):
+
+        # no options, what comes back is just a plain tube
+        $sequence = pipeline($tube1, $tube2, $tube3);
+        (undef, $it) = $sequence->($record);
+        # so far, nothing really happened because we have to run
+        # the iterator until it's exhausted
+        while (my ($record) = $it->()) { ... }
+
+        # set a "sink" tap, we don't care about returned records
+        $handler = pipeline($tube1, $tube2, $tube3, {tap => 'sink'});
+        $handler->($record); # this will exhaust the iterator
+
+        # set an explicit tap
+        $handler = pipeline(
+           $tube1, $tube2, $tube3,
+           {
+              tap => sub {
+                 my $iterator = shift;
+                 while (my ($record) = $iterator->()) { ... }
+              }
+           }
+        );
+        $handler->($record); # the tap will exhaust the iterator
+
+        # set a pump
+        $handler = pipeline(
+           $tube1, $tube2, $tube3,
+           {
+              pump => sub {
+                 my $record = shift;
+                 ...
+              }
+           }
+        );
+        $handler->($record); # the pump will exhaust the iterator
 
 - **summon**
 
@@ -250,11 +351,9 @@ find in the _Data::Tubes::Plugin_ namespace!
 
         # DWIM, treat 'em as plugins under Data::Tubes::Plugin
         summon(
-           {
-              '+Source' => [ qw< iterate_array open_file > ],
-           },
            [ qw< +Plumbing sequence logger > ],
            '+Reader::read_by_line',
+           \%options,
         );
 
     summon operations, most likely from plugins.  This is pretty much the
@@ -263,34 +362,80 @@ find in the _Data::Tubes::Plugin_ namespace!
 
     You can pass different things:
 
-    - _array_
+    - _array references_
 
         the first item in the array will be considered the package name, the
         following ones sub names inside that package;
 
-    - _hash_
-
-        each key will be considered a package name, pointing to either a string
-        (considered a sub name) or an array (each item considered a sub name);
-
-    - _string_
+    - _strings_
 
         this will be considered a fully qualified sub name, i.e. including the
         package name at the beginning.
 
-    In every case, if the package name starts with a `+` plus sign, the
-    package name will be considered relative to `Data::Tubes::Plugin`, so
-    the `+` plus sign will be substitued with `Data::Tubes::Plugin::`. For
-    example:
+    The package name will be subject to some analysis that will make using
+    it a bit easier, by means of `resolve_module` in [Data::Tubes::Util](https://metacpan.org/pod/Data::Tubes::Util).
+    In particular:
 
-        +Plumbing becomes Data::Tubes::Plugin::Plumbing
-        +Reader   becomes Data::Tubes::Plugin::Reader
+    - if the name of the package starts with an exclamation point `!`, this
+    initial character will be stripped away and the rest will be used as the
+    package name;
+    - otherwise, if the package name starts with a plus sign `+`, this first
+    character will be stripped away and the prefix in the provided options
+    will be used (defaulting to `Data::Tubes::Plugin`)
+    - otherwise, if the package name does _not_ contain sub-packages (i.e.
+    the sequence `::`), then the prefix will be used as in the previous
+    bullet;
+    - otherwise, the provide name is used straight.
 
-    and so on.
+    Examples (in the same order as the bullet above):
 
-    It's probable that the `import` method will be overridden to make this
-    import easy directly upon `use`-ing this module, instead of explicitly
-    calling `summon`.
+        !SimplePack --> SimplePack
+        +Some::Pack --> Data::Tubes::Plugin::Some::Pack
+        SimplePack  --> Data::Tubes::Plugin::SimplePack
+        Some::Pack  --> Some::Pack
+
+    You can optionally pass a hash reference with options as the last
+    parameter, with the following options:
+
+    - `package`
+
+        the package where the loaded sub should be imported. Defaults to the
+        package calling the `summon` function;
+
+    - `prefix`
+
+        the prefix to apply when needed. Defaults to `Data::Tubes::Plugin`.
+        Note that you MUST NOT put the `::`, it will be added automatically.
+
+- **tube**
+
+        $tube = tube($factory_locator, @parameters); # OR
+        $tube = tube(\@factory_locator, @parameters); # OR
+
+    this allows you to facilitate the creation of a tube, doing most of the
+    heavy-lifting automatically.
+
+    The first parameter is used as a _locator_ of a factory method to
+    generate the real tube. It can be either a string, or an array reference
+    containing two elements, a package name and a subroutine name inside
+    that package. The function `load_sub` in [Data::Tubes::Util](https://metacpan.org/pod/Data::Tubes::Util) is used
+    to load the factory method automatically, which means that the package
+    name is subject to the same rules described in ["summon"](#summon) above.
+
+    After the factory function is loaded, it is called with the provided
+    `@parameters` and the returned value... returned back.
+
+    Hence, this is a quick way to load some factory from a plugin and call
+    it in one, single call:
+
+        # no additional parameters
+        $files = tube('Reader::iterate_files');
+
+        # set some parameters for iterate_files
+        $files = tube('Reader::iterate_files', binmode => ':raw');
+
+    Most of the times, you are probably looking for ["pipeline"](#pipeline) above,
+    as that will eventually call `tube` automatically.
 
 # BUGS AND LIMITATIONS
 
@@ -310,11 +455,3 @@ under the terms of the Artistic License 2.0.
 This program is distributed in the hope that it will be useful, but
 without any warranty; without even the implied warranty of
 merchantability or fitness for a particular purpose.
-
-# POD ERRORS
-
-Hey! **The above document had some coding errors, which are explained below:**
-
-- Around line 278:
-
-    You forgot a '=back' before '=head1'
