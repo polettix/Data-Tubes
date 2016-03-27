@@ -11,8 +11,33 @@ Data::Tubes::Plugin::Parser
 
 =head1 DESCRIPTION
 
-This module contains I<tubes> for handling general plumbing
-requirements, e.g. put some other I<tubes> in a sequence.
+This module contains factory functions to generate I<tubes> that ease
+parsing of input records.
+
+Each of the generated tubes has the following contract:
+
+=over
+
+=item *
+
+the input record MUST be a hash reference;
+
+=item *
+
+one field in the hash (according to factory argument C<input>, set to
+C<raw> by default) points to the input text that has to be parsed;
+
+=item *
+
+one field in the hash (according to factory argument C<output>, set to
+C<structured> by default) is set to the output of the parsing operation.
+
+=back
+
+The factory functions below have two names, one starting with C<parse_>
+and the other without this prefix. They are perfectly equivalent to each
+other, whereas the short version can be handier e.g. when using C<tube>
+or C<pipeline> from L<Data::Tubes>.
 
 =head1 FUNCTIONS
 
@@ -22,25 +47,246 @@ requirements, e.g. put some other I<tubes> in a sequence.
 
 =item B<< parse_by_format >>
 
+   my $tube = by_format(%args); # OR
+   my $tube = by_format(\%args); # OR
+
+parse the input text according to a template format string (passed via
+factory argument C<format>). This string is supposed to be composed of
+word and non-word sequences, where each word sequence is assumed to be
+the name of a field, and each non-word sequence is a separator. Example:
+
+   $format = 'foo;bar;baz';
+
+is interpreted as follows:
+
+   @field_names = ('foo', 'bar', 'baz');
+   @separators  = (';', ';');
+
+Example:
+
+   $format = 'foo;bar~~~baz';
+
+is interpreted as follows:
+
+   @field_names = ('foo', 'bar', 'baz');
+   @separators  = (';', '~~~');
+
+In the first case, i.e. when all separators are equal to each other,
+L</parse_by_split> will be called, as it is (arguably) slightly more
+efficient. Otherwise, L</parse_by_regexes> will be called. Whatever
+these two factories return will be returned back.
+
+All C<@field_names> MUST be different from one another.
+
+The following arguments are supported:
+
+=over
+
+=item C<format>
+
+the format to use for splitting the inputs;
+
+=item C<input>
+
+name of the input field, defaults to C<raw>;
+
+=item C<name>
+
+name of the tube, useful for debugging;
+
+=item C<output>
+
+name of the output field, defaults to C<structured>;
+
+=back
+
 =item B<< by_regex >>
 
 =item B<< parse_by_regex >>
 
-=item B<< by_regexes >>
+   my $tube = by_regex(%args); # OR
+   my $tube = by_regex(\%args); # OR
 
-=item B<< parse_by_regexes >>
+parse the input text based on a regular expression, passed as argument
+C<regex>. The regular expression is supposed to have named captures,
+that will eventually be used to populate the rendered output.
+
+The following arguments are supported:
+
+=over
+
+=item C<input>
+
+name of the input field, defaults to C<raw>;
+
+=item C<name>
+
+name of the tube, useful for debugging;
+
+=item C<output>
+
+name of the output field, defaults to C<structured>;
+
+=item C<regex>
+
+the regular expression to use for splitting the inputs.
+
+=back
+
+=item B<< by_separators >>
+
+=item B<< parse_by_separators >>
+
+   my $tube = by_separators(%args); # OR
+   my $tube = by_separators(\%args); # OR
+
+parse the input according to a series of separators, that will be
+applied in sequence. For example, if the list of separators is the
+following:
+
+   @separators = (';', '~~');
+
+the following input:
+
+   $text = 'foo;bar~~/baz/';
+
+will be split as:
+
+   @split = ('foo', 'bar', '/baz/');
+
+The following arguments are supported:
+
+=over
+
+=item C<input>
+
+name of the input field, defaults to C<raw>;
+
+=item C<keys>
+
+a reference to an array containing the list of keys to be associated to
+the values from the split;
+
+=item C<name>
+
+name of the tube, useful for debugging;
+
+=item C<output>
+
+name of the output field, defaults to C<structured>;
+
+=item C<separators>
+
+a reference to an array containing the list of separators to be
+used for splitting the input.
+
+=back
 
 =item B<< by_split >>
 
 =item B<< parse_by_split >>
 
+   my $tube = by_split(%args); # OR
+   my $tube = by_split(\%args); # OR
+
+split the input according to a separator string.
+
+The following arguments are supported:
+
+=over
+
+=item C<input>
+
+name of the input field, defaults to C<raw>;
+
+=item C<keys>
+
+optional reference to an array containing a list of keys to be
+associated to the split data. If present, it will be used as such; if
+absent, a reference to an array will be set as output.
+
+=item C<name>
+
+name of the tube, useful for debugging;
+
+=item C<output>
+
+name of the output field, defaults to C<structured>;
+
+=item C<separator>
+
+a reference to an array containing the list of separators to be
+used for splitting the input.
+
+=back
+
 =item B<< hashy >>
 
-=item B<< parse_by_hashy >>
+=item B<< parse_hashy >>
+
+   my $tube = hashy(%args); # OR
+   my $tube = hashy(\%args);
+
+parse the input text as a hash. The algorithm used is the same as
+C<metadata> in L<Data::Tubes::Util>.
+
+=over
+
+=item C<chunks_separator>
+
+character used to divide chunks in the input;
+
+=item C<default_key>
+
+the default key to be used when a key is not present in a chunk;
+
+=item C<input>
+
+name of the input field, defaults to C<raw>;
+
+=item C<key_value_separator>
+
+character used to divide the key from the value in a chunk;
+
+=item C<name>
+
+name of the tube, useful for debugging;
+
+=item C<output>
+
+name of the output field, defaults to C<structured>;
+
+=back
 
 =item B<< single >>
 
 =item B<< parse_single >>
+
+   my $tube = single(%args); # OR
+   my $tube = single(\%args);
+
+consider the input text as already parsed, and generate as output a hash
+reference where the text is associated to a key.
+
+=over
+
+=item C<input>
+
+name of the input field, defaults to C<raw>;
+
+=item C<key>
+
+key to use for associating the input text;
+
+=item C<name>
+
+name of the tube, useful for debugging;
+
+=item C<output>
+
+name of the output field, defaults to C<structured>;
+
+=back
 
 =back
 

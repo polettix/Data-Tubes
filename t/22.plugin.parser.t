@@ -10,7 +10,7 @@ use Data::Tubes qw< summon >;
 my @functions = qw<
   parse_by_format
   parse_by_regex
-  parse_by_regexes
+  parse_by_separators
   parse_by_split
   parse_hashy
   parse_single
