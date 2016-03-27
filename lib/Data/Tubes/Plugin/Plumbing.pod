@@ -11,7 +11,7 @@ Data::Tubes::Plugin::Plumbing
 
 =head1 DESCRIPTION
 
-This module contains I<tubes> for handling general plumbing
+This module contains I<tubes> factories for handling general plumbing
 requirements, e.g. put some other I<tubes> in a sequence.
 
 =head1 FUNCTIONS
