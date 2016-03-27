@@ -89,7 +89,7 @@ sub get_fh {
 } ## end sub get_fh
 
 sub release_fh {
-   my ($self, $fh, $handle) = @_;
+   my ($self, $fh) = @_;
    my $track = $self->track();
    if (my $releaser = delete $track->{current_fh_releaser}) {
       $releaser->($fh);
