@@ -1,0 +1,66 @@
+=pod
+
+=for vim
+   vim: tw=72 ts=3 sts=3 sw=3 et ai :
+
+=encoding utf8
+
+=head1 NAME
+
+Data::Tubes::Plugin::Parser
+
+=head1 DESCRIPTION
+
+This module contains I<tubes> for handling general plumbing
+requirements, e.g. put some other I<tubes> in a sequence.
+
+=head1 FUNCTIONS
+
+=over
+
+=item B<< by_format >>
+
+=item B<< parse_by_format >>
+
+=item B<< by_regex >>
+
+=item B<< parse_by_regex >>
+
+=item B<< by_regexes >>
+
+=item B<< parse_by_regexes >>
+
+=item B<< by_split >>
+
+=item B<< parse_by_split >>
+
+=item B<< hashy >>
+
+=item B<< parse_by_hashy >>
+
+=item B<< single >>
+
+=item B<< parse_single >>
+
+=back
+
+=head1 BUGS AND LIMITATIONS
+
+Report bugs either through RT or GitHub (patches welcome).
+
+=head1 AUTHOR
+
+Flavio Poletti <polettix@cpan.org>
+
+=head1 COPYRIGHT AND LICENSE
+
+Copyright (C) 2016 by Flavio Poletti <polettix@cpan.org>
+
+This module is free software. You can redistribute it and/or modify it
+under the terms of the Artistic License 2.0.
+
+This program is distributed in the hope that it will be useful, but
+without any warranty; without even the implied warranty of
+merchantability or fitness for a particular purpose.
+
+=cut
