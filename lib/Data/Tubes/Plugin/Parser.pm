@@ -22,6 +22,8 @@ my %global_defaults = (
 
 sub parse_by_format {
    my %args = normalize_args(@_, {%global_defaults,});
+   identify(\%args);
+
    my $format = $args{format};
    LOGDIE "parser of type 'format' needs a definition"
      unless defined $format;
@@ -44,7 +46,7 @@ sub parse_by_format {
       separator => $separators->[0]
    ) if test_all_equal(@$separators);
 
-   return parse_by_regexes(
+   return parse_by_separators(
       %args,
       keys       => $keys,
       separators => $separators
@@ -78,16 +80,18 @@ sub parse_by_regex {
    };
 } ## end sub parse_by_regex
 
-sub parse_by_regexes {
+sub parse_by_separators {
    my %args = normalize_args(@_, {%global_defaults,});
+   identify(\%args);
+
    my $keys = $args{keys};
-   LOGDIE "parse_by_regexes needs keys"
+   LOGDIE "parse_by_separators needs keys"
      unless defined $keys;
    my $separators = $args{separators};
-   LOGDIE "parse_by_regexes needs separators"
+   LOGDIE "parse_by_separators needs separators"
      unless defined $separators;
    my $delta = scalar(@$keys) - scalar(@$separators);
-   LOGDIE "parse_by_regexes 0 <= #keys - #separators <= 1"
+   LOGDIE "parse_by_separators 0 <= #keys - #separators <= 1"
      if ($delta < 0) || ($delta > 1);
 
    my @items;
@@ -121,7 +125,7 @@ sub parse_by_regexes {
       @retval{@$keys} = @values;
       return $record;
    };
-} ## end sub parse_by_regexes
+} ## end sub parse_by_separators
 
 sub parse_by_split {
    my %args =
