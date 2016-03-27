@@ -29,7 +29,7 @@ sub _load_module {
    (my $packfile = $module . '.pm') =~ s{::}{/}gmxs;
    require $packfile;
    return $module;
-} ## end sub load_module
+} ## end sub _load_module
 
 sub args_array_with_options {
    my %defaults = %{pop @_};
@@ -90,7 +90,7 @@ sub metadata {
    $separator = $args{key_value_separator};
    return {
       map {
-         my ($k, $v) = split_pair($_, $separator);
+         my ($k, $v) = _split_pair($_, $separator);
          defined($v) ? ($k, $v) : ($args{default_key} => $k);
       } @chunks
    };
@@ -143,9 +143,9 @@ sub shorter_sub_names {
    no strict 'refs';
 
    # isolate all subs
-   my %sub_for = map {
-      *{$stash . $_}{CODE} ? ($_ => *{$stash . $_}{CODE}) : ();
-   } keys %$stash;
+   my %sub_for =
+     map { *{$stash . $_}{CODE} ? ($_ => *{$stash . $_}{CODE}) : (); }
+     keys %$stash;
 
    # iterate through inputs, work only on isolated subs and don't
    # consider shortened ones
@@ -155,12 +155,12 @@ sub shorter_sub_names {
          my $shortname = substr $name, length($prefix);
          *{$stash . $shortname} = $sub;
       }
-   }
+   } ## end for my $prefix (@_)
 
    return;
-}
+} ## end sub shorter_sub_names
 
-sub split_pair {
+sub _split_pair {
    my ($input, $separator) = @_;
    my $qs     = quotemeta($separator);
    my $regexp = qr{(?mxs:\A((?:\\.|[^\\$qs])+)$qs(.*)\z)};
@@ -168,7 +168,7 @@ sub split_pair {
    ($first, $second) = ($input, undef) unless defined($first);
    $first =~ s{\\(.)}{$1}gmxs;    # unescape metadata
    return ($first, $second);
-} ## end sub split_pair
+} ## end sub _split_pair
 
 sub sprintffy {
    my ($template, $substitutions) = @_;
