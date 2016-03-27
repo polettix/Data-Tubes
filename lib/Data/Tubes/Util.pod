@@ -1,0 +1,400 @@
+=pod
+
+=for vim
+   vim: tw=72 ts=3 sts=3 sw=3 et ai :
+
+=encoding utf8
+
+=head1 NAME
+
+Data::Tubes::Util
+
+=head1 DESCRIPTION
+
+Helper functions for automatic management of argument lists and other.
+
+=head1 FUNCTIONS
+
+=over
+
+=item B<< args_array_with_options >>
+
+    my ($aref, $args) = args_array_with_options(@list, \%defaults); # OR
+    my ($aref, $args) = args_array_with_options(@list, \%args, \%defaults);
+
+helper function to ease parsing of input parameters. This is mostly
+useful when your function I<usually> takes a list as input, but you want
+to be able to provide an optional hash of arguments.
+
+The function returns an array reference with the list of parameters, and
+a hash reference of arguments for I<less common> things.
+
+When calling this function, you are always supposed to pass a hash
+reference of options, which will act as a default. If the element
+immediately before is a hash reference itself, it will be considered the
+input for overriding arguments. Their combination (a simple overriding
+at the highest hash level) is then returned as $<$args>.
+
+The typical way to invoke this function is like this:
+
+   function foo {
+      my ($list, $args) = args_array_with_options(@_, {bar => 'baz'});
+      ...
+   }
+
+so that the function C<foo> can be called with an optional trailing hash
+reference containing the arguments, like this:
+
+   foo(qw< this and that >, {bar => 'galook!'});
+
+In case your list might actually contain hash references, you will have
+to take this into consideration.
+
+=item B<< assert_all_different >>
+
+   my $bool = assert_all_different(@strings);
+
+checks that all strings in C<@strings> are different. Returns C<1> if
+the check is successful, throws an exception otherwise. The exception is
+a hash reference with a key C<message> set to the first string that is
+found repeated.
+
+=item B<< load_module >>
+
+   my $module = load_module($locator); # OR
+   my $module = load_module($locator, $prefix);
+
+loads a module automatically. There are a lot of modules on CPAN that do
+this, probably much better, but this should do for these module's needs.
+
+The C<$locator> is resolved into a full module name through
+L</resolve_module>; the resulting name is then C<require>d and the
+resolved name returned back.
+
+Example:
+
+   my $module = load_module('Reader');
+
+loads module L<Data::Tubes::Plugin::Reader> and returns the string
+C<Data::Tubes::Plugin::Reader>, while:
+
+   my $other_module = load_module('Foo::Bar');
+
+loads module C<Foo::Bar> and returns string C<Foo::Bar>.
+
+You can optionally pass a C<$prefix> that will be passed to
+L</resolve_module>, see there for further information.
+
+=item B<< load_sub >>
+
+   my $sub = load_sub($locator); # OR
+   my $sub = load_sub($locator, $prefix);
+
+loads a sub automatically. There are a lot of modules on CPAN that do
+this, probably much better, but this should do for these module's needs.
+
+The C<$locator> is split into a pair of module and subroutine name. The
+module is loaded through L</load_module>; the subroutine referenc3 is then
+returned from that module.
+
+Example:
+
+   my $sub = load_module('Reader::by_line');
+
+loads subroutine C<Data::Tubes::Plugin::Reader::by_line> and returns a
+reference to it, while:
+
+   my $other_sub = load_module('Foo::Bar::baz');
+
+returns a reference to subroutine C<Foo::Bar::baz> after loading module
+C<Foo::Bar>.
+
+You can optionally pass a C<$prefix> that will be passed to
+L</resolve_module>, see there for further information.
+
+=item B<< metadata >>
+
+   my $href = metadata($input, %args); # OR
+   my $href = metadata($input, \%args);
+
+parse input string C<$string> according to rules exposed below, that can
+be controlled through C<%args>.
+
+The string is split on the base of two separators, a I<chunks> separator
+and a I<key/value> separator. The first one isolates what should be
+key/value pairs, the second allows separating the key from the value in
+each of these chunks. Whenever a chunk is not actually a key/value pair,
+it is considered a value and associated to a I<default key>.
+
+The following items can be set in C<%args>:
+
+=over
+
+=item C<chunks_separator>
+
+what allows separating chunks, it MUST be a single character;
+
+=item C<default_key>
+
+a string used as the key when a chunk cannot be split into a pair;
+
+=item C<key_value_separator>
+
+what allows separating the key from the value in a chunk, it MUST be a
+single character.
+
+=back
+
+Examples:
+
+   # use defaults
+   my $input = 'foo=bar baz=galook booom!';
+   my $href = metadata($input);
+   # $href = {
+   #    foo => 'bar',
+   #    baz => 'galook',
+   #    ''  => 'booom!'
+   # }
+
+   # use defaults
+   my $input = 'foo=bar baz=galook booom!';
+   my $href = metadata($input, default_key => 'name');
+   # $href = {
+   #    foo  => 'bar',
+   #    baz  => 'galook',
+   #    name => 'booom!'
+   # }
+
+   # use alternative separators
+   my $input = 'foo:bar & bar|baz:galook booom!|whatever';
+   my $href = metadata($input,
+      default_key => 'name',
+      chunks_separator => '|',
+      key_value_separator => ':'
+   );
+   # $href = {
+   #    foo  => 'bar & bar',
+   #    baz  => 'galook booom!',
+   #    name => 'whatever'
+   # }
+
+=item B<< normalize_args >>
+
+   my $args = normalize_args( %args, \%defaults); # OR
+   my $args = normalize_args(\%args, \%defaults);
+
+helper function to handle input parameters, with some defaults. Allows
+accepting both a series of key/value pairs, or a hash reference with
+these pairs, while at the same time providing default values.
+
+A typical usage is as follows:
+
+   sub foo {
+      my $args = normalize_args(@_, {bar => 'baz'});
+      ...
+   }
+
+=item B<< normalize_filename >>
+
+   my $name_or_handle = normalize_filename($name, $default_handle);
+
+helper function to I<normalize> a file name according to some rules. In
+particular, depending on C<$filename>:
+
+=over
+
+=item *
+
+if it is a filehandle, it is returned directly;
+
+=item *
+
+if it is the string C<->, the C<$default_handle> is returned. This
+allows you to use C<STDIN> or C<STDOUT> as input/output handles in case
+the filename is C<-> (like many applications support);
+
+=item *
+
+if it starts with the string C<file:>, this prefix is stripped away and
+the rest is used as a filename. This allows you to actually use C<-> as
+a real file name, avoiding the automatic handle management described in
+the bullet above. If your filename may start with the string C<file:>,
+then you should always put this prefix, e.g.:
+
+   file:whatever   -- should be passed as -->  file:file:whatever
+
+=item *
+
+if it starts with the string C<handle:>, this prefix is stripped and the
+rest is used to get one of the standard filehandles. The allowed
+remaining parts are (case-insensitive):
+
+=over
+
+=item C<in>
+
+=item C<stdin>
+
+=item C<out>
+
+=item C<stdout>
+
+=item C<err>
+
+=item C<stderr>
+
+=back
+
+Any other remaining part causes an exception to be thrown.
+
+Again, if you actually need to create a file whose name is e.g.
+C<handle:whatever>, you have to prefix it with C<file:>:
+
+   handle:whatever   -- should be passed as -->  file:handle:whatever
+
+=item *
+
+otherwise, the provided C<$filename> will be returned as-is.
+
+=back
+
+=item B<< resolve_module >>
+
+   my $full_module_name = resolve_module($module_name); # OR
+   my $full_module_name = resolve_module($module_name, $prefix);
+
+possibly expand a module's name according to a prefix. These are the
+rules:
+
+=over
+
+=item *
+
+if C<$module_name> starts with an exclamation point C<!>, this initial
+character will be stripped away and the rest will be used as the package
+name. C<$prefix> will be ignored in this case;
+
+=item *
+
+otherwise, if C<$module_name> starts with a plus sign C<+>, this first
+character will be stripped away and the C<$prefix> will be used
+(defaulting to C<Data::Tubes::Plugin>);
+
+=item *
+
+otherwise, if C<$module_name> does I<not> contain sub-packages (i.e. the
+sequence C<::>), then the C<$prefix> will be used as in the previous
+bullet;
+
+=item *
+
+otherwise, the provide name is used.
+
+=back
+
+Examples (in the same order as the bullet above):
+
+   module_name('!SimplePack'); # SimplePack
+   module_name('+Some::Pack'); # Data::Tubes::Plugin::Some::Pack
+   module_name('SimplePack');  # Data::Tubes::Plugin::SimplePack
+   module_name('Some::Pack');  # Some::Pack
+   module_name('Pack', 'Some::Thing'); # Some::Thing::Pack
+   module_name('Some::Pack', 'Some::Thing'); # Some::Pack
+
+=item B<< shorter_sub_names >>
+
+   shorter_sub_names($package_name);
+
+this helper is used in plugins to generate alternative versions of the
+implemented functions, with shorter names.
+
+The basic rationale is that functions are usually named after the area
+they cover, e.g. the function in L<Data::Tubes::Plugin::Reader> that
+reads a filehandle line-by-line is called C<read_by_line>. In this way,
+when you use e.g. C<summon> from L<Data::Tubes>, you end up with a
+function C<read_by_line> that is much clearer than simply C<by_line>.
+
+On the other hand, when you rely upon automatic running of factory
+functions like in C<tube> or C<pipeline> (again, in L<Data::Tubes>),
+some parts are redundant. In the example, you would end up using
+C<Reader::read_by_line>, where C<read_> is actually redundant as you
+already have the last part of the plugin package name to tell you what
+this C<by_line> thing is about.
+
+C<shorter_sub_names> comes to the rescue to generate alternative names
+by analysing the current namespace for a package and generating new
+functions by removing a prefix. In the L<Data::Tubes::Plugin::Reader>
+case, for example, it is called like this at the end of the module:
+
+   shorter_sub_names(__PACKAGE__);
+
+and it generates, among the others, C<by_line> and C<by_paragraph>.
+
+Consider using this if you generate new plugins.
+
+=item B<< sprintffy >>
+
+   my $string = sprintffy($template, \@substitutions);
+
+expand a C<$template> string a-la C<sprintf>, based on a list of
+C<@substitutions>.
+
+The template targets are C<sprintf>-like, i.e. sequences that start with
+a percent sign followed by... something.
+
+Each substitution is supposed to be an array reference with two items
+inside: a regular expression and a value specifier. The regular
+expression is used to match what comes after the percent sign, while the
+value part can be either a straight value, or a subroutine reference
+that will be run to get the real value for the substitution.
+
+There is always an implicit, high priority substitution that matches a
+single percent sign and expands to a percent sign, so that the string
+C<%%> will be I<unescaped> to C<%> as you would expect in something that
+is C<sprintf>-like.
+
+=item B<< test_all_equal >>
+
+   my $bool = test_all_equal(@list);
+
+test whether all elements in C<@list> are equal to one another or not,
+and return test output as a boolean value (i.e. something that Perl
+considers true or false).
+
+=item B<< traverse >>
+
+   my $item = traverse($data, @keys);
+
+Assuming that C<$data> is an array or hash reference, traverse it using
+items in C<@keys> at each step in the descent.
+
+=item B<< unzip >>
+
+   my ($even, $odds) = unzip(@list); # OR
+   my ($even, $odds) = unzip(\@list);
+
+separates even and odd items in the input C<@list> and returns them as
+two references to arrays.
+
+=back
+
+=head1 SEE ALSO
+
+L<Data::Tubes> is a valid entry point of all of this.
+
+=head1 AUTHOR
+
+Flavio Poletti <polettix@cpan.org>
+
+=head1 COPYRIGHT AND LICENSE
+
+Copyright (C) 2016 by Flavio Poletti <polettix@cpan.org>
+
+This module is free software. You can redistribute it and/or modify it
+under the terms of the Artistic License 2.0.
+
+This program is distributed in the hope that it will be useful, but
+without any warranty; without even the implied warranty of
+merchantability or fitness for a particular purpose.
+
+=cut
