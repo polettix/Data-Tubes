@@ -110,21 +110,15 @@ sub parse_by_regexes {
    # values in a hash with @keys
    my $n_keys     = scalar @$keys;
    my $input      = $args{input};
-   my $has_input  = defined($input) && length($input);
    my $output     = $args{output};
-   my $has_output = defined($output) && length($output);
    return sub {
       my $record = shift;
-      my @values = ($has_input ? $record->{$input} : $record) =~ m{$regex}
-        or die {message => 'invalid record'};
-      die      {message => "invalid record, wrong number of items"}
+      my @values = $record->{$input} =~ m{$regex}
+        or die {message => 'invalid record', record => $record};
+      die      {message => "invalid record, wrong number of items", record => $record}
         if scalar(@values) != $n_keys;
-      my %retval;
+      $record->{$output} = \my %retval;
       @retval{@$keys} = @values;
-
-      return {record => \%retval} unless $has_output;
-      $record = {} unless $has_input;
-      $record->{$output} = \%retval;
       return $record;
    };
 } ## end sub parse_by_regexes
