@@ -40,6 +40,8 @@ sub dispatch {
          };
       };
    } ## end if (!defined($factory)...)
+   LOGDIE "$name: required factory or handlers"
+     unless defined $factory;
 
    my $default = $args{default};
    return sub {
@@ -150,41 +152,5 @@ sub sequence {
       return (iterator => $iterator);
    };
 } ## end sub sequence
-
-sub unwrap {
-   my %args = normalize_args(@_,
-      {name => 'unwrap', missing_ok => 0, missing_is_skip => 0});
-   identify(\%args);
-   my $logger = log_helper(\%args);
-   my $name   = $args{name};
-   my $key    = $args{key};
-   LOGDIE "$name needs a key" unless defined $key;
-   my $missing_ok      = $args{missing_ok};
-   my $missing_is_skip = $args{missing_is_skip};
-   return sub {
-      my $record = shift;
-      $logger->($record, \%args) if $logger;
-      die {message => "$name: not a hash reference", record => $record}
-        unless ref($record) eq 'HASH';
-      return $record->{$key} if exists($record->{$key});
-      return if $missing_is_skip;
-      return undef if $missing_ok;
-      die {message => "$name: no '$key' in record", record => $record};
-   };
-} ## end sub unwrap
-
-sub wrap {
-   my %args = normalize_args(@_, {name => 'wrap'});
-   identify(\%args);
-   my $logger = log_helper(\%args);
-   my $name   = $args{name};
-   my $key    = $args{key};
-   LOGDIE "$name needs a key" unless defined $key;
-   return sub {
-      my $record = shift;
-      $logger->($record, \%args) if $logger;
-      return {$key => $record};
-   };
-} ## end sub wrap
 
 1;
