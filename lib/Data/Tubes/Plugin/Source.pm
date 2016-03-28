@@ -93,8 +93,6 @@ sub iterate_files {
    my ($files, $args) = args_array_with_options(
       @_,
       {    # these are the default options
-         binmode => ':encoding(UTF-8)',
-         output  => 'source',
          name    => 'files',
 
          # options specific for sub-tubes
