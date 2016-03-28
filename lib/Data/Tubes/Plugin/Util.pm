@@ -89,7 +89,8 @@ sub log_helper {
       return if $level < $loglevel;
       my $record = shift;
       my $rendered =
-        $tp->evaluate($message, {record => $record, args => $args});
+        $tp->evaluate($message,
+         {record => $record, args => $args, opts => $opts});
       $logger->log($loglevel, $rendered);
    };
 } ## end sub log_helper
