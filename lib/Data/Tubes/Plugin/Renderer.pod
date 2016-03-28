@@ -1,0 +1,115 @@
+=pod
+
+=for vim
+   vim: tw=72 ts=3 sts=3 sw=3 et ai :
+
+=encoding utf8
+
+=head1 NAME
+
+Data::Tubes::Plugin::Reader
+
+=head1 DESCRIPTION
+
+This module contains factory functions to generate I<tubes> that ease
+rendering records as text (or data).
+
+Each of the generated tubes has the following contract:
+
+=over
+
+=item *
+
+the input record MUST be a hash reference;
+
+=item *
+
+one field in the input record (according to factory argument C<input>,
+set to C<structured> by default) indicates which input field contains
+variables for expansion;
+
+=item *
+
+one field in the hash (according to factory argument C<output>, set to
+C<rendered> by default) is set to the output of the reading operation.
+
+=back
+
+The factory functions below have two names, one starting with C<render_>
+and the other without this prefix. They are perfectly equivalent to each
+other, whereas the short version can be handier e.g. when using C<tube>
+or C<pipeline> from L<Data::Tubes>.
+
+=head1 FUNCTIONS
+
+=over
+
+=item B<< with_template_perlish >>
+
+=item B<< render_with_template_perlish >>
+
+   my $tube = with_template_perlish(%args); # OR
+   my $tube = with_template_perlish(\%args);
+
+render input variables using a L<Template::Perlish> template.
+
+Allowed arguments are:
+
+=over
+
+=item C<input>
+
+the name of the input field in the record, where record-specific
+variables can be found;
+
+=item C<name>
+
+the name of the tube, useful when debugging;
+
+=item C<output>
+
+the name of the output field in the output record;
+
+=item C<start>
+
+parameter for L<Template::Perlish>, defaults to C<[%>;
+
+=item C<stop>
+
+parameter for L<Template::Perlish>, defaults to C<%]>;
+
+=item C<template>
+
+template that will be expanded, MUST be compliant with the rules
+explained in L<Template::Perlish> and the setting above for L</start>
+and L</stop>;
+
+=item C<variables>
+
+hash reference with variables that will always be available when
+expanding the template.
+
+=back
+
+=back
+
+=head1 BUGS AND LIMITATIONS
+
+Report bugs either through RT or GitHub (patches welcome).
+
+=head1 AUTHOR
+
+Flavio Poletti <polettix@cpan.org>
+
+=head1 COPYRIGHT AND LICENSE
+
+Copyright (C) 2016 by Flavio Poletti <polettix@cpan.org>
+
+This module is free software. You can redistribute it and/or modify it
+under the terms of the Artistic License 2.0.
+
+This program is distributed in the hope that it will be useful, but
+without any warranty; without even the implied warranty of
+merchantability or fitness for a particular purpose.
+
+=cut
