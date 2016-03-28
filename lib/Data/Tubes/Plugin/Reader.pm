@@ -73,10 +73,6 @@ sub read_by_record_reader {
    };
 } ## end sub read_by_record_reader
 
-sub read_by_regex {
-   ...;
-}
-
 sub read_by_separator {
    my %args = normalize_args(
       @_,
