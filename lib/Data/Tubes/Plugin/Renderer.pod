@@ -7,7 +7,7 @@
 
 =head1 NAME
 
-Data::Tubes::Plugin::Reader
+Data::Tubes::Plugin::Renderer
 
 =head1 DESCRIPTION
 
