@@ -34,16 +34,10 @@ sub render_with_template_perlish {
    my $template = $tp->compile($args{template});
 
    my $input      = $args{input};
-   my $has_input  = defined($input) && length($input);
    my $output     = $args{output};
-   my $has_output = defined($output) && length($output);
    return sub {
       my $record    = shift;
-      my $variables = $has_input ? $record->{$input} : $record;
-      my $retval    = $tp->evaluate($template, $variables);
-      return $retval unless $has_output;
-      $record = {} unless $has_input;
-      $record->{$output} = $retval;
+      $record->{$output} = $tp->evaluate($template, $record->{$input});
       return $record;
    };
 } ## end sub render_template_perlish
