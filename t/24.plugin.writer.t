@@ -7,7 +7,6 @@ use Data::Tubes qw< summon >;
 
 my @functions = qw<
   dispatch_to_files
-  write_to_handle
   write_to_files
 >;
 summon([Writer => @functions]);
@@ -17,7 +16,7 @@ ok __PACKAGE__->can($_), "summoned $_" for @functions;
    my $buffer = '';
    open my $fh, '>', \$buffer or die "open(): $!";
 
-   my $wth = write_to_handle(handle => $fh);
+   my $wth = write_to_files(filename => $fh);
    $wth->({rendered => "hello\n"});
    $wth->({rendered => "you"});
 

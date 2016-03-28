@@ -112,38 +112,6 @@ sub write_to_files {
    };
 } ## end sub write_to_files
 
-sub write_to_handle {
-   my %args = normalize_args(
-      @_,
-      {
-         %global_defaults,
-         name    => 'write to handle',
-         binmode => ':encoding(UTF-8)'
-      }
-   );
-   identify(\%args);
-   my $name = $args{name};
-   LOGDIE "$name: need a handle" unless defined $args{handle};
-   LOGDIE "$name: need an input" unless defined $args{input};
-
-   my $fh = $args{handle};
-   if (!ref($fh)) {
-      $fh =
-          (grep { lc($fh) eq $_ } qw< - stdout out >) ? \*STDOUT
-        : ($fh =~ m{\A (?: std ) err \z}mxs) ? \*STDERR
-        :   LOGDIE "$name: cannot use handle $fh";
-   } ## end if (!ref($fh))
-
-   binmode $fh, $args{binmode} if $args{binmode};
-
-   my $input = $args{input};
-   return sub {
-      my $record = shift;
-      print {$fh} $record->{$input};
-      return $record;    # relaunch for further processing
-   };
-} ## end sub write_to_handle
-
 shorter_sub_names(__PACKAGE__, 'write_');
 
 1;
