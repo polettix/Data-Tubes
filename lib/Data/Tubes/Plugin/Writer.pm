@@ -1,4 +1,7 @@
 package Data::Tubes::Plugin::Writer;
+
+# vim: ts=3 sts=3 sw=3 et ai :
+
 use strict;
 use warnings;
 use English qw< -no_match_vars >;
@@ -91,12 +94,12 @@ sub write_to_files {
    LOGDIE "$name: need a filename" unless defined $args{filename};
    LOGDIE "$name: need an input"   unless defined $args{input};
 
-   my $factory = $args{filename};
-   $factory = _filenames_generator($factory)
-     unless ref($factory) eq 'CODE';
+   my $output = $args{filename};
+   $output = _filenames_generator($output)
+     unless ref($output);
    require Data::Tubes::Util::Output;
    my $output_handler = Data::Tubes::Util::Output->new(
-      output => $factory,
+      output => $output,
       map { ($_ => $args{$_}) }
         grep { exists $args{$_} } qw< binmode footer header policy >
    );
