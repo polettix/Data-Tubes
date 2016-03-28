@@ -7,7 +7,8 @@ use warnings;
 use English qw< -no_match_vars >;
 use Log::Log4perl::Tiny qw< :easy :dead_if_first LOGLEVEL >;
 
-use Data::Tubes::Util qw< normalize_args args_array_with_options >;
+use Data::Tubes::Util
+  qw< normalize_args normalize_filename args_array_with_options >;
 use Data::Tubes::Plugin::Util qw< identify log_helper >;
 my %global_defaults = (
    input  => 'source',
@@ -59,6 +60,7 @@ sub open_file {
    return sub {
       my ($record, $file) =
         $has_input ? ($_[0], $_[0]{$input}) : ({}, $_[0]);
+      $file = normalize_filename($file);
 
       if (ref($file) eq 'GLOB') {
          my $is_stdin = fileno($file) == fileno(\*STDIN);
@@ -70,16 +72,7 @@ sub open_file {
             name  => "handle\:$name",
          };
       } ## end if (ref($file) eq 'GLOB')
-      elsif ($file eq '-') {
-         $record->{$output} = {
-            fh    => \*STDIN,
-            input => $file,
-            type  => 'handle',
-            name  => "handle\:STDIN",
-         };
-      } ## end elsif ($file eq '-')
       else {
-         $file =~ s{\Afile:}{}mxs;
          open my $fh, '<', $file
            or die "open('$file'): $OS_ERROR";
          binmode $fh, $binmode;
