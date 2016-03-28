@@ -107,6 +107,7 @@ sub normalize_args {
 sub normalize_filename {
    my ($filename, $default_handle) = @_;
    return $filename       if ref($filename) eq 'GLOB';
+   return $filename       if ref($filename) eq 'SCALAR';
    return $default_handle if $filename eq '-';
    return $filename       if $filename =~ s{\Afile:}{}mxs;
    if (my ($handlename) = $filename =~ m{\Ahandle:(?:std)?(.*)\z}imxs) {
