@@ -11,7 +11,7 @@ Data::Tubes - Text and data canalising
 
 =head1 VERSION
 
-This document describes Data::Tubes version 0.70.
+This document describes Data::Tubes version 0.69_00.
 
 =head1 SYNOPSIS
 
