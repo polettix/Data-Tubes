@@ -67,7 +67,7 @@ $td->mkpath();
 }
 
 {
-   my $template = $td->child('second%02d.txt');
+   my $template = $td->child('second%02n.txt');
    {
       my $wtf = write_to_files(
          filename          => $template->stringify(),
@@ -120,7 +120,7 @@ $td->mkpath();
       my $dtf = dispatch_to_files(
          key => [qw< structured class >],
          filename_template =>
-           $td->child('fourth-[% key %]-%02d.txt')->stringify(),
+           $td->child('fourth-[% key %]-%02n.txt')->stringify(),
          policy => {
             records_threshold => 1
          },
