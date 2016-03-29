@@ -20,16 +20,16 @@ sub _filenames_generator {
 
    my $n             = 0; # counter, used in closures inside $substitutions
    my $substitutions = [
-      [qr{(\d*)[din]} => sub { return sprintf "%${1}d",  $n; }],
-      [qr{Y}          => sub { return strftime('%Y',     localtime()); }],
-      [qr{m}          => sub { return strftime('%m',     localtime()); }],
-      [qr{d}          => sub { return strftime('%d',     localtime()); }],
-      [qr{H}          => sub { return strftime('%H',     localtime()); }],
-      [qr{M}          => sub { return strftime('%M',     localtime()); }],
-      [qr{S}          => sub { return strftime('%S',     localtime()); }],
-      [qr{z}          => sub { return strftime('%z',     localtime()); }],
-      [qr{D}          => sub { return strftime('%Y%m%d', localtime()); }],
-      [qr{T} => sub { return strftime('%H%M%S%z',        localtime()); }],
+      [qr{(\d*)n} => sub { return sprintf "%${1}d",    $n; }],
+      [qr{Y}      => sub { return strftime('%Y',       localtime()); }],
+      [qr{m}      => sub { return strftime('%m',       localtime()); }],
+      [qr{d}      => sub { return strftime('%d',       localtime()); }],
+      [qr{H}      => sub { return strftime('%H',       localtime()); }],
+      [qr{M}      => sub { return strftime('%M',       localtime()); }],
+      [qr{S}      => sub { return strftime('%S',       localtime()); }],
+      [qr{z}      => sub { return strftime('%z',       localtime()); }],
+      [qr{D}      => sub { return strftime('%Y%m%d',   localtime()); }],
+      [qr{T}      => sub { return strftime('%H%M%S%z', localtime()); }],
       [qr{t} => sub { return strftime('%Y%m%dT%H%M%S%z', localtime()); }],
    ];
 
@@ -64,7 +64,7 @@ sub dispatch_to_files {
 
    my $factory = delete $args{filename_factory};
    if (!defined($factory) && defined($args{filename_template})) {
-      my $tp = Template::Perlish->new(%{$args{template_perlish} || {}});
+      my $tp = Template::Perlish->new(%{$args{tp_opts} || {}});
       my $template = $tp->compile($args{filename_template});
       $factory = sub {
          my ($key, $record) = @_;
@@ -104,7 +104,7 @@ sub write_to_files {
         grep { exists $args{$_} } qw< binmode footer header policy >
    );
 
-   my $input   = $args{input};
+   my $input = $args{input};
    return sub {
       my $record = shift;
       $output_handler->print($record->{$input});
