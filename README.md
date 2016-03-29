@@ -4,7 +4,7 @@ Data::Tubes - Text and data canalising
 
 # VERSION
 
-This document describes Data::Tubes version 0.01.
+This document describes Data::Tubes version 0.70.
 
 # SYNOPSIS
 
@@ -82,6 +82,14 @@ This document describes Data::Tubes version 0.01.
 
 This module allows you to define and manage _tubes_, which are
 transformation subroutines over records.
+
+**NOTE**: this software is usable but still in a state of flux with
+respect to the interface. Most notably, although the provided plugins
+are mostly stable, the accepted parameters' names might change to gain
+greater consistency across the whole codebase. As an example, passing
+options to sub-module `foo` might be done via option `foo_opt` in one
+function, and via option `opts_for_foo` in another, which is ugly and
+likely to be changed to have only one single way.
 
 ## First Things First: What's a _Tube_?
 
