@@ -112,10 +112,10 @@ sub iterate_files {
    return Data::Tubes::Plugin::Plumbing::sequence(
       tubes => [
          iterate_array(
-            %{$args->{iterate_array}}, array => $files,
+            %{$args->{iterate_array_args}}, array => $files,
          ),
-         open_file(%{$args->{open_file}}),
-         Data::Tubes::Plugin::Plumbing::logger(%{$args->{logger}}),
+         open_file(%{$args->{open_file_args}}),
+         Data::Tubes::Plugin::Plumbing::logger(%{$args->{logger_args}}),
       ]
    );
 } ## end sub iterate_files
