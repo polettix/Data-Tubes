@@ -90,6 +90,14 @@ This document describes Data::Tubes version 0.01.
 This module allows you to define and manage I<tubes>, which are
 transformation subroutines over records.
 
+B<NOTE>: this software is usable but still in a state of flux with
+respect to the interface. Most notably, although the provided plugins
+are mostly stable, the accepted parameters' names might change to gain
+greater consistency across the whole codebase. As an example, passing
+options to sub-module C<foo> might be done via option C<foo_opt> in one
+function, and via option C<opts_for_foo> in another, which is ugly and
+likely to be changed to have only one single way.
+
 =head2 First Things First: What's a I<Tube>?
 
 A sort of operative definition in code:
