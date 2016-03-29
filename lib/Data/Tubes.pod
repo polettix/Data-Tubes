@@ -531,7 +531,8 @@ as that will eventually call C<tube> automatically.
 
 =head1 BUGS AND LIMITATIONS
 
-Report bugs either through RT or GitHub (patches welcome).
+Report bugs through GitHub (patches welcome) at
+L<https://github.com/polettix/Data-Tubes>.
 
 =head1 AUTHOR
 

@@ -447,7 +447,8 @@ exhausted.
 
 # BUGS AND LIMITATIONS
 
-Report bugs either through RT or GitHub (patches welcome).
+Report bugs through GitHub (patches welcome) at
+[https://github.com/polettix/Data-Tubes](https://github.com/polettix/Data-Tubes).
 
 # AUTHOR
 
