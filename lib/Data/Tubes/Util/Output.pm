@@ -2,7 +2,7 @@ package Data::Tubes::Util::Output;
 use strict;
 use warnings;
 use English qw< -no_match_vars >;
-use 5.012;
+use 5.010;
 use File::Path qw< make_path >;
 use File::Basename qw< dirname >;
 

@@ -1,4 +1,5 @@
 {{$NEXT}}
+    - lowered requirement to perl 5010 in +Util::Output
 
 0.69_00  2016-03-29 10:18:36 CEST
     - first release
