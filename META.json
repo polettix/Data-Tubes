@@ -50,6 +50,17 @@
       }
    },
    "release_status" : "stable",
+   "resources" : {
+      "bugtracker" : {
+         "web" : "https://github.com/polettix/Data-Tubes/issues"
+      },
+      "homepage" : "https://github.com/polettix/Data-Tubes",
+      "repository" : {
+         "type" : "git",
+         "url" : "https://github.com/polettix/Data-Tubes.git",
+         "web" : "https://github.com/polettix/Data-Tubes"
+      }
+   },
    "version" : "0.70",
    "x_contributors" : [
       "Flavio Poletti <flavio@polettix.it>"
