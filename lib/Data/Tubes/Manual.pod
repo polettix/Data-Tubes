@@ -99,20 +99,20 @@ call is a story apart, of course):
 
 =over
 
-=item -
+=item *
 
 I<nothing> (i.e. the empty list);
 
-=item -
+=item *
 
 I<exactly one scalar>, representing the I<output record>;
 
-=item -
+=item *
 
 the string C<records> followed by an I<array reference>, containing the
 sequence of I<output records>;
 
-=item -
+=item *
 
 the string I<iterator> followed by a I<sub reference>, from where you
 can draw the I<output records>.
