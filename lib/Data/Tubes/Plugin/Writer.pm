@@ -101,7 +101,8 @@ sub write_to_files {
    my $output_handler = Data::Tubes::Util::Output->new(
       output => $output,
       map { ($_ => $args{$_}) }
-        grep { exists $args{$_} } qw< binmode footer header policy >
+        grep { exists $args{$_} }
+        qw< binmode footer header interlude policy >
    );
 
    my $input = $args{input};

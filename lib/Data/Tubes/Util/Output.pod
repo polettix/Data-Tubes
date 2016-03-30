@@ -62,6 +62,10 @@ closed;
 a header that will be written in every newly opened file, just after it
 has been opened;
 
+=item B<< interlude >>
+
+a string that will be written between two successive prints;
+
 =item B<< output >>
 
 whatever is set as an I<output channel>. It might be multiple things:
@@ -169,6 +173,9 @@ prints things out. Accepts as input either an iterator or a list of
 records, where an iterator is a reference to a sub that will emit a
 record at each call. In this context, a valid record is everything that
 is not C<undef> (and that is possible to print, of course).
+
+If L</interlude> is set, each record that is printed is prefixed with
+its value, except for the very first one.
 
 =item B<< release_fh >>
 

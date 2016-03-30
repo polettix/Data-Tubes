@@ -28,10 +28,9 @@ sub dispatch {
    LOGDIE "$name: required dispatch key or selector"
      unless defined $selector;
 
-   my $handler_for = {};               # our cache
+   my $handler_for = {%{$args{handlers}||{}}};   # our cache
    my $factory     = $args{factory};
-   if (!defined($factory) && defined($args{handlers})) {
-      $handler_for = $args{handlers};
+   if (!defined($factory)) {
       $factory     = sub {
          my ($key, $record) = @_;
          die {

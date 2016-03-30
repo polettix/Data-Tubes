@@ -279,6 +279,11 @@ input field in the record. This is what will actually be printed.
 Defaults to C<rendered>, in compliance with the output of tubes from
 L<Data::Tubes::Plugin::Renderer>.
 
+=item C<interlude>
+
+data to be inserted between records printed out. See
+L</Data::Tubes::Util::Output>;
+
 =item C<name>
 
 name of the tube, useful when debugging;

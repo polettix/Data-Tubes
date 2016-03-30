@@ -11,6 +11,7 @@ use Mo qw< default >;
 has binmode => (default => ':raw');
 has footer  => ();
 has header  => ();
+has interlude => ();
 has output  => (default => \*STDOUT);
 has policy  => (default => undef);
 has track   => (
@@ -123,6 +124,7 @@ sub print {
    my $checker  = $self->checker();
    my $track    = $self->track();
    my $fh       = $track->{current_fh};
+   my $interlude = $self->interlude();
 
    while ('necessary') {
       my $record = $iterator ? $iterator->() : shift(@_);
@@ -131,9 +133,12 @@ sub print {
       # get filehandle if needed
       $fh ||= $self->open();
 
-      # print record, increase count
+      # print record
       $self->_print($fh, $record, $track);
-      $track->{records}++;
+
+      # print interlude if we have previous records, increase count
+      $self->_print($fh, $interlude, $track)
+        if $track->{records}++;
 
       # do checks if activated
       $fh = $self->close($fh, $track)
