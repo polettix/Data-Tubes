@@ -45,23 +45,15 @@ although it can receive more or less in different contexts (i.e. when
 called outside of the _tube_ definition);
 - at each call in _list context_, returns one of the following (every
 call is a story apart, of course):
-    - -
+    - _nothing_ (i.e. the empty list);
 
-        _nothing_ (i.e. the empty list);
+    - _exactly one scalar_, representing the _output record_;
 
-    - -
+    - the string `records` followed by an _array reference_, containing
+      the sequence of _output records_;
 
-        _exactly one scalar_, representing the _output record_;
-
-    - -
-
-        the string `records` followed by an _array reference_, containing the
-        sequence of _output records_;
-
-    - -
-
-        the string _iterator_ followed by a _sub reference_, from where you
-        can draw the _output records_.
+    - the string _iterator_ followed by a _sub reference_, from where you
+      can draw the _output records_.
 
 The iterator has some additional constraints:
 
