@@ -903,7 +903,7 @@ encoding too, just set a `CORE::binmode` compatible string using the
 
 Now, you have full control over your input. Or have you?
 
-## Writing, reloaded
+## Writing, Reloaded
 
 In the previous section about ["Writing"](#writing) we saw that there's a very
 flexible tool `to_files`. Is it sufficient to get you covered in all
