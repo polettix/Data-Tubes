@@ -11,19 +11,9 @@ tagline: 'The Missing Manual'
 data that can be though as a sequence of _records_. It does it by
 passing _records_ through _tubes_, usually a sequence of them.
 
-There's an extensive documentation about the modules, here's a list. But
-if you need a gentle introduction... read on the following sections!
+* Point at which the TOC is attached
+{:toc}
 
-- [Data::Tubes](https://metacpan.org/pod/Data::Tubes)
-- [Data::Tubes::Plugin::Parser](https://metacpan.org/pod/Data::Tubes::Plugin::Parser)
-- [Data::Tubes::Plugin::Plumbing](https://metacpan.org/pod/Data::Tubes::Plugin::Plumbing)
-- [Data::Tubes::Plugin::Reader](https://metacpan.org/pod/Data::Tubes::Plugin::Reader)
-- [Data::Tubes::Plugin::Renderer](https://metacpan.org/pod/Data::Tubes::Plugin::Renderer)
-- [Data::Tubes::Plugin::Source](https://metacpan.org/pod/Data::Tubes::Plugin::Source)
-- [Data::Tubes::Plugin::Util](https://metacpan.org/pod/Data::Tubes::Plugin::Util)
-- [Data::Tubes::Plugin::Writer](https://metacpan.org/pod/Data::Tubes::Plugin::Writer)
-- [Data::Tubes::Util](https://metacpan.org/pod/Data::Tubes::Util)
-- [Data::Tubes::Util::Output](https://metacpan.org/pod/Data::Tubes::Util::Output)
 
 ## A Few Definitions
 
@@ -1324,9 +1314,20 @@ _avoid_ setting a `tap`, otherwise we wouldn't get a tube back!
 
 ## Process In Peace
 
-Alas, we have come to the end of our journey through [Data::Tubes](https://metacpan.org/pod/Data::Tubes).
-There's much more to discover in the manual pages listed at the
-beginning, so be sure to check them out.
+Alas, we have come to the end of our journey through
+[Data::Tubes](https://metacpan.org/pod/Data::Tubes). There's much more to
+discover in the manual pages for each individual module: 
+
+- [Data::Tubes](https://metacpan.org/pod/Data::Tubes)
+- [Data::Tubes::Plugin::Parser](https://metacpan.org/pod/Data::Tubes::Plugin::Parser)
+- [Data::Tubes::Plugin::Plumbing](https://metacpan.org/pod/Data::Tubes::Plugin::Plumbing)
+- [Data::Tubes::Plugin::Reader](https://metacpan.org/pod/Data::Tubes::Plugin::Reader)
+- [Data::Tubes::Plugin::Renderer](https://metacpan.org/pod/Data::Tubes::Plugin::Renderer)
+- [Data::Tubes::Plugin::Source](https://metacpan.org/pod/Data::Tubes::Plugin::Source)
+- [Data::Tubes::Plugin::Util](https://metacpan.org/pod/Data::Tubes::Plugin::Util)
+- [Data::Tubes::Plugin::Writer](https://metacpan.org/pod/Data::Tubes::Plugin::Writer)
+- [Data::Tubes::Util](https://metacpan.org/pod/Data::Tubes::Util)
+- [Data::Tubes::Util::Output](https://metacpan.org/pod/Data::Tubes::Util::Output)
 
 If you want to contribute, [Data::Tubes](https://metacpan.org/pod/Data::Tubes) is on GitHub at
 [https://github.com/polettix/Data-Tubes](https://github.com/polettix/Data-Tubes). One way to contribute might
