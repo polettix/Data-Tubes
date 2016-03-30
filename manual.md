@@ -11,6 +11,8 @@ tagline: 'The Missing Manual'
 data that can be though as a sequence of _records_. It does it by
 passing _records_ through _tubes_, usually a sequence of them.
 
+This manual is a bit long... here's a table of contents for guiding you:
+
 * Point at which the TOC is attached
 {:toc}
 
