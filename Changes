@@ -1,4 +1,8 @@
 {{$NEXT}}
+    - added manual page, a gentle introduction to Data::Tubes
+    - minor fixes to parameters passing
+    - minor enhancements to output handling (interlude)
+    - minor enhancements to dispatch (cache pre-population)
 
 0.69_01  2016-03-29 19:09:12 CEST
     - lowered requirement to perl 5010 in +Util::Output

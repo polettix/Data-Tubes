@@ -5,7 +5,7 @@ package Data::Tubes;
 use strict;
 use warnings;
 use English qw< -no_match_vars >;
-{ our $VERSION = '0.69_01'; }
+{ our $VERSION = '0.70'; }
 use Exporter qw< import >;
 
 use Log::Log4perl::Tiny qw< :easy :dead_if_first LOGLEVEL >;

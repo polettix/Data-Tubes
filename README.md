@@ -4,7 +4,7 @@ Data::Tubes - Text and data canalising
 
 # VERSION
 
-This document describes Data::Tubes version 0.69\_01.
+This document describes Data::Tubes version 0.70.
 
 # SYNOPSIS
 
