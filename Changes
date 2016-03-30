@@ -1,5 +1,6 @@
 {{$NEXT}}
     - set minimum version for Path::Tiny to 0.84
+    - minor fixes to the Manual
 
 0.70  2016-03-30 11:17:53 CEST
     - added manual page, a gentle introduction to Data::Tubes
