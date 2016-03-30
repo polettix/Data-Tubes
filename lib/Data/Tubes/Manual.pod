@@ -1052,7 +1052,7 @@ C<binmode> argument, that is set to C<:encoding(UTF-8)> by default.
 
 Now, you have full control over your input. Or have you?
 
-=head2 Writing, reloaded
+=head2 Writing, Reloaded
 
 In the previous section about L</Writing> we saw that there's a very
 flexible tool C<to_files>. Is it sufficient to get you covered in all
