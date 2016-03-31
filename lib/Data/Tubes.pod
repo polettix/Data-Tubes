@@ -11,7 +11,7 @@ Data::Tubes - Text and data canalising
 
 =head1 VERSION
 
-This document describes Data::Tubes version 0.72.
+This document describes Data::Tubes version {{[={local*STDOUT;open STDOUT,'>&',V 'STDOUT';V('dzil')->version()}]}}.
 
 =head1 SYNOPSIS
 
