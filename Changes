@@ -1,4 +1,6 @@
 {{$NEXT}}
+
+0.72  2016-03-31 07:47:31 CEST
     - set minimum version for Path::Tiny to 0.84
     - minor fixes to the Manual
     - fixed warning under perl 5.10
