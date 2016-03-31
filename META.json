@@ -45,7 +45,7 @@
       },
       "test" : {
          "requires" : {
-            "Path::Tiny" : "0"
+            "Path::Tiny" : "0.084"
          }
       }
    },
