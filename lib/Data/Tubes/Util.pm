@@ -139,7 +139,7 @@ sub resolve_module {
 } ## end sub resolve_module
 
 sub shorter_sub_names {
-   my $stash = shift . '::';
+   my $stash = shift(@_) . '::';
 
    no strict 'refs';
 
