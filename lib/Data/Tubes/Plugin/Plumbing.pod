@@ -110,10 +110,9 @@ can pass the following arguments:
 =item C<loglevel>
 
 the level where the logging should happen. See L<Log::Log4perl::Tiny>
-for the available ones. Due to a current restriction in
-L<Log::Log4perl::Tiny> (as of version 1.2.7), you MUST pass a numeric
-value and you cannot pass the name of a log level (this will likely
-change in the future);
+for the available ones. You can pass either the numeric value of the log
+level (as exported via C<:levels> by L<Log::Log4perl::Tiny>) or the log
+level name (uppercase, e.g. C<INFO> or C<DEBUG>);
 
 =item C<name>
 

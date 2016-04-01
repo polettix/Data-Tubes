@@ -9,7 +9,8 @@ use Data::Dumper;
 use Scalar::Util qw< blessed >;
 our $VERSION = '0.00'; # automatically set by RewriteVersion
 
-use Log::Log4perl::Tiny qw< :easy :dead_if_first get_logger LOGLEVEL >;
+use Log::Log4perl::Tiny
+  qw< :easy :dead_if_first get_logger LOGLEVEL LEVELID_FOR >;
 use Data::Tubes qw< tube >;
 use Data::Tubes::Util
   qw< normalize_args traverse args_array_with_options >;
@@ -66,7 +67,7 @@ sub dispatch {
 sub logger {
    my %args = normalize_args(@_, {name => 'log pipe', loglevel => $INFO});
    identify(\%args);
-   my $loglevel = $args{loglevel};
+   my $loglevel = LEVELID_FOR($args{loglevel});
    my $mangler  = $args{target};
    if (!defined $mangler) {
       $mangler = sub { return shift; }
