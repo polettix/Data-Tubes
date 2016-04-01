@@ -7,7 +7,7 @@ use warnings;
 use English qw< -no_match_vars >;
 use Data::Dumper;
 use Scalar::Util qw< blessed >;
-our $VERSION = '0.00'; # automatically set by RewriteVersion
+our $VERSION = '0.00';    # automatically set by RewriteVersion
 
 use Log::Log4perl::Tiny
   qw< :easy :dead_if_first get_logger LOGLEVEL LEVELID_FOR >;
@@ -30,17 +30,17 @@ sub dispatch {
    LOGDIE "$name: required dispatch key or selector"
      unless defined $selector;
 
-   my $handler_for = {%{$args{handlers}||{}}};   # our cache
-   my $factory     = $args{factory};
+   my $handler_for = {%{$args{handlers} || {}}};    # our cache
+   my $factory = $args{factory};
    if (!defined($factory)) {
-      $factory     = sub {
+      $factory = sub {
          my ($key, $record) = @_;
          die {
             message => "$name: unhandled selection key '$key'",
             record  => $record,
          };
       };
-   } ## end if (!defined($factory)...)
+   } ## end if (!defined($factory))
    LOGDIE "$name: required factory or handlers"
      unless defined $factory;
 
@@ -102,7 +102,8 @@ sub sequence {
             return shift @record;
          }
       );
-   } unless @$tubes;
+     }
+     unless @$tubes;
 
    # auto-generate tubes if you get definitions
    my @tubes = map {
