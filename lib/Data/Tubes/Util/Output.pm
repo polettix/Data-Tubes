@@ -134,12 +134,15 @@ sub print {
       # get filehandle if needed
       $fh ||= $self->open();
 
+      # print interlude if we have previous records, increase count
+      $self->_print($fh, $interlude, $track)
+        if $track->{records};
+
       # print record
       $self->_print($fh, $record, $track);
 
-      # print interlude if we have previous records, increase count
-      $self->_print($fh, $interlude, $track)
-        if $track->{records}++;
+      # increment number of records, for next print
+      $track->{records}++;
 
       # do checks if activated
       $fh = $self->close($fh, $track)
