@@ -62,6 +62,7 @@ $td->mkpath();
    my @children = $td->children();
    is scalar(@children), 1, 'one file created';
    my $content = $filename->slurp_raw();
+   $content =~ s{\x{0d}+}{}gmxs; # remove \r in Windows
    is $content, "hello\nyou", 'content of only file';
    $filename->remove();
 }
@@ -82,6 +83,7 @@ $td->mkpath();
      sort { $a->stringify() cmp $b->stringify() } $td->children();
    is scalar(@children), 2, 'two files created';
    my $content = $children[0]->slurp_raw();
+   $content =~ s{\x{0d}+}{}gmxs; # remove \r in Windows
    is $content, "hello\n", 'content of first file';
    is $children[0]->basename(), 'second00.txt', 'name of first file';
    $content = $children[1]->slurp_raw();
@@ -106,6 +108,7 @@ $td->mkpath();
      sort { $a->stringify() cmp $b->stringify() } $td->children();
    is scalar(@children), 2, 'two files created';
    my $content = $children[0]->slurp_raw();
+   $content =~ s{\x{0d}+}{}gmxs; # remove \r in Windows
    is $content, "hello\n", 'content of first file';
    is $children[0]->basename(), 'third.txt', 'name of first file';
    $content = $children[1]->slurp_raw();
@@ -145,6 +148,7 @@ $td->mkpath();
    is $children[1]->basename(), 'fourth-hey-01.txt', 'name of second file';
 
    my $content = $children[2]->slurp_raw();
+   $content =~ s{\x{0d}+}{}gmxs; # remove \r in Windows
    is $content, "{{{hello\n}}}", 'content of third file';
    is $children[2]->basename(), 'fourth-whatever-00.txt',
      'name of third file';
