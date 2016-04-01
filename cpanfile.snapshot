@@ -39,12 +39,14 @@ DISTRIBUTIONS
       perl 5.006
       strict 0
       warnings 0
-  Log-Log4perl-Tiny-1.2.7
-    pathname: P/PO/POLETTIX/Log-Log4perl-Tiny-1.2.7.tar.gz
+  Log-Log4perl-Tiny-1.2.9
+    pathname: P/PO/POLETTIX/Log-Log4perl-Tiny-1.2.9.tar.gz
     provides:
-      Log::Log4perl::Tiny 1.002007
+      Log::Log4perl::Tiny 1.002009
     requirements:
-      ExtUtils::MakeMaker 6.30
+      ExtUtils::MakeMaker 0
+      Test::More 0.94
+      perl 5.008_000
   Mo-0.39
     pathname: I/IN/INGY/Mo-0.39.tar.gz
     provides:
