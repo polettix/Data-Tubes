@@ -1,18 +1,20 @@
 {{$NEXT}}
+   - upped minimum version of Log::Log4perl::Tiny for LEVELID_FOR
+   - fixed writer tests to work under Windows (CRLF instead of LF)
 
 0.72  2016-03-31 07:47:31 CEST
-    - set minimum version for Path::Tiny to 0.84
-    - minor fixes to the Manual
-    - fixed warning under perl 5.10
+   - set minimum version for Path::Tiny to 0.84
+   - minor fixes to the Manual
+   - fixed warning under perl 5.10
 
 0.70  2016-03-30 11:17:53 CEST
-    - added manual page, a gentle introduction to Data::Tubes
-    - minor fixes to parameters passing
-    - minor enhancements to output handling (interlude)
-    - minor enhancements to dispatch (cache pre-population)
+   - added manual page, a gentle introduction to Data::Tubes
+   - minor fixes to parameters passing
+   - minor enhancements to output handling (interlude)
+   - minor enhancements to dispatch (cache pre-population)
 
 0.69_01  2016-03-29 19:09:12 CEST
-    - lowered requirement to perl 5010 in +Util::Output
+   - lowered requirement to perl 5010 in +Util::Output
 
 0.69_00  2016-03-29 10:18:36 CEST
-    - first release
+   - first release
