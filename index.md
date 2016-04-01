@@ -5,7 +5,7 @@ author: 'polettix'
 tagline: 'Text and data canalising'
 ---
 
-Some input data in `data.txt`:
+Some input in `data.txt`:
 
 ```
 name=Flavio|age=44|food=salad
@@ -13,7 +13,7 @@ food=banana|name=FooBar|age=29
 age=52|name=What Ever|food=kiwi
 ```
 
-A template to fill in `template.tp`:
+Something to fill in `template.tp`:
 
 ```
 ---------------------------------------------------------------
