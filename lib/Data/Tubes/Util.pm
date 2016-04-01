@@ -5,7 +5,7 @@ package Data::Tubes::Util;
 use strict;
 use warnings;
 use Exporter 'import';
-our $VERSION = '0.00'; # automatically set by RewriteVersion
+our $VERSION = '0.721'; # TRIAL
 
 use Log::Log4perl::Tiny qw< :easy :dead_if_first >;
 

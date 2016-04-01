@@ -5,7 +5,7 @@ use English qw< -no_match_vars >;
 use 5.010;
 use File::Path qw< make_path >;
 use File::Basename qw< dirname >;
-our $VERSION = '0.00'; # automatically set by RewriteVersion
+our $VERSION = '0.721'; # TRIAL
 
 use Log::Log4perl::Tiny qw< :easy :dead_if_first >;
 use Mo qw< default >;
