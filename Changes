@@ -1,4 +1,5 @@
 {{$NEXT}}
+   - added import of normalize_args in ::Plugin::Util
 
 0.721  2016-04-01 22:13:50 CEST
    - upped minimum version of Log::Log4perl::Tiny for LEVELID_FOR

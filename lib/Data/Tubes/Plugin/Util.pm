@@ -7,6 +7,7 @@ our $VERSION = '0.721'; # TRIAL
 
 use Template::Perlish;
 use Log::Log4perl::Tiny qw< :easy :dead_if_first get_logger >;
+use Data::Tubes::Util qw< normalize_args >;
 
 use Exporter qw< import >;
 our @EXPORT_OK = qw< identify log_helper read_file >;
