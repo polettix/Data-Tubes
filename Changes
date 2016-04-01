@@ -1,4 +1,6 @@
 {{$NEXT}}
+
+0.721001  2016-04-02 00:41:29 CEST
    - added import of normalize_args in ::Plugin::Util
    - set right place for interlude when printing
    - added test file for ::Util::Output
