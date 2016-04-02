@@ -1,4 +1,5 @@
 {{$NEXT}}
+   - release after 75 PASSes on CPAN Testers (thanks!)
 
 0.721001  2016-04-02 00:41:29 CEST
    - added import of normalize_args in ::Plugin::Util

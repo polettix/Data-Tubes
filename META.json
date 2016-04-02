@@ -49,7 +49,7 @@
          }
       }
    },
-   "release_status" : "testing",
+   "release_status" : "stable",
    "resources" : {
       "bugtracker" : {
          "web" : "https://github.com/polettix/Data-Tubes/issues"
@@ -61,7 +61,7 @@
          "web" : "https://github.com/polettix/Data-Tubes"
       }
    },
-   "version" : "0.721001",
+   "version" : "0.722",
    "x_contributors" : [
       "Flavio Poletti <flavio@polettix.it>"
    ]
