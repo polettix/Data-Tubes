@@ -1,0 +1,246 @@
+#!/usr/bin/env perl
+# vim: sts=3 ts=3 sw=3 et ai :
+
+use strict;
+use warnings;
+my $VERSION = "{{[={local*STDOUT;open STDOUT,'>&',V 'STDOUT';V('dzil')->version()}]}}";
+RUSE('Log::Log4perl::Tiny', qw< :easy LOGLEVEL >);
+RUSE('Data::Tubes',         qw< pipeline >);
+
+########################################################################
+#
+# Input options and logger initialization
+#
+########################################################################
+my %config = get_options(
+   ['loglevel|log=s', default => 'INFO'],
+
+   # start putting your options here
+   ['abstract|A=s', required => 1],
+   ['author|a=s',   required => 1],
+   ['email|e=s',    required => 1],
+   ['name|n=s', required => 1],
+   ['output|o=s', fallback => \*STDOUT],
+   ['year|y=s', default => 1900 + (localtime)[5]],
+);
+
+# Remove following line if you remove 'loglevel' in options above
+LOGLEVEL($config{loglevel});
+
+########################################################################
+#
+# Business Logic
+#
+########################################################################
+
+$config{modules_bundle} = modules_bundle($config{module});
+pipeline(
+   ['Renderer::with_template_perlish', template => template()],
+   ['Writer::to_files', filename => $config{output}],
+   {tap => 'sink'},
+)->({structured => \%config});
+
+if (! ref $config{output}) {
+   my $mode = ((stat $config{output})[2] | 0111) & (~umask());
+   chmod $mode, $config{output};
+}
+
+sub modules_bundle {
+   open my $fh, '<', __FILE__ or die "open(): $!";
+   local $/;
+   my $ME = <$fh>;
+   my ($text) = $ME =~ m{
+      (
+         ^\#\ __MOBUNDLE_INCLUSION__\s*
+         .*
+         ^\#\ __MOBUNDLE_INCLUSION__
+      )
+   }mxs;
+   return $text;
+}
+
+
+########################################################################
+#
+# You should not need to fiddle any more beyond this point
+#
+########################################################################
+
+# Ancillary scaffolding here
+use Pod::Usage qw< pod2usage >;
+use Getopt::Long qw< :config gnu_getopt >;
+
+sub get_options {
+   my %config;
+   my @options = qw< usage! help! man! version! >;
+   my (%fallback_for, @required);
+   for my $option (@_) {
+      if (ref $option) {
+         my ($spec, %opts) = @$option;
+         push @options, $spec;
+
+         my ($name) = split /\|/, $spec, 2;
+         if (exists $opts{default}) {
+            $config{$name} = $opts{default};
+         }
+         if (exists $opts{fallback}) {
+            $fallback_for{$name} = $opts{fallback};
+         }
+         if (exists $opts{required}) {
+            push @required, $name;
+         }
+      } ## end if (ref $option)
+      else {
+         push @options, $option;
+      }
+   } ## end for my $option (@_)
+
+   GetOptions(\%config, @options)
+     or pod2usage(-verbose => 99, -sections => 'USAGE');
+   pod2usage(message => "$0 $VERSION", -verbose => 99,
+      -sections => ' ') if $config{version};
+   pod2usage(-verbose => 99, -sections => 'USAGE') if $config{usage};
+   pod2usage(-verbose => 99, -sections => 'USAGE|EXAMPLES|OPTIONS')
+     if $config{help};
+   pod2usage(-verbose => 2) if $config{man};
+
+   while (my ($key, $value) = each %fallback_for) {
+      next if exists $config{$key};
+      $config{$key} = $value;
+   }
+
+   my @missing = grep { ! exists $config{$_} } @required;
+   pod2usage(message => "missing options @missing",
+      -verbose => 99, -sections => 'USAGE')
+     if @missing;
+
+   return %config if wantarray();
+   return \%config;
+} ## end sub get_options
+
+sub RUSE {
+   my $module = shift;
+   (my $packfile = $module . '.pm') =~ s{::}{/}gmxs;
+   require $packfile;
+   $module->import(@_);
+   return $module;
+} ## end sub RUSE
+
+# Embedded stuff here
+# __MOBUNDLE__
+
+sub template {
+   my $template = <<'END_OF_TEMPLATE';
+# __TEMPLATE__
+END_OF_TEMPLATE
+   $template =~ s{^\ }{}gmxs;
+   $template =~ s{\n\z}{}mxs;
+   return $template;
+}
+
+__END__
+
+=head1 NAME
+
+tubergen - generate Data::Tubes programs
+
+=head1 USAGE
+
+   tubergen [--usage] [--help] [--man] [--version]
+
+   tubergen
+
+=head1 EXAMPLES
+
+   shell$ tubergen
+
+=for author, to fill in
+    Put a few examples of how to use your program
+
+
+=head1 DESCRIPTION
+
+=for author, to fill in
+    Put a thorough description of your program
+
+
+=head1 OPTIONS
+
+=for author, to fill in
+    Description of all command-line options
+
+=over
+
+=item --help
+
+print a somewhat more verbose help, showing usage, this description of
+the options and some examples from the synopsis.
+
+=item --man
+
+print out the full documentation for the script.
+
+=item --usage
+
+print a concise usage line and exit.
+
+=item --version
+
+print the version of the script.
+
+=back
+
+=head1 DIAGNOSTICS
+
+=for author, to fill in
+    List and describe all warnings/error messages
+
+=over
+
+=item C<< Error message here, perhaps with %s placeholders >>
+
+[Error description...]
+
+=item C<< Another error message here >>
+
+[Error description...]
+
+[You get the idea...]
+
+=back
+
+
+=head1 CONFIGURATION AND ENVIRONMENT
+
+=for author, to fill in
+    Explain any configuration that can be used by the program, via some
+    file or via environment variables.
+
+tubergen requires no configuration files or environment variables.
+
+
+=head1 BUGS AND LIMITATIONS
+
+=for author, to fill in
+    List any known bugs and limitations of your program
+
+No bugs have been reported.
+
+
+=head1 AUTHOR
+
+Flavio Poletti polettix@cpan.org
+
+
+=head1 LICENCE AND COPYRIGHT
+
+Copyright (c) 2016, Flavio Poletti polettix@cpan.org
+
+This module is free software.  You can redistribute it and/or
+modify it under the terms of the Artistic License 2.0.
+
+This program is distributed in the hope that it will be useful,
+but without any warranty; without even the implied warranty of
+merchantability or fitness for a particular purpose.
+
+=cut
