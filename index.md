@@ -15,6 +15,7 @@ There's a toolkit, though, that will help you with some common cases for
 reading, parsing, rendering and writing records. Find a few examples
 below, and the full story in [the manual](manual).
 
+## Getting Your Feet Wet
 
 Some input in `data.txt`:
 
@@ -55,6 +56,27 @@ my $pl = pipeline(
 $pl->(['data.txt']);
 ```
 
+The output:
+
+```
+---------------------------------------------------------------
+Hi Flavio! Happy birthday, now you are 44 years old!
+Would you like a salad?
+_______________________________________________________________
+---------------------------------------------------------------
+Hi FooBar! Happy birthday, now you are 29 years old!
+Would you like a banana?
+_______________________________________________________________
+---------------------------------------------------------------
+Hi What Ever! Happy birthday, now you are 52 years old!
+Would you like a kiwi?
+_______________________________________________________________
+```
+
+## Input Format Changes? No problem!
+
+### A Simple CSV-like Input
+
 Your input data changes, and it's some columns separated by semicolons in
 a fixed order? I mean, like this:
 
@@ -80,6 +102,8 @@ my $pl = pipeline(
    {tap => 'sink'}
 );
 ```
+
+### Key/Value Pairs Again
 
 OK, you switch back to key/value pairs, but think that it's better to put
 each in its own line this time? I mean, like this:
@@ -116,6 +140,8 @@ my $pl = pipeline(
    {tap => 'sink'}
 );
 ```
+
+### New Change - HTTP Rules!
 
 OK, we're almost fine but you fall in love with the HTTP specification,
 and what we have here does not do automatic handling of case, removal of
@@ -166,6 +192,8 @@ my $pl = pipeline(
    {tap => 'sink'}
 );
 ```
+
+## Intrigued?
 
 There's more than just reading/parsing flexibility, as you get to
 control each step, reusing what you can and adapting when you must.
