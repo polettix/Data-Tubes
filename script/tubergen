@@ -127,11 +127,67 @@ sub RUSE {
 } ## end sub RUSE
 
 # Embedded stuff here
-# __MOBUNDLE__
+
+# __MOBUNDLE_INCLUSION__
+BEGIN {
+   my %file_for = (
+
+# __MOBUNDLE_FILES__
+
+{{[
+   use Path::Tiny;
+   my $iter = path('lib')->iterator({recurse => 1});
+   my @matches;
+   while (my $path = $iter->()) {
+      next unless $path->stringify() =~ m{\.pm$}mxs;
+      my $name = $path->relative('lib')->stringify();
+      push @matches, [$name, $path];
+   }
+   push @matches, ['Template/Perlish.pm', path(qw< local lib perl5 Template Perlish.pm >)];
+   push @matches, ['Log::Log4perl::Tiny.pm', path(qw< local lib perl5 Log Log4perl Tiny.pm >)];
+
+   for my $match (@matches) {
+      my ($name, $path) = @$match;
+]}}
+
+# __MOBUNDLE_FILE__
+
+      '{{[= $name ]}}' => <<'END_OF_FILE',
+{{[=
+      my $contents = $path->slurp_raw();
+      $contents =~ s{^}{ }gmxs;
+      $contents;
+]}}
+END_OF_FILE
+{{[
+   }
+]}}
+
+
+# __MOBUNDLE_FILE__
+   );
+
+   unshift @INC, sub {
+      my ($me, $packfile) = @_;
+      return unless exists $file_for{$packfile};
+      (my $text = $file_for{$packfile}) =~ s/^\ //gmxs;
+      chop($text); # added \n at the end
+      open my $fh, '<', \$text or die "open(): $!\n";
+      return $fh;
+   };
+} ## end BEGIN
+# __MOBUNDLE_INCLUSION__
+
 
 sub template {
    my $template = <<'END_OF_TEMPLATE';
-# __TEMPLATE__
+{{[=
+   open my $fh, '<', 'script/tuber.tp';
+   local $/;
+   my $text = <$fh>;
+   $text =~ s/^/ /gmxs;
+   $text;
+]}}
 END_OF_TEMPLATE
    $template =~ s{^\ }{}gmxs;
    $template =~ s{\n\z}{}mxs;
