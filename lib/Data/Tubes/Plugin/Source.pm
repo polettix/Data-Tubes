@@ -97,9 +97,9 @@ sub iterate_files {
          name    => 'files',
 
          # options specific for sub-tubes
-         iterate_array => {},
-         open_file     => {},
-         logger        => {
+         iterate_array_args => {},
+         open_file_args     => {},
+         logger_args        => {
             target => sub {
                my $record = shift;
                return 'reading from ' . $record->{source}{name},;
