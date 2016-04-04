@@ -152,11 +152,11 @@ is not capable of properly handling the following input:
 Name:    Flavio  ␤
 Age:     44  ␤
 Food:    salad  ␤
-
+␤
 AGE  : 29␤
 name : FooBar␤
 FOOD : banana   ␤
-
+␤
 food: kiwi␤
 name: What␤
  Ever␤
