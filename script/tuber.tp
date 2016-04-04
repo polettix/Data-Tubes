@@ -1,0 +1,242 @@
+#!/usr/bin/env perl
+# vim: sts=3 ts=3 sw=3 et ai :
+
+use strict;
+use warnings;
+my $VERSION = '0.0.1';
+RUSE('Log::Log4perl::Tiny', qw< :easy LOGLEVEL >);
+RUSE('Data::Tubes',         qw< pipeline >);
+
+########################################################################
+#
+# Input options and logger initialization
+#
+########################################################################
+my %config = get_options(
+   ['loglevel|log=s', 'INFO'],    # leave this alone unless you know better
+
+   # start putting your options here
+   'foo|f=s',
+   ['bar|b=s', 'default value for bar'], 'baz|B=i',
+);
+
+# Remove following line if you remove 'loglevel' in options above
+LOGLEVEL($config{loglevel});
+
+########################################################################
+#
+# Business Logic
+#
+########################################################################
+
+# this is just an example to get you started, works with an input file
+# like this:
+#
+#    Flavio,44,salad
+#    FooBar,23,kiwi
+
+my $template = <<'END_OF_TEMPLATE';
+[[%%]% name %] is [[%%]% age %] and likes [[%%]% food %].
+-----------------------------------------------------------
+END_OF_TEMPLATE
+
+pipeline(
+   'Source::iterate_files',
+
+   # Choose a reader
+   #
+   'Reader::by_line',
+   #
+   #'Reader::by_paragraph',
+   #
+   #['Reader::by_separator', separator => "\n---\n"],
+
+   # Choose a parser
+   #
+   #['Parser::hashy',
+   #   chunks_separator    => ';',
+   #   key_value_separator => ':',
+   #   default_key         => 'name'],
+   #
+   ['Parser::by_format', format => 'name,age,food'],
+   #
+   #['Parser::by_regex',
+   #   regex => qr{(?mxs:\A(?<name>.*?),(?<age>\d+),(^<food>.*))}],
+
+   # There's little choiche for a renderer initially...
+   ['Renderer::with_template_perlish', template => $template],
+
+   # Choose a writer
+   ['Writer::to_files', filename => \*STDOUT],
+   #
+   #['Writer::to_files',
+   #    filename  => '[% name %]-output-%02d.txt',
+   #    header    => "-- here comes the data:\n",
+   #    interlude => "-- end of record, start of next record --\n",
+   #    footer    => "-- end of data\n",
+   #    binmode   => ':encoding(UTF-8)',
+   #    policy    => {records_threshold => 100}],
+   #
+   #['Writer::dispatch_to_files',
+   #    filename_factory => sub {...},
+   #    filename_template => '[% name %]-{{ key }}-output-%02d.txt',
+   #    tp_opts  => {start => '{{', stop => '}}'},
+
+   {tap => 'sink'},
+)->([@ARGV]);
+
+
+########################################################################
+#
+# You should not need to fiddle any more beyond this point
+#
+########################################################################
+
+# Ancillary scaffolding here
+use Pod::Usage qw< pod2usage >;
+use Getopt::Long qw< :config gnu_getopt >;
+
+sub get_options {
+   my %config;
+   my @options = qw< usage! help! man! version! >;
+   for my $option (@_) {
+      if (ref $option) {
+         my ($spec, $default) = @$option;
+         push @options, $spec;
+         my ($name) = split /\|/, $spec, 2;
+         $config{$name} = $default;
+      } ## end if (ref $option)
+      else {
+         push @options, $option;
+      }
+   } ## end for my $option (@_)
+
+   GetOptions(\%config, @options)
+     or pod2usage(-verbose => 99, -sections => 'USAGE');
+   pod2usage(message => "$0 $VERSION", -verbose => 99, -sections => ' ')
+     if $config{version};
+   pod2usage(-verbose => 99, -sections => 'USAGE') if $config{usage};
+   pod2usage(-verbose => 99, -sections => 'USAGE|EXAMPLES|OPTIONS')
+     if $config{help};
+   pod2usage(-verbose => 2) if $config{man};
+
+   return %config if wantarray();
+   return \%config;
+} ## end sub get_options
+
+sub RUSE {
+   my $module = shift;
+   (my $packfile = $module . '.pm') =~ s{::}{/}gmxs;
+   require $packfile;
+   $module->import(@_);
+   return $module;
+} ## end sub RUSE
+
+[% modules_bundle %]
+
+__END__
+
+=head1 NAME
+
+[% name %] - [% abstract %]
+
+=head1 USAGE
+
+   [% name %] [--usage] [--help] [--man] [--version]
+
+   [% name %]
+
+=head1 EXAMPLES
+
+   shell$ [% name %]
+
+=for author, to fill in
+    Put a few examples of how to use your program
+
+
+=head1 DESCRIPTION
+
+=for author, to fill in
+    Put a thorough description of your program
+
+
+=head1 OPTIONS
+
+=for author, to fill in
+    Description of all command-line options
+
+=over
+
+=item --help
+
+print a somewhat more verbose help, showing usage, this description of
+the options and some examples from the synopsis.
+
+=item --man
+
+print out the full documentation for the script.
+
+=item --usage
+
+print a concise usage line and exit.
+
+=item --version
+
+print the version of the script.
+
+=back
+
+=head1 DIAGNOSTICS
+
+=for author, to fill in
+    List and describe all warnings/error messages
+
+=over
+
+=item C<< Error message here, perhaps with %s placeholders >>
+
+[Error description...]
+
+=item C<< Another error message here >>
+
+[Error description...]
+
+[You get the idea...]
+
+=back
+
+
+=head1 CONFIGURATION AND ENVIRONMENT
+
+=for author, to fill in
+    Explain any configuration that can be used by the program, via some
+    file or via environment variables.
+
+[% name %] requires no configuration files or environment variables.
+
+
+=head1 BUGS AND LIMITATIONS
+
+=for author, to fill in
+    List any known bugs and limitations of your program
+
+No bugs have been reported.
+
+
+=head1 AUTHOR
+
+[% author %] [% email %]
+
+
+=head1 LICENCE AND COPYRIGHT
+
+Copyright (c) [% year %], [% author %] [% email %]
+
+This module is free software.  You can redistribute it and/or
+modify it under the terms of the Artistic License 2.0.
+
+This program is distributed in the hope that it will be useful,
+but without any warranty; without even the implied warranty of
+merchantability or fitness for a particular purpose.
+
+=cut
