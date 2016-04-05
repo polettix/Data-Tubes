@@ -1,4 +1,5 @@
 {{$NEXT}}
+   - new way of bumping versions (package production)
 
 0.723  2016-04-04 20:05:32 CEST
    - right name for default args in Source
