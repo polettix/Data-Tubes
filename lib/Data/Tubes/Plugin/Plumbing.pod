@@ -18,6 +18,33 @@ requirements, e.g. put some other I<tubes> in a sequence.
 
 =over
 
+=item B<< alternatives >>
+
+   $tube = alternatives(@tubes); # OR
+   $tube = alternatives(@tubes, \%args);
+
+consider a series of tubes as different alternatives, to be triggered in
+order until one of them returns something.
+
+In simple terms, the first item in C<@tubes> is called with the input
+record. If it returns I<nothing>, the second item in C<@tubes> is tried,
+and so on. The first one to return something (i.e. a record, or multiple
+ones) wins and its result is returned. Think of it as some I<OR>
+function in tubeland.
+
+If no tube returns anything, the tube itself returns nothing.
+
+You can set the following options with the optional C<%args>:
+
+=over
+
+=item C<name>
+
+set a name for the dispatcher, might be useful while debugging if you
+plan to use more than one dispatcher.
+
+=back
+
 =item B<< dispatch >>
 
    my $tube = dispatch(%args); # OR
@@ -95,6 +122,48 @@ SHOULD provide a string back, that will uniquely identify a tube.
 
 One between C<selector> or C<key> MUST be provided. One between
 C<factory> and C<handlers> MUST be provided.
+
+
+=item B<< fallback >>
+
+   $tube = fallback(@tubes); # OR
+   $tube = fallback(@tubes, \%args);
+
+consider a series of tubes as different alternatives, to be triggered in
+order until one of them does not throw an exception.
+
+In simple terms, the first item in C<@tubes> is called with the input
+record. If it throws an exception, the second item in C<@tubes> is
+tried, and so on. The first one to I<NOT> throw na exception wins and
+its result is returned. Think of it as some I<OR> function in tubeland,
+applied to exception throwing. This function is very similar to
+L</alternatives>, although there is a different exception handling here.
+
+Returns nothing if all tubes throw an exception, otherwise it returns
+the return value of the first tube that does not throw an exception, and
+ignores the rest of the tubes.
+
+The exception handling is performed via L<Try::Tiny>.
+
+You can set the following options with the optional C<%args>:
+
+=over
+
+=item C<catch>
+
+an optional sub reference to be called when an exception is catched. The
+sub is called like this:
+
+   $catcher->($exception, $record);
+
+The return value of this function is ignored.
+
+=item C<name>
+
+set a name for the dispatcher, might be useful while debugging if you
+plan to use more than one dispatcher.
+
+=back
 
 
 =item B<< logger >>

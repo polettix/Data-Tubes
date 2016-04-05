@@ -16,6 +16,30 @@ use Data::Tubes::Util
   qw< normalize_args traverse args_array_with_options >;
 use Data::Tubes::Plugin::Util qw< identify log_helper >;
 
+sub alternatives {
+   my ($tubes, $args) =
+     args_array_with_options(@_, {name => 'alternatives'});
+   identify(\%args);
+   my $name = $args{name};
+
+   my @tubes = map {
+      my $ref = ref $_;
+      ($ref eq 'CODE')
+        ? $_
+        : tube(($ref eq 'ARRAY') ? @$_ : $_)
+   } @$tubes;
+
+   return sub {
+      my $record;
+      for my $tube (@tubes) {
+         if (my @retval = $tube->($record)) {
+            return @retval;
+         }
+      }
+      return;
+   };
+} ## end sub alternatives
+
 sub dispatch {
    my %args = normalize_args(@_,
       {default => undef, name => 'dispatch', loglevel => $INFO});
@@ -63,6 +87,30 @@ sub dispatch {
       return $handler_for->{$key}->($record);
    };
 } ## end sub dispatch
+
+sub fallback {
+   my ($tubes, $args) = args_array_with_options(@_, {name => 'fallback'});
+   identify(\%args);
+   my $name = $args{name};
+
+   my $catch   = $args{catch};
+   require Try::Tiny;
+   return sub {
+      my $record;
+      for my $tube (@$tubes) {
+         my (@retval, $do_fallback);
+         try {
+            @retval = $tube->($record);
+         }
+         catch {
+            $catch->($_, $record) if $catch;
+            $do_fallback = 1;
+         };
+         return @retval unless $do_fallback;
+      } ## end for my $tube (@$tubes)
+      return;
+   };
+} ## end sub fallback
 
 sub logger {
    my %args = normalize_args(@_, {name => 'log pipe', loglevel => $INFO});
