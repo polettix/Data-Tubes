@@ -11,7 +11,9 @@ my $local = path(qw< local lib perl5 >);
 
 my $tubergen = path(qw< script tubergen.tp >)->slurp_raw();
 my $tuber    = path(qw< script tuber.tp >)->slurp_raw();
-my $target   = $dp->child(qw< script tubergen >);
+my $scriptd  = $dp->child('script');
+$scriptd->mkpath();
+my $target   = $scriptd->child(qw< tubergen >);
 
 my @modules = (
    [
@@ -46,3 +48,5 @@ my $rendered = $tp->process(
    },
 );
 $target->spew_raw($rendered);
+$target->chmod('a+x');
+$target->copy(qw< script tubergen >)->chmod('a+x');
