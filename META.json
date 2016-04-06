@@ -36,6 +36,9 @@
          }
       },
       "runtime" : {
+         "recommends" : {
+            "Try::Tiny" : "0.24"
+         },
          "requires" : {
             "Log::Log4perl::Tiny" : "v1.2.9",
             "Mo" : "0.39",
@@ -45,7 +48,9 @@
       },
       "test" : {
          "requires" : {
-            "Path::Tiny" : "0.084"
+            "Path::Tiny" : "0.084",
+            "Test::Exception" : "0.43",
+            "Try::Tiny" : "0.24"
          }
       }
    },
