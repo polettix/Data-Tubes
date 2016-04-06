@@ -212,6 +212,19 @@ traversal is something meaningful for printing.
 
 The generated tube always returns back the input record, unchanged.
 
+=item B<< pipeline >>
+
+   $tube = pipeline(@tubes); # OR
+   $tube = pipeline(@tubes, \%args);
+
+this is a thin wrapper around L</sequence>, added to avoid changing its
+signature. It is the same as calling:
+
+   $tube = sequence(tubes => \@tubes); # OR
+   $tube = sequence(%args, tubes => \@tubes);
+
+(depending on what you provide as input), only a bit more natural.
+
 =item B<< sequence >>
 
    my $tube = sequence(%args); # OR

@@ -11,26 +11,20 @@ our $VERSION = '0.723';
 
 use Log::Log4perl::Tiny
   qw< :easy :dead_if_first get_logger LOGLEVEL LEVELID_FOR >;
-use Data::Tubes qw< tube >;
 use Data::Tubes::Util
-  qw< normalize_args traverse args_array_with_options >;
-use Data::Tubes::Plugin::Util qw< identify log_helper >;
+  qw< args_array_with_options normalize_args traverse >;
+use Data::Tubes::Plugin::Util qw< identify log_helper tubify >;
 
 sub alternatives {
    my ($tubes, $args) =
      args_array_with_options(@_, {name => 'alternatives'});
-   identify(\%args);
-   my $name = $args{name};
+   identify($args);
+   my $name = $args->{name};
 
-   my @tubes = map {
-      my $ref = ref $_;
-      ($ref eq 'CODE')
-        ? $_
-        : tube(($ref eq 'ARRAY') ? @$_ : $_)
-   } @$tubes;
+   my @tubes = tubify(@$tubes);
 
    return sub {
-      my $record;
+      my $record = shift;
       for my $tube (@tubes) {
          if (my @retval = $tube->($record)) {
             return @retval;
@@ -89,25 +83,36 @@ sub dispatch {
 } ## end sub dispatch
 
 sub fallback {
-   my ($tubes, $args) = args_array_with_options(@_, {name => 'fallback'});
-   identify(\%args);
-   my $name = $args{name};
 
-   my $catch   = $args{catch};
-   require Try::Tiny;
+   # we lose syntax sugar but allow for Try::Tiny to remain optional
+   eval { require Try::Tiny; }
+     or LOGCONFESS 'Data::Tubes::Plugin::Plumbing::fallback '
+     . 'needs Try::Tiny, please install';
+
+   my ($tubes, $args) = args_array_with_options(@_, {name => 'fallback'});
+   identify($args);
+   my $name = $args->{name};
+
+   my @tubes = tubify(@$tubes);
+
+   my $catch = $args->{catch};
    return sub {
-      my $record;
-      for my $tube (@$tubes) {
+      my $record = shift;
+      for my $tube (@tubes) {
          my (@retval, $do_fallback);
-         try {
-            @retval = $tube->($record);
-         }
-         catch {
-            $catch->($_, $record) if $catch;
-            $do_fallback = 1;
-         };
+         Try::Tiny::try(
+            sub {
+               @retval = $tube->($record);
+            },
+            Try::Tiny::catch(
+               sub {
+                  $catch->($_, $record) if $catch;
+                  $do_fallback = 1;
+               }
+            )
+         );
          return @retval unless $do_fallback;
-      } ## end for my $tube (@$tubes)
+      } ## end for my $tube (@tubes)
       return;
    };
 } ## end sub fallback
@@ -135,6 +140,11 @@ sub logger {
    };
 } ## end sub logger
 
+sub pipeline {
+   my ($tubes, $args) = args_array_with_options(@_, {name => 'pipeline'});
+   return sequence(%$args, tubes => $tubes);
+}
+
 sub sequence {
    my %args = normalize_args(@_, {name => 'sequence'});
    identify(\%args);
@@ -154,12 +164,7 @@ sub sequence {
      unless @$tubes;
 
    # auto-generate tubes if you get definitions
-   my @tubes = map {
-      my $ref = ref $_;
-      ($ref eq 'CODE')
-        ? $_
-        : tube(($ref eq 'ARRAY') ? @$_ : $_)
-   } @$tubes;
+   my @tubes = tubify(@$tubes);
 
    my $logger = log_helper(\%args);
    my $name   = $args{name};
