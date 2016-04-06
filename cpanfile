@@ -5,6 +5,7 @@ requires 'Mo',                  '0.39';
 recommends 'Try::Tiny',         '0.24';
 
 on test => sub {
-   requires 'Path::Tiny', '0.084';
-   requires 'Try::Tiny', '0.24';
+   requires 'Path::Tiny',      '0.084';
+   requires 'Test::Exception', '0.43';
+   requires 'Try::Tiny',       '0.24';
 };
