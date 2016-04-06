@@ -14,6 +14,7 @@ use Data::Tubes::Util qw<
   load_sub
   normalize_args
   resolve_module
+  tube
 >;
 
 our @EXPORT_OK = (
@@ -100,11 +101,6 @@ sub summon {    # sort-of import
       } ## end for my $part (@parts)
    } ## end for my $r (@_)
 } ## end sub summon
-
-sub tube {
-   my $locator = shift;
-   return load_sub($locator)->(@_);
-} ## end sub tube
 
 1;
 __END__

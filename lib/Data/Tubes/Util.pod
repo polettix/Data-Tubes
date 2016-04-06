@@ -368,6 +368,10 @@ considers true or false).
 Assuming that C<$data> is an array or hash reference, traverse it using
 items in C<@keys> at each step in the descent.
 
+=item B<< tube >>
+
+see C<tube> in L<Data::Tubes>, this is the same function.
+
 =item B<< unzip >>
 
    my ($even, $odds) = unzip(@list); # OR

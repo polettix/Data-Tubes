@@ -22,6 +22,7 @@ our @EXPORT_OK = qw<
   sprintffy
   test_all_equal
   traverse
+  tube
   unzip
 >;
 
@@ -223,6 +224,11 @@ sub traverse {
    } ## end for my $key (@keys)
    return $data;
 } ## end sub traverse
+
+sub tube {
+   my $locator = shift;
+   return load_sub($locator)->(@_);
+} ## end sub tube
 
 sub unzip {
    my $items = (@_ && ref($_[0])) ? $_[0] : \@_;
