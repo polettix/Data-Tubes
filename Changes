@@ -1,5 +1,8 @@
 {{$NEXT}}
 
+0.723004  2016-04-06 13:14:23 CEST
+   - cleaned up patch for Milla, testing
+
 0.723003  2016-04-06 12:50:42 CEST
    - patched Milla, testing if it works for dirty files
 
