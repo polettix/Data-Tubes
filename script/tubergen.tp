@@ -3,7 +3,7 @@
 
 use strict;
 use warnings;
-my $VERSION = "{{[={local*STDOUT;open STDOUT,'>&',V 'STDOUT';V('dzil')->version()}]}}";
+my $VERSION = "{{[ version ]}}";
 RUSE('Log::Log4perl::Tiny', qw< :easy LOGLEVEL >);
 RUSE('Data::Tubes',         qw< pipeline >);
 
@@ -135,30 +135,15 @@ BEGIN {
 # __MOBUNDLE_FILES__
 
 {{[
-   use Path::Tiny;
-   my $iter = path('lib')->iterator({recurse => 1});
-   my @matches;
-   while (my $path = $iter->()) {
-      next unless $path->stringify() =~ m{\.pm$}mxs;
-      my $name = $path->relative('lib')->stringify();
-      push @matches, [$name, $path];
-   }
-   push @matches, ['Log::Log4perl::Tiny.pm', path(qw< local lib perl5 Log Log4perl Tiny.pm >)];
-   push @matches, ['Template/Perlish.pm', path(qw< local lib perl5 Template Perlish.pm >)];
-   push @matches, ['Try::Tiny.pm', path(qw< local lib perl5 Try Tiny.pm >)];
-
-   for my $match (@matches) {
-      my ($name, $path) = @$match;
+   for my $module (A('modules')) {
+      my ($name, $contents) = @$module;
+      $contents =~ s{^}{ }gmxs;
 ]}}
 
 # __MOBUNDLE_FILE__
 
       '{{[= $name ]}}' => <<'END_OF_FILE',
-{{[=
-      my $contents = $path->slurp_raw();
-      $contents =~ s{^}{ }gmxs;
-      $contents;
-]}}
+{{[= $contents ]}}
 END_OF_FILE
 {{[
    }
@@ -183,9 +168,7 @@ END_OF_FILE
 sub template {
    my $template = <<'END_OF_TEMPLATE';
 {{[=
-   open my $fh, '<', 'script/tuber.tp';
-   local $/;
-   my $text = <$fh>;
+   my $text = V('tuber');
    $text =~ s/^/ /gmxs;
    $text;
 ]}}
