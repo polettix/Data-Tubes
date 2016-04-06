@@ -3,7 +3,7 @@
 
 use strict;
 use warnings;
-my $VERSION = "0.723005";
+my $VERSION = "0.723006";
 RUSE('Log::Log4perl::Tiny', qw< :easy LOGLEVEL >);
 RUSE('Data::Tubes',         qw< pipeline >);
 
@@ -2680,7 +2680,7 @@ END_OF_FILE
  
  =item *
  
- ×××× ×§××'×× (Yuval Kogman) <nothingmuch@woobling.org>
+ יובל קוג'מן (Yuval Kogman) <nothingmuch@woobling.org>
  
  =item *
  
@@ -2690,7 +2690,7 @@ END_OF_FILE
  
  =head1 CONTRIBUTORS
  
- =for stopwords Karen Etheridge Peter Rabbitson Ricardo Signes Mark Fowler Graham Knop Dagfinn Ilmari MannsÃ¥ker Paul Howarth Rudolf Leermakers anaxagoras awalker chromatic Alex cm-perl Andrew Yates David Lowe Glenn Hans Dieter Pearcey Jonathan Yu Marc Mims Stosberg
+ =for stopwords Karen Etheridge Peter Rabbitson Ricardo Signes Mark Fowler Graham Knop Dagfinn Ilmari Mannsåker Paul Howarth Rudolf Leermakers anaxagoras awalker chromatic Alex cm-perl Andrew Yates David Lowe Glenn Hans Dieter Pearcey Jonathan Yu Marc Mims Stosberg
  
  =over 4
  
@@ -2716,7 +2716,7 @@ END_OF_FILE
  
  =item *
  
- Dagfinn Ilmari MannsÃ¥ker <ilmari@ilmari.org>
+ Dagfinn Ilmari Mannsåker <ilmari@ilmari.org>
  
  =item *
  
@@ -2778,7 +2778,7 @@ END_OF_FILE
  
  =head1 COPYRIGHT AND LICENCE
  
- This software is Copyright (c) 2009 by ×××× ×§××'×× (Yuval Kogman).
+ This software is Copyright (c) 2009 by יובל קוג'מן (Yuval Kogman).
  
  This is free software, licensed under:
  
@@ -2799,7 +2799,7 @@ END_OF_FILE
  use strict;
  use warnings;
  use English qw< -no_match_vars >;
- our $VERSION = '0.723005';
+ our $VERSION = '0.723006';
  use Exporter qw< import >;
  
  use Log::Log4perl::Tiny qw< :easy :dead_if_first LOGLEVEL >;
@@ -2912,7 +2912,7 @@ END_OF_FILE
  use strict;
  use warnings;
  use Exporter 'import';
- our $VERSION = '0.723005';
+ our $VERSION = '0.723006';
  
  use Log::Log4perl::Tiny qw< :easy :dead_if_first >;
  
@@ -3165,7 +3165,7 @@ END_OF_FILE
  use warnings;
  use English qw< -no_match_vars >;
  use Log::Log4perl::Tiny qw< :easy :dead_if_first LOGLEVEL >;
- our $VERSION = '0.723005';
+ our $VERSION = '0.723006';
  
  use Data::Tubes::Util
    qw< normalize_args normalize_filename args_array_with_options >;
@@ -3293,7 +3293,7 @@ END_OF_FILE
  use warnings;
  use English qw< -no_match_vars >;
  use Data::Dumper;
- our $VERSION = '0.723005';
+ our $VERSION = '0.723006';
  
  use Log::Log4perl::Tiny qw< :easy :dead_if_first >;
  
@@ -3522,7 +3522,7 @@ END_OF_FILE
  use strict;
  use warnings;
  use English qw< -no_match_vars >;
- our $VERSION = '0.723005';
+ our $VERSION = '0.723006';
  
  use Log::Log4perl::Tiny qw< :easy :dead_if_first >;
  
@@ -3577,7 +3577,7 @@ END_OF_FILE
  use strict;
  use warnings;
  use English qw< -no_match_vars >;
- our $VERSION = '0.723005';
+ our $VERSION = '0.723006';
  
  use Log::Log4perl::Tiny qw< :easy :dead_if_first LOGLEVEL >;
  
@@ -3692,7 +3692,7 @@ END_OF_FILE
  use English qw< -no_match_vars >;
  use Data::Dumper;
  use Scalar::Util qw< blessed >;
- our $VERSION = '0.723005';
+ our $VERSION = '0.723006';
  
  use Log::Log4perl::Tiny
    qw< :easy :dead_if_first get_logger LOGLEVEL LEVELID_FOR >;
@@ -3906,7 +3906,7 @@ END_OF_FILE
  use warnings;
  use English qw< -no_match_vars >;
  use Data::Dumper;
- our $VERSION = '0.723005';
+ our $VERSION = '0.723006';
  
  use Template::Perlish;
  use Log::Log4perl::Tiny qw< :easy :dead_if_first get_logger >;
@@ -4039,7 +4039,7 @@ END_OF_FILE
  use warnings;
  use English qw< -no_match_vars >;
  use POSIX qw< strftime >;
- our $VERSION = '0.723005';
+ our $VERSION = '0.723006';
  
  use Log::Log4perl::Tiny qw< :easy :dead_if_first LOGLEVEL >;
  use Template::Perlish;
@@ -4164,7 +4164,7 @@ END_OF_FILE
  use 5.010;
  use File::Path qw< make_path >;
  use File::Basename qw< dirname >;
- our $VERSION = '0.723005';
+ our $VERSION = '0.723006';
  
  use Log::Log4perl::Tiny qw< :easy :dead_if_first >;
  use Mo qw< default >;
@@ -4634,7 +4634,7 @@ sub template {
  but without any warranty; without even the implied warranty of
  merchantability or fitness for a particular purpose.
  
- This program embeds Try::Tiny, that is Copyright (c) 2009 by ×××× ×§××'××
+ This program embeds Try::Tiny, that is Copyright (c) 2009 by יובל קוג'מן
  (Yuval Kogman) and licensed under The MIT (X11) License. See
  L<https://metacpan.org/pod/Try::Tiny> for further details.
  

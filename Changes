@@ -1,5 +1,8 @@
 {{$NEXT}}
 
+0.723006  2016-04-06 21:59:44 CEST
+   - testing suggestion
+
 0.723005  2016-04-06 13:21:39 CEST
    - new way of packaging stuff, with patched Milla
    - added plumbing: alternatives, fallback and pipeline
