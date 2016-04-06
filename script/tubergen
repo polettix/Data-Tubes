@@ -143,8 +143,9 @@ BEGIN {
       my $name = $path->relative('lib')->stringify();
       push @matches, [$name, $path];
    }
-   push @matches, ['Template/Perlish.pm', path(qw< local lib perl5 Template Perlish.pm >)];
    push @matches, ['Log::Log4perl::Tiny.pm', path(qw< local lib perl5 Log Log4perl Tiny.pm >)];
+   push @matches, ['Template/Perlish.pm', path(qw< local lib perl5 Template Perlish.pm >)];
+   push @matches, ['Try::Tiny.pm', path(qw< local lib perl5 Try Tiny.pm >)];
 
    for my $match (@matches) {
       my ($name, $path) = @$match;
