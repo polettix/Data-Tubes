@@ -136,6 +136,10 @@ sub RUSE {
 
 __END__
 
+=pod
+
+=encoding utf8
+
 =head1 NAME
 
 [% name %] - [% abstract %]
@@ -238,5 +242,9 @@ modify it under the terms of the Artistic License 2.0.
 This program is distributed in the hope that it will be useful,
 but without any warranty; without even the implied warranty of
 merchantability or fitness for a particular purpose.
+
+This program embeds Try::Tiny, that is Copyright (c) 2009 by יובל קוג'מן
+(Yuval Kogman) and licensed under The MIT (X11) License. See
+L<https://metacpan.org/pod/Try::Tiny> for further details.
 
 =cut
