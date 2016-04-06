@@ -36,7 +36,8 @@ while (my $path = $iter->()) {
 
 my $tp = Template::Perlish->new(
    start => '{{[',
-   stop  => ']}}'
+   stop  => ']}}',
+   utf8  => 0,
 );
 my $rendered = $tp->process(
    $tubergen,
