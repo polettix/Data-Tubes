@@ -180,6 +180,10 @@ END_OF_TEMPLATE
 
 __END__
 
+=pod
+
+=encoding utf8
+
 =head1 NAME
 
 tubergen - generate Data::Tubes programs
