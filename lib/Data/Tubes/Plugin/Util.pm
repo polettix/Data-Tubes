@@ -7,10 +7,10 @@ our $VERSION = '0.723';
 
 use Template::Perlish;
 use Log::Log4perl::Tiny qw< :easy :dead_if_first get_logger >;
-use Data::Tubes::Util qw< normalize_args >;
+use Data::Tubes::Util qw< normalize_args tube >;
 
 use Exporter qw< import >;
-our @EXPORT_OK = qw< identify log_helper read_file >;
+our @EXPORT_OK = qw< identify log_helper read_file tubify >;
 
 sub identify {
    my ($args, $opts) = @_;
@@ -110,5 +110,14 @@ sub read_file {
    local $INPUT_RECORD_SEPARATOR;
    return <$fh>;
 } ## end sub read_file
+
+sub tubify {
+   map {
+      my $ref = ref $_;
+      ($ref eq 'CODE')
+        ? $_
+        : tube(($ref eq 'ARRAY') ? @$_ : $_)
+   } @_;
+}
 
 1;

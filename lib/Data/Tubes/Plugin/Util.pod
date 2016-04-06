@@ -209,6 +209,23 @@ data from.
 
 =back
 
+
+=item B<< tubify >>
+
+   @tubes = tubify(@specifications);
+
+automatically transform input specifications into tubes. Each item in
+C<@specification> can be either a tube (i.e. a code reference), or
+something that can be transformed into a tube (see C<tube> in
+L<Data::Tubes> for a definition).
+
+Hence, this does returns the two tubes you think:
+
+   @tubes = tubify(
+      'Reader::by_line',
+      ['Parser::by_format', format => 'foo,bar,baz'],
+   );
+
 =back
 
 =head1 BUGS AND LIMITATIONS
