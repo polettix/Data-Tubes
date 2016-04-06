@@ -1,15 +1,8 @@
 {{$NEXT}}
-
-0.723003  2016-04-06 12:50:42 CEST
-   - patched Milla, testing if it works for dirty files
-
-0.723002  2016-04-06 11:17:27 CEST
-   - added notice about licence and copyright of Try::Tiny
-
-0.723001  2016-04-06 11:02:48 CEST
-   - new way of bumping versions (package production)
+   - new way of packaging stuff, with patched Milla
    - added plumbing: alternatives, fallback and pipeline
    - some refactoring
+   - added notice about licence and copyright of Try::Tiny
 
 0.723  2016-04-04 20:05:32 CEST
    - right name for default args in Source
