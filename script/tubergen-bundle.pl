@@ -49,4 +49,3 @@ my $rendered = $tp->process(
 );
 $target->spew_raw($rendered);
 $target->chmod('a+x');
-#$target->copy(qw< script tubergen >)->chmod('a+x');
