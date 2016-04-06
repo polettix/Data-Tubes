@@ -9,8 +9,8 @@ my ($distro, $version) = @ARGV;
 my $dp    = path($distro);
 my $local = path(qw< local lib perl5 >);
 
-my $tubergen = path(qw< script tubergen.tp >)->slurp_raw();
-my $tuber    = path(qw< script tuber.tp >)->slurp_raw();
+my $tubergen = path(qw< support tubergen.tp >)->slurp_raw();
+my $tuber    = path(qw< support tuber.tp >)->slurp_raw();
 my $scriptd  = $dp->child('script');
 $scriptd->mkpath();
 my $target   = $scriptd->child(qw< tubergen >);
