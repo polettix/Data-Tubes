@@ -1,4 +1,5 @@
 {{$NEXT}}
+   - added notice about licence and copyright of Try::Tiny
 
 0.723001  2016-04-06 11:02:48 CEST
    - new way of bumping versions (package production)
