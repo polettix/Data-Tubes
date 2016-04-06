@@ -3,7 +3,7 @@ use strict;
 use warnings;
 use English qw< -no_match_vars >;
 use Data::Dumper;
-our $VERSION = '0.723002';
+our $VERSION = '0.723003';
 
 use Log::Log4perl::Tiny qw< :easy :dead_if_first >;
 

@@ -1,5 +1,8 @@
 {{$NEXT}}
 
+0.723003  2016-04-06 12:50:42 CEST
+   - patched Milla, testing if it works for dirty files
+
 0.723002  2016-04-06 11:17:27 CEST
    - added notice about licence and copyright of Try::Tiny
 
