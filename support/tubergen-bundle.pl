@@ -15,14 +15,19 @@ my $scriptd  = $dp->child('script');
 $scriptd->mkpath();
 my $target   = $scriptd->child(qw< tubergen >);
 
+
 my @modules = (
    [
       'Log/Log4perl/Tiny.pm',
-      $local->child(qw< Log Log4perl Tiny.pm >)->slurp_raw()
+      do {
+         my $c = $local->child(qw< Log Log4perl Tiny.pm >)->slurp_raw();
+         $c =~ s{^(__END__\s+).*}{$1}mxs;
+         $c;
+      }
    ],
    [
       'Template/Perlish.pm',
-      $local->child(qw< Template Perlish.pm >)->slurp_raw()
+      $local->child(qw< Template Perlish.pm >)->slurp_raw(),
    ],
    ['Try/Tiny.pm', $local->child(qw< Try Tiny.pm >)->slurp_raw()],
 );
