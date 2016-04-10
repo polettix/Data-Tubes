@@ -200,4 +200,3 @@ my $pl = pipeline(
 There's more than just reading/parsing flexibility, as you get to
 control each step, reusing what you can and adapting when you must.
 Interested? Take a look at [the manual](manual)!
-
