@@ -1,15 +1,25 @@
 #!/usr/bin/env perl
 # vim: sts=3 ts=3 sw=3 et ai :
 
+########################################################################
+# __SECTION__
+#
+# Preamble
+#
+########################################################################
 use strict;
 use warnings;
 my $VERSION = '0.0.1';
-RUSE('Log::Log4perl::Tiny', qw< :easy LOGLEVEL >);
 RUSE('Data::Tubes',         qw< pipeline >);
+RUSE('Log::Log4perl::Tiny', qw< :easy LOGLEVEL >);
+RUSE('Template::Perlish',   qw< render >);
+RUSE('Try::Tiny',           qw< try catch finally >);
+sub try (&;@); sub catch (&;@); sub finally (&;@);
 
 ########################################################################
+# __SECTION__
 #
-# Input options and logger initialization
+# Command Line Handling
 #
 ########################################################################
 my %config = get_options(
@@ -24,6 +34,7 @@ my %config = get_options(
 LOGLEVEL($config{loglevel});
 
 ########################################################################
+# __SECTION__
 #
 # Business Logic
 #
@@ -87,8 +98,12 @@ pipeline(
 
 
 ########################################################################
+# __SECTION__
 #
-# You should not need to fiddle any more beyond this point
+# Embedded Modules
+#
+# You should not need to fiddle any more with code beyond this point.
+# Be sure to get your POD right though!
 #
 ########################################################################
 
@@ -135,6 +150,13 @@ sub RUSE {
 [% modules_bundle %]
 
 __END__
+
+########################################################################
+# __SECTION__
+#
+# POD 
+#
+########################################################################
 
 =pod
 
@@ -236,12 +258,31 @@ No bugs have been reported.
 
 Copyright (c) [% year %], [% author %] [% email %]
 
-This module is free software.  You can redistribute it and/or
+=for author, to fill in
+   Put your licensing terms here, leaving the terms for the embedded
+   modules. If you're fine with the Artistic License 2.0, you can find
+   them in the two paragraphs below, delete them if you want to use
+   something different.
+
+This program is free software.  You can redistribute it and/or
 modify it under the terms of the Artistic License 2.0.
 
 This program is distributed in the hope that it will be useful,
 but without any warranty; without even the implied warranty of
 merchantability or fitness for a particular purpose.
+
+This program embeds all modules from distribution Data::Tubes, that is
+Copyright (C) 2016 by Flavio Poletti and licensed under the Artistic
+License 2.0. See L<https://metacpan.org/pod/Data::Tubes> for further
+details.
+
+This program embeds Log::Log4perl::Tiny, that is Copyright (C) 2010-2016
+by Flavio Poletti and licensed under the Artistic License 2.0. See
+L<https://metacpan.org/pod/Log::Log4perl::Tiny> for further details.
+
+This program embeds Template::Perlish, that is Copyright (C) 2008-2016
+by Flavio Poletti and licensed under the Artistic License 2.0. See
+L<https://metacpan.org/pod/Template::Perlish> for further details.
 
 This program embeds Try::Tiny, that is Copyright (c) 2009 by יובל קוג'מן
 (Yuval Kogman) and licensed under The MIT (X11) License. See

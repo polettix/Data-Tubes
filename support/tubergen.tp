@@ -3,6 +3,7 @@
 
 use strict;
 use warnings;
+use 5.010;
 my $VERSION = "{{[ version ]}}";
 RUSE('Log::Log4perl::Tiny', qw< :easy LOGLEVEL >);
 RUSE('Data::Tubes',         qw< pipeline >);
@@ -19,20 +20,17 @@ my %config = get_options(
    ['abstract|A=s', required => 1],
    ['author|a=s',   required => 1],
    ['email|e=s',    required => 1],
-   ['name|n=s', required => 1],
-   ['output|o=s', fallback => \*STDOUT],
+   ['name|n=s',     required => 1],
+   ['output|o=s'],
    ['year|y=s', default => 1900 + (localtime)[5]],
 );
-
-# Remove following line if you remove 'loglevel' in options above
-LOGLEVEL($config{loglevel});
 
 ########################################################################
 #
 # Business Logic
 #
 ########################################################################
-
+$config{output} //= $config{name};
 $config{modules_bundle} = modules_bundle($config{module});
 pipeline(
    ['Renderer::with_template_perlish', template => template()],
@@ -40,10 +38,8 @@ pipeline(
    {tap => 'sink'},
 )->({structured => \%config});
 
-if (! ref $config{output}) {
-   my $mode = ((stat $config{output})[2] | 0111) & (~umask());
-   chmod $mode, $config{output};
-}
+my $mode = ((stat $config{output})[2] | 0111) & (~umask());
+chmod $mode, $config{output};
 
 sub modules_bundle {
    open my $fh, '<', __FILE__ or die "open(): $!";
@@ -192,28 +188,156 @@ tubergen - generate Data::Tubes programs
 
    tubergen [--usage] [--help] [--man] [--version]
 
-   tubergen
+   tubergen --abstract|-A text
+              --author|-a name
+               --email|-e email-address
+                --name|-n program-name
+              --output|-o filename
+               [--year|-y year]
 
 =head1 EXAMPLES
 
-   shell$ tubergen
+   # generate file my-script in current directory
+   shell$ tubergen -n my-script -A 'this script does that' \
+      -a 'A. U. Thor' -e 'a.u.thor@example.com'
 
-=for author, to fill in
-    Put a few examples of how to use your program
+   # override output filename, e.g. to put in different directory
+   shell$ tubergen -n my-script -A 'this script does that' \
+      -a 'A. U. Thor' -e 'a.u.thor@example.com' \
+      -o /path/to/my-script
+
+   # you can optionally force setting a different year for copyright
+   shell$ tubergen -n my-script -A 'this script does that' \
+      -a 'A. U. Thor' -e 'a.u.thor@example.com' -y 2020
 
 
 =head1 DESCRIPTION
 
-=for author, to fill in
-    Put a thorough description of your program
+This program helps you getting started with L<Data::Tubes> quickly. It's
+a minting program that generates a new script with all batteries
+included:
+
+=over
+
+=item *
+
+L<Data::Tubes> different modules and plugins, of course
+
+=item *
+
+L<Log::Log4perl::Tiny>
+
+=item *
+
+L<Template::Perlish>
+
+=item *
+
+L<Try::Tiny>
+
+=back
+
+The last one is optional in L<Data::Tubes>, but it is extremely handy
+and allows you using all plugins to their full potential, so why not?
+
+Generating a new program requires you to provide four options:
+
+=over
+
+=item *
+
+a L<name|/"--name program-name"> for your program;
+
+=item *
+
+an L<abstract|/"--abstract text"> to (briefly) describe what your program does;
+
+=item *
+
+the L<author|/"--author name"> name;
+
+=item *
+
+the L<email|/"--email email-address"> of the author.
+
+=back
+
+This allows kickstarting the POD section of your new program. You can
+also optionally pass argument L<output|/"--output filename">, to set the output filename
+(which is equal to L</name> by default>) and a L<year|/"--year year"> for the
+copyright notice (the current year is used by default).
+
+After you generate the minted program, you end up with a Perl source
+file containing the following sections:
+
+=over
+
+=item *
+
+a L</Preamble> with housekeeping that will help get the new program
+started with using the included batteries;
+
+=item *
+
+a L</"Command Line Handling"> section for defining how your program
+accepts its inputs;
+
+=item *
+
+a L</"Business Logic"> section for putting your code;
+
+=item *
+
+an L</"Embedded Modules"> section with the I<batteries>;
+
+=item *
+
+a L</"POD"> section where you can write the documentation for your new
+program.
+
+=back
+
+Each of the above parts is explained in the sub-sections below.
+
+=head2 Preamble
+
+
+
+=head2 Command Line Handling
+
+=head2 Business Logic
+
+=head2 Embedded Modules
+
+=head2 POD
+
 
 
 =head1 OPTIONS
 
-=for author, to fill in
-    Description of all command-line options
-
 =over
+
+=item --abstract text
+
+=item -A text
+
+a (brief) text describing what your program does. This parameter that is
+used to initialize the POD section of the newly minted program. This
+option is required.
+
+=item --author name
+
+=item -a name
+
+the name of the author of the program, used to initialize the POD
+section of the newly minted program. This option is required.
+
+=item --email email-address
+
+=item -e email-address
+
+the email address of the author of the program, used to initialize the
+POD section of the newly minted program. This option is required.
 
 =item --help
 
@@ -224,6 +348,22 @@ the options and some examples from the synopsis.
 
 print out the full documentation for the script.
 
+=item --name program-name
+
+=item -n program-name
+
+the name assigned to the program. This is used to both initialize the
+POD section of the newly minted program, and as the file name where it
+is saved to. You can override the filename with option
+L<output|/"--output filename">. This option is required.
+
+=item --output filename
+
+=item -o filename
+
+the filename where the program should be saved. Defaults to the value
+assigned to L<name|/"--name program-name">.
+
 =item --usage
 
 print a concise usage line and exit.
@@ -232,43 +372,31 @@ print a concise usage line and exit.
 
 print the version of the script.
 
+=item --year year
+
+=item -y year
+
+X<year>
+
+The year to set for starting the copyright of the newly minted program
+in the relevant POD section. Defaults to the current year.
+
 =back
 
 =head1 DIAGNOSTICS
 
-=for author, to fill in
-    List and describe all warnings/error messages
-
-=over
-
-=item C<< Error message here, perhaps with %s placeholders >>
-
-[Error description...]
-
-=item C<< Another error message here >>
-
-[Error description...]
-
-[You get the idea...]
-
-=back
-
+tubergen will complain if any of the required option is missing. It will
+also complain if you try to define unknown options.
 
 =head1 CONFIGURATION AND ENVIRONMENT
-
-=for author, to fill in
-    Explain any configuration that can be used by the program, via some
-    file or via environment variables.
 
 tubergen requires no configuration files or environment variables.
 
 
 =head1 BUGS AND LIMITATIONS
 
-=for author, to fill in
-    List any known bugs and limitations of your program
-
-No bugs have been reported.
+No bugs have been reported, but you can do this through Issues at
+L<https://github.com/polettix/Data-Tubes/issues>.
 
 
 =head1 AUTHOR
@@ -286,6 +414,19 @@ modify it under the terms of the Artistic License 2.0.
 This program is distributed in the hope that it will be useful,
 but without any warranty; without even the implied warranty of
 merchantability or fitness for a particular purpose.
+
+This program embeds all modules from distribution Data::Tubes, that is
+Copyright (C) 2016 by Flavio Poletti and licensed under the Artistic
+License 2.0. See L<https://metacpan.org/pod/Data::Tubes> for further
+details.
+
+This program embeds Log::Log4perl::Tiny, that is Copyright (C) 2010-2016
+by Flavio Poletti and licensed under the Artistic License 2.0. See
+L<https://metacpan.org/pod/Log::Log4perl::Tiny> for further details.
+
+This program embeds Template::Perlish, that is Copyright (C) 2008-2016
+by Flavio Poletti and licensed under the Artistic License 2.0. See
+L<https://metacpan.org/pod/Template::Perlish> for further details.
 
 This program embeds Try::Tiny, that is Copyright (c) 2009 by יובל קוג'מן
 (Yuval Kogman) and licensed under The MIT (X11) License. See
