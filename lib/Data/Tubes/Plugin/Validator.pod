@@ -71,10 +71,10 @@ I<name> and with optional additional parameters. Example:
 The validator function will be called in I<list> context, like this:
 
    my @outcome = $validator->(
-      $target,     # whatever pointed by "input", or the whole record
+      $target,     # what pointed by "input", or the whole record
       $record,     # the whole record, if necessary
       \%args,      # args passed to the factory
-      @parameters, # anything after the sub in the array ref version
+      @parameters, # anything sub in the array ref version
    );
 
 The validator can:
@@ -132,10 +132,10 @@ sub reference. This means that the following call will be used instead:
 
    my @outcome = $wrapper->(
       $validator,  # the validation function
-      $target,     # whatever pointed by "input", or the whole record
+      $target,     # what pointed by "input", or the whole record
       $record,     # the whole record, if necessary
       \%args,      # args passed to the factory
-      @parameters, # anything after the sub in the array ref version
+      @parameters, # anything sub in the array ref version
    );
 
 In this case, your C<wrapper> function will be responsible for calling
@@ -225,41 +225,42 @@ A few examples should be of help now.
 First, an example with validators that all return a true or false value,
 hence there is nothing to trap:
 
-   my $validator = with_subs {
+   my $v = with_subs(
       sub { $_[0]{foo} =~ /bar|baz/ },
       ['is-even' => sub { $_[0]{number} % 2 == 0 }],
-      ['in-bounds' => sub { $_[0]{number} >= 10 && $_[0]{number} <= 21}]
-   };
+      ['in-bounds' =>
+       sub { $_[0]{number} >= 10 && $_[0]{number} <= 21}]
+   );
 
-   my $o1 = $validator->({structured => {foo => 'bar', number => 12}});
-   my $o2 = $validator->({structured => {foo => 'bar', number => 13}});
-   my $o3 = $validator->({structured => {foo => 'hey', number => 3}});
+   my $o1 = $v->({structured => {foo => 'bar', number => 12}});
+   my $o2 = $v->({structured => {foo => 'bar', number => 13}});
+   my $o3 = $v->({structured => {foo => 'hey', number => 3}});
 
 In all cases the output record contains a new C<validation> key,
 pointing to:
 
 =over
 
-=item C<$o1>
+=item * 
 
-an C<undef> value
+C<$o1> an C<undef> value
 
-=item C<$o2>
+=item *
 
-an array reference like this:
+C<$o2> an array reference like this:
 
    [ ['is-even', ''] ]
 
 because the test C<is-even> fails returning an empty string
 
-=item C<$o3>
+=item *
 
-an array reference like this:
+C<$o3> an array reference like this:
 
    [
-      ['validator-0', 0],  # empty list outcome transformed into "0"
-      ['is-even', ''],     # empty string outcome from validator
-      ['in-bound', '']     # empty string outcome from validator
+      ['validator-0', 0],  # empty list transformed into "0"
+      ['is-even', ''],     # empty string from validator
+      ['in-bound', '']     # empty string from validator
    ]
 
 =back
@@ -269,15 +270,16 @@ generated based on the index of the test in the list of validators.
 
 Here's an example for trapping exceptions:
 
-   my $validator = with_subs {
+   my $v= with_subs(
       sub { $_[0]{foo} =~ /bar|baz/ },
       ['is-even' => sub { die "odd\n" if $_[0]{number} % 2 }],
-      ['in-bounds' => sub { die "too low\n" if $_[0]{number} < 10 }],
+      ['in-bounds' =>
+       sub { die "too low\n" if $_[0]{number} < 10 }],
       {wrapper => 'try'},
-   };
+   );
 
-   my $o4 = $validator->({structured => {foo => 'bar', number => 13}});
-   my $o5 = $validator->({structured => {foo => 'hey', number => 3}});
+   my $o4 = $v->({structured => {foo => 'bar', number => 13}});
+   my $o5 = $v->({structured => {foo => 'hey', number => 3}});
 
 Again, you will get a C<validation> key in each output record, like
 this:
@@ -296,8 +298,8 @@ all three tests fail, two with exception, leading to this:
 
    [
       ['validator-0', 0],        # as before
-      ['is-even', 0, "odd\n"],   # exception to validation failure
-      ['in-bound', 0, "too low"] # exception to validation failure
+      ['is-even', 0, "odd\n"],   # exception to failure
+      ['in-bound', 0, "too low"] # exception to failure
    ]
 
 =back

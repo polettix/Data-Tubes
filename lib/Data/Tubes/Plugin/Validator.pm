@@ -6,7 +6,7 @@ our $VERSION = '0.724';
 
 use Log::Log4perl::Tiny qw< :easy :dead_if_first >;
 
-use Data::Tubes::Util qw< normalize_args shorter_sub_names >;
+use Data::Tubes::Util qw< args_array_with_options shorter_sub_names >;
 use Data::Tubes::Plugin::Util qw< identify >;
 my %global_defaults = (input => 'structured',);
 
