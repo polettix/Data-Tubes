@@ -1,7 +1,7 @@
 <div id="disqus_thread"></div>
 <script>
     var disqus_config = function () {
-       this.page.url = '{{ site.url }}{% if page.url != '/' %}{{ page.url }}{% else %}index.html{% endif %}';
+       this.page.url = '{{ site.url }}{% if page.url != '/' %}{{ page.url }}{% else %}/index.html{% endif %}';
         this.page.identifier = '{% if page.url != '/' %}{{ page.url | slugify }}{% else %}index-html{% endif %}';
     };
     (function() {  // DON'T EDIT BELOW THIS LINE
