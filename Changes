@@ -1,5 +1,8 @@
 {{$NEXT}}
 
+0.725001  2016-04-10 10:51:54 CEST
+   - renamed test sub-directory, bad choice initially
+
 0.725  2016-04-10 10:48:03 CEST
    - added +Validator with tests and documentation
 

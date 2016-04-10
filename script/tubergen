@@ -3,7 +3,7 @@
 
 use strict;
 use warnings;
-my $VERSION = "0.725";
+my $VERSION = "0.725001";
 RUSE('Log::Log4perl::Tiny', qw< :easy LOGLEVEL >);
 RUSE('Data::Tubes',         qw< pipeline >);
 
@@ -1980,7 +1980,7 @@ END_OF_FILE
  use strict;
  use warnings;
  use English qw< -no_match_vars >;
- our $VERSION = '0.725';
+ our $VERSION = '0.725001';
  use Exporter qw< import >;
  
  use Log::Log4perl::Tiny qw< :easy :dead_if_first LOGLEVEL >;
@@ -2093,7 +2093,7 @@ END_OF_FILE
  use strict;
  use warnings;
  use Exporter 'import';
- our $VERSION = '0.725';
+ our $VERSION = '0.725001';
  
  use Log::Log4perl::Tiny qw< :easy :dead_if_first >;
  
@@ -2346,7 +2346,7 @@ END_OF_FILE
  use warnings;
  use English qw< -no_match_vars >;
  use Log::Log4perl::Tiny qw< :easy :dead_if_first LOGLEVEL >;
- our $VERSION = '0.725';
+ our $VERSION = '0.725001';
  
  use Data::Tubes::Util
    qw< normalize_args normalize_filename args_array_with_options >;
@@ -2474,7 +2474,7 @@ END_OF_FILE
  use warnings;
  use English qw< -no_match_vars >;
  use Data::Dumper;
- our $VERSION = '0.725';
+ our $VERSION = '0.725001';
  
  use Log::Log4perl::Tiny qw< :easy :dead_if_first >;
  
@@ -2703,7 +2703,7 @@ END_OF_FILE
  use strict;
  use warnings;
  use English qw< -no_match_vars >;
- our $VERSION = '0.725';
+ our $VERSION = '0.725001';
  
  use Log::Log4perl::Tiny qw< :easy :dead_if_first >;
  
@@ -2758,7 +2758,7 @@ END_OF_FILE
  use strict;
  use warnings;
  use English qw< -no_match_vars >;
- our $VERSION = '0.725';
+ our $VERSION = '0.725001';
  
  use Log::Log4perl::Tiny qw< :easy :dead_if_first LOGLEVEL >;
  
@@ -2873,7 +2873,7 @@ END_OF_FILE
  use English qw< -no_match_vars >;
  use Data::Dumper;
  use Scalar::Util qw< blessed >;
- our $VERSION = '0.725';
+ our $VERSION = '0.725001';
  
  use Log::Log4perl::Tiny
    qw< :easy :dead_if_first get_logger LOGLEVEL LEVELID_FOR >;
@@ -3086,7 +3086,7 @@ END_OF_FILE
  use strict;
  use warnings;
  use English qw< -no_match_vars >;
- our $VERSION = '0.725';
+ our $VERSION = '0.725001';
  
  use Log::Log4perl::Tiny qw< :easy :dead_if_first >;
  
@@ -3166,7 +3166,7 @@ END_OF_FILE
  use warnings;
  use English qw< -no_match_vars >;
  use Data::Dumper;
- our $VERSION = '0.725';
+ our $VERSION = '0.725001';
  
  use Template::Perlish;
  use Log::Log4perl::Tiny qw< :easy :dead_if_first get_logger >;
@@ -3299,7 +3299,7 @@ END_OF_FILE
  use warnings;
  use English qw< -no_match_vars >;
  use POSIX qw< strftime >;
- our $VERSION = '0.725';
+ our $VERSION = '0.725001';
  
  use Log::Log4perl::Tiny qw< :easy :dead_if_first LOGLEVEL >;
  use Template::Perlish;
@@ -3424,7 +3424,7 @@ END_OF_FILE
  use 5.010;
  use File::Path qw< make_path >;
  use File::Basename qw< dirname >;
- our $VERSION = '0.725';
+ our $VERSION = '0.725001';
  
  use Log::Log4perl::Tiny qw< :easy :dead_if_first >;
  use Mo qw< default >;

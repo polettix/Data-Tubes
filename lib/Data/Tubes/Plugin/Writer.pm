@@ -6,7 +6,7 @@ use strict;
 use warnings;
 use English qw< -no_match_vars >;
 use POSIX qw< strftime >;
-our $VERSION = '0.725';
+our $VERSION = '0.725001';
 
 use Log::Log4perl::Tiny qw< :easy :dead_if_first LOGLEVEL >;
 use Template::Perlish;
