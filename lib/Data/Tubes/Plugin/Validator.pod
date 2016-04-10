@@ -272,9 +272,10 @@ Here's an example for trapping exceptions:
 
    my $v= with_subs(
       sub { $_[0]{foo} =~ /bar|baz/ },
-      ['is-even' => sub { die "odd\n" if $_[0]{number} % 2 }],
+      ['is-even' => 
+       sub { ($_[0]{number} % 2 == 0) or die "odd\n" }],
       ['in-bounds' =>
-       sub { die "too low\n" if $_[0]{number} < 10 }],
+       sub { $_[0]{number} >= 10 or die "too low\n" }],
       {wrapper => 'try'},
    );
 
@@ -305,6 +306,20 @@ all three tests fail, two with exception, leading to this:
 =back
 
 You hopefully get the idea at this point.
+
+It's important to always remember the difference between the following
+validators:
+
+   sub { ($_[0]{number} % 2 == 0) or die "odd\n" };
+   sub { die "odd\n" if $_[0]{number} % 2 };
+
+The second validator I<always fails>: it either throws an exception, or
+returns a I<false> value. This is not the case with the first one.
+Always remember to return a true value from your validators, like this:
+
+   sub { die "odd\n" if $_[0]{number} % 2; 1 }
+
+(Yes, this actually happened while writing the tests...)
 
 =back
 
