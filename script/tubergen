@@ -3,7 +3,7 @@
 
 use strict;
 use warnings;
-my $VERSION = "0.724";
+my $VERSION = "0.725";
 RUSE('Log::Log4perl::Tiny', qw< :easy LOGLEVEL >);
 RUSE('Data::Tubes',         qw< pipeline >);
 
@@ -1980,7 +1980,7 @@ END_OF_FILE
  use strict;
  use warnings;
  use English qw< -no_match_vars >;
- our $VERSION = '0.724';
+ our $VERSION = '0.725';
  use Exporter qw< import >;
  
  use Log::Log4perl::Tiny qw< :easy :dead_if_first LOGLEVEL >;
@@ -2093,7 +2093,7 @@ END_OF_FILE
  use strict;
  use warnings;
  use Exporter 'import';
- our $VERSION = '0.724';
+ our $VERSION = '0.725';
  
  use Log::Log4perl::Tiny qw< :easy :dead_if_first >;
  
@@ -2346,7 +2346,7 @@ END_OF_FILE
  use warnings;
  use English qw< -no_match_vars >;
  use Log::Log4perl::Tiny qw< :easy :dead_if_first LOGLEVEL >;
- our $VERSION = '0.724';
+ our $VERSION = '0.725';
  
  use Data::Tubes::Util
    qw< normalize_args normalize_filename args_array_with_options >;
@@ -2474,7 +2474,7 @@ END_OF_FILE
  use warnings;
  use English qw< -no_match_vars >;
  use Data::Dumper;
- our $VERSION = '0.724';
+ our $VERSION = '0.725';
  
  use Log::Log4perl::Tiny qw< :easy :dead_if_first >;
  
@@ -2703,7 +2703,7 @@ END_OF_FILE
  use strict;
  use warnings;
  use English qw< -no_match_vars >;
- our $VERSION = '0.724';
+ our $VERSION = '0.725';
  
  use Log::Log4perl::Tiny qw< :easy :dead_if_first >;
  
@@ -2758,7 +2758,7 @@ END_OF_FILE
  use strict;
  use warnings;
  use English qw< -no_match_vars >;
- our $VERSION = '0.724';
+ our $VERSION = '0.725';
  
  use Log::Log4perl::Tiny qw< :easy :dead_if_first LOGLEVEL >;
  
@@ -2873,7 +2873,7 @@ END_OF_FILE
  use English qw< -no_match_vars >;
  use Data::Dumper;
  use Scalar::Util qw< blessed >;
- our $VERSION = '0.724';
+ our $VERSION = '0.725';
  
  use Log::Log4perl::Tiny
    qw< :easy :dead_if_first get_logger LOGLEVEL LEVELID_FOR >;
@@ -3081,13 +3081,92 @@ END_OF_FILE
 
 # __MOBUNDLE_FILE__
 
+      'Data/Tubes/Plugin/Validator.pm' => <<'END_OF_FILE',
+ package Data::Tubes::Plugin::Validator;
+ use strict;
+ use warnings;
+ use English qw< -no_match_vars >;
+ our $VERSION = '0.725';
+ 
+ use Log::Log4perl::Tiny qw< :easy :dead_if_first >;
+ 
+ use Data::Tubes::Util qw< args_array_with_options shorter_sub_names >;
+ use Data::Tubes::Plugin::Util qw< identify >;
+ my %global_defaults = (input => 'structured',);
+ 
+ sub validate_with_subs {
+    my ($validators, $args) = args_array_with_options(
+       @_,
+       {
+          %global_defaults,
+          name           => 'validate with subs',
+          output         => 'validation',
+          keep_positives => 0,
+          keep_empty     => 0,
+          wrapper        => undef,
+       }
+    );
+    identify($args);
+    my $name = $args->{name};
+ 
+    my $wrapper = $args->{wrapper};
+    if ($wrapper && $wrapper eq 'try') {
+       eval { require Try::Tiny; }
+         or LOGCONFESS '+Validator::validate_with_subs '
+         . 'needs Try::Tiny, please install';
+ 
+       $wrapper = sub {
+          my ($validator, @params) = @_;
+          return Try::Tiny::try(
+             sub { $validator->(@params); },
+             Try::Tiny::catch(sub { return (0, $_); }),
+          );
+       };
+    } ## end if ($wrapper && $wrapper...)
+ 
+    my $input          = $args->{input};
+    my $output         = $args->{output};
+    my $keep_positives = $args->{keep_positives};
+    my $keep_empty     = $args->{keep_empty};
+    return sub {
+       my $record = shift;
+       my $target = defined($input) ? $record->{$input} : $record;
+       my @outcomes;
+       for my $i (0 .. $#$validators) {
+          my ($name, $validator, @params) =
+            (ref($validators->[$i]) eq 'ARRAY')
+            ? @{$validators->[$i]}
+            : ("validator-$i", $validators->[$i]);
+          my @outcome =
+              $wrapper
+            ? $wrapper->($validator, $target, $record, $args, @params)
+            : $validator->($target, $record, $args, @params);
+          push @outcome, 0 unless @outcome;
+          push @outcomes, [$name, @outcome]
+            if !$outcome[0] || $keep_positives;
+       } ## end for my $i (0 .. $#$validators)
+       $record->{$output} = undef;
+       $record->{$output} = \@outcomes if @outcomes || $keep_empty;
+       return $record;
+    };
+ } ## end sub validate_with_subs
+ 
+ shorter_sub_names(__PACKAGE__, 'validate_');
+ 
+ 1;
+
+END_OF_FILE
+
+
+# __MOBUNDLE_FILE__
+
       'Data/Tubes/Plugin/Util.pm' => <<'END_OF_FILE',
  package Data::Tubes::Plugin::Util;
  use strict;
  use warnings;
  use English qw< -no_match_vars >;
  use Data::Dumper;
- our $VERSION = '0.724';
+ our $VERSION = '0.725';
  
  use Template::Perlish;
  use Log::Log4perl::Tiny qw< :easy :dead_if_first get_logger >;
@@ -3220,7 +3299,7 @@ END_OF_FILE
  use warnings;
  use English qw< -no_match_vars >;
  use POSIX qw< strftime >;
- our $VERSION = '0.724';
+ our $VERSION = '0.725';
  
  use Log::Log4perl::Tiny qw< :easy :dead_if_first LOGLEVEL >;
  use Template::Perlish;
@@ -3345,7 +3424,7 @@ END_OF_FILE
  use 5.010;
  use File::Path qw< make_path >;
  use File::Basename qw< dirname >;
- our $VERSION = '0.724';
+ our $VERSION = '0.725';
  
  use Log::Log4perl::Tiny qw< :easy :dead_if_first >;
  use Mo qw< default >;
