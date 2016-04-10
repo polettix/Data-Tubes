@@ -3,6 +3,7 @@
 
 use strict;
 use warnings;
+use 5.010;
 my $VERSION = "0.725001";
 RUSE('Log::Log4perl::Tiny', qw< :easy LOGLEVEL >);
 RUSE('Data::Tubes',         qw< pipeline >);
@@ -19,20 +20,17 @@ my %config = get_options(
    ['abstract|A=s', required => 1],
    ['author|a=s',   required => 1],
    ['email|e=s',    required => 1],
-   ['name|n=s', required => 1],
-   ['output|o=s', fallback => \*STDOUT],
+   ['name|n=s',     required => 1],
+   ['output|o=s'],
    ['year|y=s', default => 1900 + (localtime)[5]],
 );
-
-# Remove following line if you remove 'loglevel' in options above
-LOGLEVEL($config{loglevel});
 
 ########################################################################
 #
 # Business Logic
 #
 ########################################################################
-
+$config{output} //= $config{name};
 $config{modules_bundle} = modules_bundle($config{module});
 pipeline(
    ['Renderer::with_template_perlish', template => template()],
@@ -40,10 +38,8 @@ pipeline(
    {tap => 'sink'},
 )->({structured => \%config});
 
-if (! ref $config{output}) {
-   my $mode = ((stat $config{output})[2] | 0111) & (~umask());
-   chmod $mode, $config{output};
-}
+my $mode = ((stat $config{output})[2] | 0111) & (~umask());
+chmod $mode, $config{output};
 
 sub modules_bundle {
    open my $fh, '<', __FILE__ or die "open(): $!";
@@ -3652,15 +3648,25 @@ sub template {
  #!/usr/bin/env perl
  # vim: sts=3 ts=3 sw=3 et ai :
  
+ ########################################################################
+ # __SECTION__
+ #
+ # Preamble
+ #
+ ########################################################################
  use strict;
  use warnings;
  my $VERSION = '0.0.1';
- RUSE('Log::Log4perl::Tiny', qw< :easy LOGLEVEL >);
  RUSE('Data::Tubes',         qw< pipeline >);
+ RUSE('Log::Log4perl::Tiny', qw< :easy LOGLEVEL >);
+ RUSE('Template::Perlish',   qw< render >);
+ RUSE('Try::Tiny',           qw< try catch finally >);
+ sub try (&;@); sub catch (&;@); sub finally (&;@);
  
  ########################################################################
+ # __SECTION__
  #
- # Input options and logger initialization
+ # Command Line Handling
  #
  ########################################################################
  my %config = get_options(
@@ -3675,6 +3681,7 @@ sub template {
  LOGLEVEL($config{loglevel});
  
  ########################################################################
+ # __SECTION__
  #
  # Business Logic
  #
@@ -3738,8 +3745,12 @@ sub template {
  
  
  ########################################################################
+ # __SECTION__
  #
- # You should not need to fiddle any more beyond this point
+ # Embedded Modules
+ #
+ # You should not need to fiddle any more with code beyond this point.
+ # Be sure to get your POD right though!
  #
  ########################################################################
  
@@ -3750,12 +3761,22 @@ sub template {
  sub get_options {
     my %config;
     my @options = qw< usage! help! man! version! >;
+    my (%fallback_for, @required);
     for my $option (@_) {
        if (ref $option) {
-          my ($spec, $default) = @$option;
+          my ($spec, %opts) = @$option;
           push @options, $spec;
+ 
           my ($name) = split /\|/, $spec, 2;
-          $config{$name} = $default;
+          if (exists $opts{default}) {
+             $config{$name} = $opts{default};
+          }
+          if (exists $opts{fallback}) {
+             $fallback_for{$name} = $opts{fallback};
+          }
+          if (exists $opts{required}) {
+             push @required, $name;
+          }
        } ## end if (ref $option)
        else {
           push @options, $option;
@@ -3764,12 +3785,22 @@ sub template {
  
     GetOptions(\%config, @options)
       or pod2usage(-verbose => 99, -sections => 'USAGE');
-    pod2usage(message => "$0 $VERSION", -verbose => 99, -sections => ' ')
-      if $config{version};
+    pod2usage(message => "$0 $VERSION", -verbose => 99,
+       -sections => ' ') if $config{version};
     pod2usage(-verbose => 99, -sections => 'USAGE') if $config{usage};
     pod2usage(-verbose => 99, -sections => 'USAGE|EXAMPLES|OPTIONS')
       if $config{help};
     pod2usage(-verbose => 2) if $config{man};
+ 
+    while (my ($key, $value) = each %fallback_for) {
+       next if exists $config{$key};
+       $config{$key} = $value;
+    }
+ 
+    my @missing = grep { ! exists $config{$_} } @required;
+    pod2usage(message => "missing options @missing",
+       -verbose => 99, -sections => 'USAGE')
+      if @missing;
  
     return %config if wantarray();
     return \%config;
@@ -3786,6 +3817,13 @@ sub template {
  [% modules_bundle %]
  
  __END__
+ 
+ ########################################################################
+ # __SECTION__
+ #
+ # POD 
+ #
+ ########################################################################
  
  =pod
  
@@ -3887,12 +3925,31 @@ sub template {
  
  Copyright (c) [% year %], [% author %] [% email %]
  
- This module is free software.  You can redistribute it and/or
+ =for author, to fill in
+    Put your licensing terms here, leaving the terms for the embedded
+    modules. If you're fine with the Artistic License 2.0, you can find
+    them in the two paragraphs below, delete them if you want to use
+    something different.
+ 
+ This program is free software.  You can redistribute it and/or
  modify it under the terms of the Artistic License 2.0.
  
  This program is distributed in the hope that it will be useful,
  but without any warranty; without even the implied warranty of
  merchantability or fitness for a particular purpose.
+ 
+ This program embeds all modules from distribution Data::Tubes, that is
+ Copyright (C) 2016 by Flavio Poletti and licensed under the Artistic
+ License 2.0. See L<https://metacpan.org/pod/Data::Tubes> for further
+ details.
+ 
+ This program embeds Log::Log4perl::Tiny, that is Copyright (C) 2010-2016
+ by Flavio Poletti and licensed under the Artistic License 2.0. See
+ L<https://metacpan.org/pod/Log::Log4perl::Tiny> for further details.
+ 
+ This program embeds Template::Perlish, that is Copyright (C) 2008-2016
+ by Flavio Poletti and licensed under the Artistic License 2.0. See
+ L<https://metacpan.org/pod/Template::Perlish> for further details.
  
  This program embeds Try::Tiny, that is Copyright (c) 2009 by יובל קוג'מן
  (Yuval Kogman) and licensed under The MIT (X11) License. See
@@ -3920,28 +3977,342 @@ tubergen - generate Data::Tubes programs
 
    tubergen [--usage] [--help] [--man] [--version]
 
-   tubergen
+   tubergen --abstract|-A text
+              --author|-a name
+               --email|-e email-address
+                --name|-n program-name
+              --output|-o filename
+               [--year|-y year]
 
 =head1 EXAMPLES
 
-   shell$ tubergen
+   # generate file my-script in current directory
+   shell$ tubergen -n my-script -A 'this script does that' \
+      -a 'A. U. Thor' -e 'a.u.thor@example.com'
 
-=for author, to fill in
-    Put a few examples of how to use your program
+   # override output filename, e.g. to put in different directory
+   shell$ tubergen -n my-script -A 'this script does that' \
+      -a 'A. U. Thor' -e 'a.u.thor@example.com' \
+      -o /path/to/my-script
+
+   # you can optionally force setting a different year for copyright
+   shell$ tubergen -n my-script -A 'this script does that' \
+      -a 'A. U. Thor' -e 'a.u.thor@example.com' -y 2020
 
 
 =head1 DESCRIPTION
 
-=for author, to fill in
-    Put a thorough description of your program
+This program helps you getting started with L<Data::Tubes> quickly. It's
+a minting program that generates a new script with all batteries
+included:
 
+=over
+
+=item *
+
+L<Data::Tubes> different modules and plugins, of course
+
+=item *
+
+L<Log::Log4perl::Tiny>
+
+=item *
+
+L<Template::Perlish>
+
+=item *
+
+L<Try::Tiny>
+
+=back
+
+The last one is optional in L<Data::Tubes>, but it is extremely handy
+and allows you using all plugins to their full potential, so why not?
+
+Generating a new program requires you to provide four options:
+
+=over
+
+=item *
+
+a L<name|/"--name program-name"> for your program;
+
+=item *
+
+an L<abstract|/"--abstract text"> to (briefly) describe what your program does;
+
+=item *
+
+the L<author|/"--author name"> name;
+
+=item *
+
+the L<email|/"--email email-address"> of the author.
+
+=back
+
+This allows kickstarting the POD section of your new program. You can
+also optionally pass argument L<output|/"--output filename">, to set the
+output filename (which is equal to L<name|/"--name program-name"> by
+default>) and a L<year|/"--year year"> for the copyright notice (the
+current year is used by default).
+
+After you generate the minted program, you end up with a Perl source
+file containing the following sections:
+
+=over
+
+=item *
+
+a L</Preamble> with housekeeping that will help get the new program
+started with using the included batteries;
+
+=item *
+
+a L</"Command Line Handling"> section for defining how your program
+accepts its inputs;
+
+=item *
+
+a L</"Business Logic"> section for putting your code;
+
+=item *
+
+an L</"Embedded Modules"> section with the I<batteries>;
+
+=item *
+
+a L</"POD"> section where you can write the documentation for your new
+program.
+
+=back
+
+You will normally need to mind about L</"Command Line Handling">,
+L</"Business Logic"> and L</POD>, although it's good for you to know
+about all of them. Each part is explained in depth in the sub-sections
+below.
+
+=head2 Preamble
+
+The preamble is where the initial setup is done so that you can use
+L<Data::Tubes> and the other embedded modules out of the box. You can
+get rid of components you don't need, of course, although you will at
+least want to keep the call to C<RUSE> for L<Data::Tubes>.
+
+If you need to C<use> additional modules, this is probably a good point
+to do it. Otherwise, you can just C<use> them in the L</"Business
+Logic"> section, as you see fit.
+
+You will notice that the embedded modules are called through the
+function C<RUSE>. This trick allows pushing the code below in
+L</"Embedded Modules"> so that it does not get in the way of your
+program. You are supposed to keep the C<RUSE> calls untouched to benefit
+from the inclusion of the modules.
+
+You can consider C<RUSE> at the same level of a C<use> line, though, so
+you can add elements in the import list should you need to. For example,
+if you need the L<Data::Tubes/summon> you can modify the relevant
+C<RUSE> line from this:
+
+   RUSE('Data::Tubes', qw< pipeline >);
+
+to this:
+
+   RUSE('Data::Tubes', qw< pipeline summon >);
+
+You will also notice that the preamble includes the forward-declaration
+for all functions in L<Try::Tiny>. This is necessary so that you will be
+able to use the syntactic sugar provided by this module. Leave them in
+place if you plan to use L<Try::Tiny>, get rid of them (or just ignore
+them) otherwise.
+
+=head2 Command Line Handling
+
+Command line handling is performed via L<Getopt::Long> behind the
+scenes. Here you have a simplified interface that should (hopefully) be
+what you need most of the times.
+
+Handling of command line is performed by subroutine C<get_options>, that
+returns a hash (key-value pairs) or hash reference depending on calling
+context. In the default section, you get hash C<%config> back.
+
+Options are defined as a sequence of elements, each of which can be
+either a string or an array reference. The string alternative is exactly
+the same as what is accepted by L<Getopt::Long>. The array reference
+alternative has the following structure:
+
+=over
+
+=item *
+
+the first element is the L<Getopt::Long> specification string;
+
+=item *
+
+the following elements are key-value pairs that are put in a hash of
+options. Recognised keys are:
+
+=over
+
+=item C<default>
+
+a default value for the option. This is used to initialize the returned
+hash I<before> the command line is analyzed;
+
+=item C<fallback>
+
+a default value for the option. This is used to initialize the returned
+hash I<after> the command line is analyzed;
+
+=item C<required>
+
+this marks whether an option is I<required> or not, set via anything
+that Perl considers I<true> or I<false> depending on your needs. Default
+is I<false>.
+
+=back
+
+The difference between L</default> and L</fallback> is negligible for
+most options, but you might e.g. set initial values for a
+multiple-valued option (in which case you will want to set it as
+L</default>) or pass a value that would not be considered good for
+L<Getopt::Long> (e.g. you cannot pre-initialize options with GLOBs, in
+which case you would choose L</fallback>). In general, use L</default>
+unless you really need L</fallback>.
+
+=back
+
+The newly minted program contains a few examples to get you started. You
+might want to keep the first one on L<loglevel> though, as it will help
+you set the logging level of the script automatically.
+
+=head2 Business Logic
+
+This is where your business logic is supposed to be written, which is
+only yours. A couple of considerations are worth mentioning though:
+
+=over
+
+=item *
+
+functions from L<Try::Tiny> have their prototype declared in the
+L</Preamble>, but all other C<RUSE>d functions are available at runtime
+but unknown at compile time. This means that you will need to use
+parentheses to call them (which is somehow different from all examples
+in L<Log::Log4perl::Tiny>, for example);
+
+=item *
+
+apart from the modules C<use>d/C<RUSE>d in the L</Preamble>, other
+modules are directly C<use>d by the program, e.g. L<Pod::Usage> and
+L<Getopt::Long> in the L</"Embedded Modules"> section or in the embedded
+modules themselves.
+
+=back
+
+=head2 Embedded Modules
+
+Your business logic is supposed to live in section L</"Business Logic">,
+so you should generally not need to put anything here.
+
+This section contains most of the I<batteries included>. It has the
+options parsing function C<get_options>, the I<require-as-use> function
+C<RUSE>, the logic for embedding all modules.
+
+If you want to embed additional pure-Perl modules, and C<RUSE> them, you
+are welcome to do this. Just follow the example of the other modules,
+namely:
+
+=over
+
+=item *
+
+add items inside the hash C<%file_for> defined at the top of the
+C<BEGIN> section;
+
+=item *
+
+each item's key is a relative file name of the module, as if it was in
+some C<lib> directory (see shipped modules for an example);
+
+=item *
+
+each item's value is a string with the whole contents of your module,
+where each line is pre-pended with a single space character (ASCII
+0x20). This character will be automatically removed and allows you to
+safely use here-documents, again see the included modules for an
+effective example;
+
+=item *
+
+although not strictly necessary, for your convenience you might want to
+keep the relative position of different comment markers starting with
+string C<__MOBUNDLE__>.
+
+=back
+
+Example:
+
+   BEGIN {
+      my %file_for = (
+
+   # __MOBUNDLE_FILES__
+
+   # __MOBUNDLE_FILE__
+
+      # this is for embedding Some::Module. Note that the
+      # contents of the heredoc is indented by one space at
+      # each line
+      "Some/Module.pm" => <<'END_OF_FILE';
+    #
+    # Some::Module contents, each line is indented by one space
+    # so that e.g. the following lines will not mess all things
+    # up:
+    my $something = <<'END_OF_FILE'
+    What...ever!
+    END_OF_FILE
+    # The line above is indented, so it is ignored by the
+    # program's heredoc. The real boundary for the included
+    # module is the line below.
+   END_OF_FILE
+
+   # __MOBUNDLE_FILE
+   #
+   # ... REST OF %file_for hash...
+
+
+=head2 POD
+
+This is where you are supposed to write I<extensive> documentation for
+your new program. There's some scaffolding to get you started,
+initialized with the required values provided during the minting
+process. L<perlpod> will be your friend here.
 
 =head1 OPTIONS
 
-=for author, to fill in
-    Description of all command-line options
-
 =over
+
+=item --abstract text
+
+=item -A text
+
+a (brief) text describing what your program does. This parameter that is
+used to initialize the POD section of the newly minted program. This
+option is required.
+
+=item --author name
+
+=item -a name
+
+the name of the author of the program, used to initialize the POD
+section of the newly minted program. This option is required.
+
+=item --email email-address
+
+=item -e email-address
+
+the email address of the author of the program, used to initialize the
+POD section of the newly minted program. This option is required.
 
 =item --help
 
@@ -3952,6 +4323,22 @@ the options and some examples from the synopsis.
 
 print out the full documentation for the script.
 
+=item --name program-name
+
+=item -n program-name
+
+the name assigned to the program. This is used to both initialize the
+POD section of the newly minted program, and as the file name where it
+is saved to. You can override the filename with option
+L<output|/"--output filename">. This option is required.
+
+=item --output filename
+
+=item -o filename
+
+the filename where the program should be saved. Defaults to the value
+assigned to L<name|/"--name program-name">.
+
 =item --usage
 
 print a concise usage line and exit.
@@ -3960,43 +4347,31 @@ print a concise usage line and exit.
 
 print the version of the script.
 
+=item --year year
+
+=item -y year
+
+X<year>
+
+The year to set for starting the copyright of the newly minted program
+in the relevant POD section. Defaults to the current year.
+
 =back
 
 =head1 DIAGNOSTICS
 
-=for author, to fill in
-    List and describe all warnings/error messages
-
-=over
-
-=item C<< Error message here, perhaps with %s placeholders >>
-
-[Error description...]
-
-=item C<< Another error message here >>
-
-[Error description...]
-
-[You get the idea...]
-
-=back
-
+tubergen will complain if any of the required option is missing. It will
+also complain if you try to define unknown options.
 
 =head1 CONFIGURATION AND ENVIRONMENT
-
-=for author, to fill in
-    Explain any configuration that can be used by the program, via some
-    file or via environment variables.
 
 tubergen requires no configuration files or environment variables.
 
 
 =head1 BUGS AND LIMITATIONS
 
-=for author, to fill in
-    List any known bugs and limitations of your program
-
-No bugs have been reported.
+No bugs have been reported, but you can do this through Issues at
+L<https://github.com/polettix/Data-Tubes/issues>.
 
 
 =head1 AUTHOR
@@ -4014,6 +4389,19 @@ modify it under the terms of the Artistic License 2.0.
 This program is distributed in the hope that it will be useful,
 but without any warranty; without even the implied warranty of
 merchantability or fitness for a particular purpose.
+
+This program embeds all modules from distribution Data::Tubes, that is
+Copyright (C) 2016 by Flavio Poletti and licensed under the Artistic
+License 2.0. See L<https://metacpan.org/pod/Data::Tubes> for further
+details.
+
+This program embeds Log::Log4perl::Tiny, that is Copyright (C) 2010-2016
+by Flavio Poletti and licensed under the Artistic License 2.0. See
+L<https://metacpan.org/pod/Log::Log4perl::Tiny> for further details.
+
+This program embeds Template::Perlish, that is Copyright (C) 2008-2016
+by Flavio Poletti and licensed under the Artistic License 2.0. See
+L<https://metacpan.org/pod/Template::Perlish> for further details.
 
 This program embeds Try::Tiny, that is Copyright (c) 2009 by יובל קוג'מן
 (Yuval Kogman) and licensed under The MIT (X11) License. See
