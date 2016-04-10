@@ -3,6 +3,7 @@ title: 'Data::Tubes'
 layout: page
 author: polettix
 tagline: 'The Missing Manual'
+comments: true
 ---
 
 # Data::Tubes - The Missing Manual

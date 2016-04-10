@@ -1,2 +1,4 @@
 kramdown:
     toc_levels: '2,3'
+disqus_domain: data-tubes.disqus.com
+url: http://github.polettix.it/Data-Tubes
