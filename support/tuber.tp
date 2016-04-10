@@ -114,12 +114,22 @@ use Getopt::Long qw< :config gnu_getopt >;
 sub get_options {
    my %config;
    my @options = qw< usage! help! man! version! >;
+   my (%fallback_for, @required);
    for my $option (@_) {
       if (ref $option) {
-         my ($spec, $default) = @$option;
+         my ($spec, %opts) = @$option;
          push @options, $spec;
+
          my ($name) = split /\|/, $spec, 2;
-         $config{$name} = $default;
+         if (exists $opts{default}) {
+            $config{$name} = $opts{default};
+         }
+         if (exists $opts{fallback}) {
+            $fallback_for{$name} = $opts{fallback};
+         }
+         if (exists $opts{required}) {
+            push @required, $name;
+         }
       } ## end if (ref $option)
       else {
          push @options, $option;
@@ -128,12 +138,22 @@ sub get_options {
 
    GetOptions(\%config, @options)
      or pod2usage(-verbose => 99, -sections => 'USAGE');
-   pod2usage(message => "$0 $VERSION", -verbose => 99, -sections => ' ')
-     if $config{version};
+   pod2usage(message => "$0 $VERSION", -verbose => 99,
+      -sections => ' ') if $config{version};
    pod2usage(-verbose => 99, -sections => 'USAGE') if $config{usage};
    pod2usage(-verbose => 99, -sections => 'USAGE|EXAMPLES|OPTIONS')
      if $config{help};
    pod2usage(-verbose => 2) if $config{man};
+
+   while (my ($key, $value) = each %fallback_for) {
+      next if exists $config{$key};
+      $config{$key} = $value;
+   }
+
+   my @missing = grep { ! exists $config{$_} } @required;
+   pod2usage(message => "missing options @missing",
+      -verbose => 99, -sections => 'USAGE')
+     if @missing;
 
    return %config if wantarray();
    return \%config;
