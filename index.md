@@ -3,6 +3,8 @@ title: 'Data::Tubes'
 layout: page
 author: 'polettix'
 tagline: 'Text and data canalising'
+comments: true
+
 ---
 
 [Data::Tubes](https://metacpan.org/pod/Data::Tubes) helps you manage
