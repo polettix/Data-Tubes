@@ -2,7 +2,7 @@
 title: 'Data::Tubes'
 layout: page
 author: polettix
-tagline: 'The Missing Manual'
+tagline: 'Use the Laziness, Luke!'
 comments: true
 ---
 
