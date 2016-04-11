@@ -1,6 +1,8 @@
 {{$NEXT}}
-   - read_file accepts direct filename now
+   - read_file accepts direct filename now and has more checks
    - fixed bugs and enhanced tuber.tp template file
+   - tubergen enhancements after article writing
+   - added some tests for +Util
 
 0.725001  2016-04-10 10:51:54 CEST
    - renamed test sub-directory, bad choice initially
