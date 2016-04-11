@@ -1,0 +1,26 @@
+[% initial_salutation %] [% name %],
+
+   we would like to invite you at our wedding that will be celebrated on
+[% wedding.date %] at [% wedding.place %].
+
+[%
+    if (V 'dinner') { 
+
+%]It would be a pleasure for us to enjoy the dinner with you at
+[% wedding.dinner %]. If you plan to attend, it would be nice of
+you to let us know.
+
+[% 
+    }
+
+    if (V 'hotel') {
+
+%]It would also be a pleasure for us if you will be our guest at
+[% wedding.hotel %]. Please let us know the date you plan to come visit
+us for arranging the booking properly!
+
+[%
+    }
+%][% final_salutation %],
+
+   Silvia & Flavio.

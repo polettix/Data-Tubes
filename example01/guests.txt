@@ -1,0 +1,16 @@
+# Each line is: name;group;initial;final;dinner?;hotel?
+
+# nice relatives, coming from outside
+Aunt Jean & Uncle John;nice-relatives;Hello;Yours;1;1
+
+# Friends we want for sure. Juliet and John live in our city
+Juliet;close-friends;Hi;Cheers;1;0
+John;close-friends;Hi;Cheers;1;1
+
+# We're not sure about Max, so it's commented out
+#Max;acquaintances;Dear;Regards;0;0
+
+# and
+# so
+# on...
+

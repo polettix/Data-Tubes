@@ -1,0 +1,3808 @@
+#!/usr/bin/env perl
+# vim: sts=3 ts=3 sw=3 et ai :
+
+########################################################################
+# __SECTION__
+#
+# Preamble
+#
+########################################################################
+use strict;
+use warnings;
+my $VERSION = '0.0.1';
+RUSE('Data::Tubes',         qw< pipeline summon >);
+RUSE('Log::Log4perl::Tiny', qw< :easy LOGLEVEL >);
+RUSE('Template::Perlish',   qw< render >);
+RUSE('Try::Tiny',           qw< try catch finally >);
+sub try (&;@); sub catch (&;@); sub finally (&;@);
+
+########################################################################
+# __SECTION__
+#
+# Command Line Handling
+#
+########################################################################
+my %config = get_options(
+   ['loglevel|log=s', default => 'INFO'],
+
+   # wedding-related
+   ['date|d=s',   default => 'April 1st, 2018'],
+   ['dinner|D=s', default => 'Restaurant Bui-a-Car'],
+   ['hotel|h=s',  default => 'Hotel Namaddormi'],
+   ['place|p=s',  required => 1], # no default available
+
+   # inputs
+   ['data|input|i=s', default => 'guests.txt'],
+   ['template|t=s',   default => 'mail.tp'],
+);
+
+# Remove following line if you remove 'loglevel' in options above
+LOGLEVEL($config{loglevel});
+
+########################################################################
+# __SECTION__
+#
+# Business Logic
+#
+########################################################################
+
+summon('Util::read_file');
+try {
+   pipeline(
+      'Source::open_file',
+      'Reader::by_line',
+      sub { return ($_[0]{raw} =~ m{^ \s* (?: \# | $)}mxs) ? () : $_[0]; },
+      ['Parser::by_format', format =>
+        'name;group;initial_salutation;final_salutation;dinner;hotel'],
+      ['Renderer::with_template_perlish',
+        template => read_file(filename => $config{template}),
+        variables => {
+          wedding => {
+            date   => $config{date},
+            dinner => $config{dinner},
+            hotel  => $config{hotel},
+            place  => $config{place},
+          }
+        }
+      ],
+      ['Writer::dispatch_to_files',
+        filename_template => '[% key %]/invitation-%02n.txt',
+        key    => [qw< structured group >],
+        policy => {records_threshold => 1},
+      ],
+      {tap => 'sink'},
+   )->($config{data});
+}
+catch {
+   use Data::Dumper; local $Data::Dumper::Indent = 1;
+   LOGEXIT(Dumper($_));
+};
+
+########################################################################
+# __SECTION__
+#
+# Embedded Modules
+#
+# You should not need to fiddle any more with code beyond this point.
+# Be sure to get your POD right though!
+#
+########################################################################
+
+# Ancillary scaffolding here
+use Pod::Usage qw< pod2usage >;
+use Getopt::Long qw< :config gnu_getopt >;
+
+sub get_options {
+   my %config;
+   my @options = qw< usage! help! man! version! >;
+   my (%fallback_for, @required);
+   for my $option (@_) {
+      if (ref $option) {
+         my ($spec, %opts) = @$option;
+         push @options, $spec;
+
+         my ($name) = split /\|/, $spec, 2;
+         if (exists $opts{default}) {
+            $config{$name} = $opts{default};
+         }
+         if (exists $opts{fallback}) {
+            $fallback_for{$name} = $opts{fallback};
+         }
+         if (exists $opts{required}) {
+            push @required, $name;
+         }
+      } ## end if (ref $option)
+      else {
+         push @options, $option;
+      }
+   } ## end for my $option (@_)
+
+   GetOptions(\%config, @options)
+     or pod2usage(-verbose => 99, -sections => 'USAGE');
+   pod2usage(message => "$0 $VERSION", -verbose => 99,
+      -sections => ' ') if $config{version};
+   pod2usage(-verbose => 99, -sections => 'USAGE') if $config{usage};
+   pod2usage(-verbose => 99, -sections => 'USAGE|EXAMPLES|OPTIONS')
+     if $config{help};
+   pod2usage(-verbose => 2) if $config{man};
+
+   while (my ($key, $value) = each %fallback_for) {
+      next if exists $config{$key};
+      $config{$key} = $value;
+   }
+
+   my @missing = grep { ! exists $config{$_} } @required;
+   pod2usage(message => "missing options @missing",
+      -verbose => 99, -sections => 'USAGE')
+     if @missing;
+
+   return %config if wantarray();
+   return \%config;
+} ## end sub get_options
+
+sub RUSE {
+   my $module = shift;
+   (my $packfile = $module . '.pm') =~ s{::}{/}gmxs;
+   require $packfile;
+   $module->import(@_);
+   return $module;
+} ## end sub RUSE
+
+# __MOBUNDLE_INCLUSION__
+BEGIN {
+   my %file_for = (
+
+# __MOBUNDLE_FILES__
+
+
+
+# __MOBUNDLE_FILE__
+
+      'Log/Log4perl/Tiny.pm' => <<'END_OF_FILE',
+ package Log::Log4perl::Tiny;
+ $Log::Log4perl::Tiny::VERSION = '1.2.9';
+ # ABSTRACT: mimic Log::Log4perl in one single module
+ 
+ use warnings;
+ use strict;
+ use Carp;
+ 
+ our ($TRACE, $DEBUG, $INFO, $WARN, $ERROR, $FATAL, $OFF, $DEAD);
+ my ($_instance, %name_of, %format_for, %id_for);
+ my $LOGDIE_MESSAGE_ON_STDERR = 1;
+ 
+ sub import {
+    my ($exporter, @list) = @_;
+    my ($caller, $file, $line) = caller();
+    no strict 'refs';
+ 
+    if (grep { $_ eq ':full_or_fake' } @list) {
+       @list = grep { $_ ne ':full_or_fake' } @list;
+       my $sue = 'use Log::Log4perl (@list)';
+       eval "
+          package $caller;
+          $sue;
+          1;
+       " and return;
+       unshift @list, ':fake';
+    } ## end if (grep { $_ eq ':full_or_fake'...
+ 
+    my (%done, $level_set);
+  ITEM:
+    for my $item (@list) {
+       next ITEM if $done{$item};
+       $done{$item} = 1;
+       if ($item =~ /^[a-zA-Z]/mxs) {
+          *{$caller . '::' . $item} = \&{$exporter . '::' . $item};
+       }
+       elsif ($item eq ':levels') {
+          for my $level (qw( TRACE DEBUG INFO WARN ERROR FATAL OFF DEAD )) {
+             *{$caller . '::' . $level} = \${$exporter . '::' . $level};
+          }
+       }
+       elsif ($item eq ':subs') {
+          push @list, qw(
+            ALWAYS TRACE DEBUG INFO WARN ERROR FATAL
+            LOGWARN LOGDIE LOGEXIT LOGCARP LOGCLUCK LOGCROAK LOGCONFESS
+            get_logger
+          );
+       } ## end elsif ($item eq ':subs')
+       elsif ($item =~ /\A : (mimic | mask | fake) \z/mxs) {
+ 
+          # module name as a string below to trick Module::ScanDeps
+          if (!'Log::Log4perl'->can('easy_init')) {
+             $INC{'Log/Log4perl.pm'} = __FILE__;
+             *Log::Log4perl::import = sub { };
+             *Log::Log4perl::easy_init = sub {
+                my ($pack, $conf) = @_;
+                if (ref $conf) {
+                   $_instance = __PACKAGE__->new($conf);
+                   $_instance->level($conf->{level})
+                     if exists $conf->{level};
+                   $_instance->format($conf->{format})
+                     if exists $conf->{format};
+                   $_instance->format($conf->{layout})
+                     if exists $conf->{layout};
+                } ## end if (ref $conf)
+                elsif (defined $conf) {
+                   $_instance->level($conf);
+                }
+             };
+          } ## end if (!'Log::Log4perl'->can...
+       } ## end elsif ($item =~ /\A : (mimic | mask | fake) \z/mxs)
+       elsif ($item eq ':easy') {
+          push @list, qw( :levels :subs :fake );
+       }
+       elsif (lc($item) eq ':dead_if_first') {
+          get_logger()->_set_level_if_first($DEAD);
+          $level_set = 1;
+       }
+       elsif (lc($item) eq ':no_extra_logdie_message') {
+          $LOGDIE_MESSAGE_ON_STDERR = 0;
+       }
+    } ## end for my $item (@list)
+ 
+    if (!$level_set) {
+       my $logger = get_logger();
+       $logger->_set_level_if_first($INFO);
+       $logger->level($logger->level());
+    }
+ 
+    return;
+ } ## end sub import
+ 
+ sub new {
+    my $package = shift;
+    my %args = ref($_[0]) ? %{$_[0]} : @_;
+ 
+    $args{format} = $args{layout} if exists $args{layout};
+ 
+    my $channels_input = [ fh => \*STDERR ];
+    if (exists $args{channels}) {
+       $channels_input = $args{channels};
+    }
+    else {
+       for my $key (qw< file_append file_create file_insecure file fh >) {
+          next unless exists $args{$key};
+          $channels_input = [ $key => $args{$key} ];
+          last;
+       }
+    }
+    my $channels = build_channels($channels_input);
+    $channels = $channels->[0] if @$channels == 1; # remove outer shell
+ 
+    my $self = bless {
+       fh    => $channels,
+       level => $INFO,
+    }, $package;
+ 
+    for my $accessor (qw( level fh format )) {
+       next unless defined $args{$accessor};
+       $self->$accessor($args{$accessor});
+    }
+ 
+    $self->format('[%d] [%5p] %m%n') unless exists $self->{format};
+ 
+    return $self;
+ } ## end sub new
+ 
+ sub build_channels {
+    my @pairs = (@_ && ref($_[0])) ? @{$_[0]} : @_;
+    my @channels;
+    while (@pairs) {
+       my ($key, $value) = splice @pairs, 0, 2;
+ 
+       # some initial validation
+       croak "build_channels(): undefined key in list"
+          unless defined $key;
+       croak "build_channels(): undefined value for key $key"
+          unless defined $value;
+ 
+       # analyze the key-value pair and set the channel accordingly
+       my ($channel, $set_autoflush);
+       if ($key =~ m{\A(?: fh | sub | code | channel )\z}mxs) {
+          $channel = $value;
+       }
+       elsif ($key eq 'file_append') {
+          open $channel, '>>', $value
+            or croak "open('$value') for appending: $!";
+          $set_autoflush = 1;
+       }
+       elsif ($key eq 'file_create') {
+          open $channel, '>', $value
+            or croak "open('$value') for creating: $!";
+          $set_autoflush = 1;
+       }
+       elsif ($key =~ m{\A file (?: _insecure )? \z}mxs) {
+          open $channel, $value
+            or croak "open('$value'): $!";
+          $set_autoflush = 1;
+       }
+       else {
+          croak "unsupported channel key '$key'";
+       }
+ 
+       # autoflush new filehandle if applicable
+       if ($set_autoflush) {
+          my $previous = select($channel);
+          $|++;
+          select($previous);
+       } ## end if (exists $args{file})
+ 
+       # record the channel, on to the next
+       push @channels, $channel;
+    }
+    return \@channels;
+ }
+ 
+ sub get_logger { return $_instance ||= __PACKAGE__->new(); }
+ sub LOGLEVEL { return get_logger()->level(@_); }
+ sub LEVELID_FOR {
+    my $level = shift;
+    return $id_for{$level} if exists $id_for{$level};
+    return;
+ }
+ sub LEVELNAME_FOR {
+    my $id = shift;
+    return $name_of{$id} if exists $name_of{$id};
+    return $id if exists $id_for{$id};
+    return;
+ }
+ 
+ sub format {
+    my $self = shift;
+ 
+    if (@_) {
+       $self->{format} = shift;
+       $self->{args} = \my @args;
+       my $replace = sub {
+          my ($num, $op) = @_;
+          return '%%' if $op eq '%';
+          return "%%$op" unless defined $format_for{$op};
+          push @args, $op;
+          return "%$num$format_for{$op}[0]";
+       };
+ 
+       # transform into real format
+       my $format_chars = join '', keys %format_for;
+       $self->{format} =~ s{
+             %                      # format marker
+             ( -? \d* (?:\.\d+)? )  # number
+             ([$format_chars])      # specifier
+          }
+          {
+             $replace->($1, $2);
+          }gsmex;
+    } ## end if (@_)
+    return $self->{format};
+ } ## end sub format
+ 
+ *layout = \&format;
+ 
+ sub emit_log {
+    my ($self, $message) = @_;
+    my $fh = $self->{fh};
+    for my $channel ((ref($fh) eq 'ARRAY') ? (@$fh) : ($fh)) {
+       (ref($channel) eq 'CODE') ? $channel->($message, $self)
+                                 : print {$channel} $message;
+    }
+    return;
+ }
+ 
+ sub log {
+    my $self = shift;
+    return if $self->{level} == $DEAD;
+ 
+    my $level = shift;
+    return if $level > $self->{level};
+ 
+    my %data_for = (
+       level   => $level,
+       message => \@_,
+    );
+    my $message = sprintf $self->{format},
+      map { $format_for{$_}[1]->(\%data_for); } @{$self->{args}};
+ 
+    return $self->emit_log($message);
+ } ## end sub log
+ 
+ sub ALWAYS { return $_instance->log($OFF, @_); }
+ 
+ sub _exit {
+    my $self = shift || $_instance;
+    exit $self->{logexit_code} if defined $self->{logexit_code};
+    exit $Log::Log4perl::LOGEXIT_CODE
+      if defined $Log::Log4perl::LOGEXIT_CODE;
+    exit 1;
+ } ## end sub _exit
+ 
+ sub logwarn {
+    my $self = shift;
+    $self->warn(@_);
+ 
+    # default warning when nothing is passed to warn
+    push @_, "Warning: something's wrong" unless @_;
+ 
+    # add 'at <file> line <line>' unless argument ends in "\n";
+    my (undef, $file, $line) = caller(1);
+    push @_, sprintf " at %s line %d.\n", $file, $line
+       if substr($_[-1], -1, 1) ne "\n";
+ 
+    # go for it!
+    CORE::warn(@_) if $LOGDIE_MESSAGE_ON_STDERR;
+ } ## end sub logwarn
+ 
+ sub logdie {
+    my $self = shift;
+    $self->fatal(@_);
+ 
+    # default die message when nothing is passed to die
+    push @_, "Died" unless @_;
+ 
+    # add 'at <file> line <line>' unless argument ends in "\n";
+    my (undef, $file, $line) = caller(1);
+    push @_, sprintf " at %s line %d.\n", $file, $line
+       if substr($_[-1], -1, 1) ne "\n";
+ 
+    # go for it!
+    CORE::die(@_) if $LOGDIE_MESSAGE_ON_STDERR;
+ 
+    $self->_exit();
+ } ## end sub logdie
+ 
+ sub logexit {
+    my $self = shift;
+    $self->fatal(@_);
+    $self->_exit();
+ }
+ 
+ sub logcarp {
+    my $self = shift;
+    require Carp;
+    $Carp::Internal{$_} = 1 for __PACKAGE__;
+    if ($self->is_warn()) { # avoid unless we're allowed to emit
+       my $message = Carp::shortmess(@_);
+       $self->warn($_) for split m{\n}mxs, $message;
+    }
+    if ($LOGDIE_MESSAGE_ON_STDERR) {
+       local $Carp::CarpLevel = $Carp::CarpLevel + 1;
+       Carp::carp(@_);
+    }
+    return;
+ } ## end sub logcarp
+ 
+ sub logcluck {
+    my $self = shift;
+    require Carp;
+    $Carp::Internal{$_} = 1 for __PACKAGE__;
+    if ($self->is_warn()) { # avoid unless we're allowed to emit
+       my $message = Carp::longmess(@_);
+       $self->warn($_) for split m{\n}mxs, $message;
+    }
+    if ($LOGDIE_MESSAGE_ON_STDERR) {
+       local $Carp::CarpLevel = $Carp::CarpLevel + 1;
+       Carp::cluck(@_);
+    }
+    return;
+ } ## end sub logcluck
+ 
+ sub logcroak {
+    my $self = shift;
+    require Carp;
+    $Carp::Internal{$_} = 1 for __PACKAGE__;
+    if ($self->is_fatal()) { # avoid unless we're allowed to emit
+       my $message = Carp::shortmess(@_);
+       $self->fatal($_) for split m{\n}mxs, $message;
+    }
+    if ($LOGDIE_MESSAGE_ON_STDERR) {
+       local $Carp::CarpLevel = $Carp::CarpLevel + 1;
+       Carp::croak(@_);
+    }
+    $self->_exit();
+ } ## end sub logcroak
+ 
+ sub logconfess {
+    my $self = shift;
+    require Carp;
+    $Carp::Internal{$_} = 1 for __PACKAGE__;
+    if ($self->is_fatal()) { # avoid unless we're allowed to emit
+       my $message = Carp::longmess(@_);
+       $self->fatal($_) for split m{\n}mxs, $message;
+    }
+    if ($LOGDIE_MESSAGE_ON_STDERR) {
+       local $Carp::CarpLevel = $Carp::CarpLevel + 1;
+       Carp::confess(@_);
+    }
+    $self->_exit();
+ } ## end sub logconfess
+ 
+ sub level {
+    my $self = shift;
+    $self = $_instance unless ref $self;
+    if (@_) {
+       my $level = shift;
+       return unless exists $id_for{$level};
+       $self->{level} = $id_for{$level};
+       $self->{_count}++;
+    } ## end if (@_)
+    return $self->{level};
+ } ## end sub level
+ 
+ sub _set_level_if_first {
+    my ($self, $level) = @_;
+    if (!$self->{_count}) {
+       $self->level($level);
+       delete $self->{_count};
+    }
+    return;
+ } ## end sub _set_level_if_first
+ 
+ BEGIN {
+ 
+    # Time tracking's start time. Used to be tied to $^T but Log::Log4perl
+    # does differently and uses Time::HiRes if available
+    my $start_time = time(); # default, according to Log::Log4perl
+    my $has_time_hires;
+    eval {
+       require Time::HiRes;
+       $has_time_hires = 1;
+       $start_time = [ Time::HiRes::gettimeofday() ];
+    };
+ 
+    # For supporting %R
+    my $last_log = $start_time;
+ 
+    # %format_for idea from Log::Tiny by J. M. Adler
+    %format_for = (    # specifiers according to Log::Log4perl
+       c => [s => sub { 'main' }],
+       C => [
+          s => sub {
+             my ($internal_package) = caller 0;
+             for my $i (1 .. 4) {
+                my ($package) = caller $i;
+                last unless defined $package;
+                return $package if $package ne $internal_package;
+             }
+             return '*undef*';
+            }
+       ],
+       d => [
+          s => sub {
+             my ($sec, $min, $hour, $mday, $mon, $year, $wday, $yday,
+                $isdst) = localtime();
+             sprintf '%04d/%02d/%02d %02d:%02d:%02d',
+               $year + 1900, $mon + 1, $mday, $hour, $min, $sec;
+            }
+       ],
+       F => [
+          s => sub {
+             my ($internal_package) = caller 0;
+             for my $i (1 .. 4) {
+                my ($package, $file) = caller $i;
+                last unless defined $package;
+                return $file if $package ne $internal_package;
+             }
+             return '*undef*';
+            }
+       ],
+       H => [
+          s => sub {
+             eval { require Sys::Hostname; Sys::Hostname::hostname() }
+               || '';
+            }
+       ],
+       l => [
+          s => sub {
+             my (undef, undef, undef, $subroutine) = caller(4);
+             my (undef, $filename, $line) = caller(3);
+             sprintf '%s %s (%d)', $subroutine, $filename, $line;
+            }
+       ],
+       L => [
+          d => sub {
+             my ($internal_package) = caller 0;
+             for my $i (1 .. 4) {
+                my ($package, undef, $line) = caller $i;
+                last unless defined $package;
+                return $line if $package ne $internal_package;
+             }
+             return -1;
+            }
+       ],
+       m => [
+          s => sub {
+             join(
+                (defined $, ? $, : ''),
+                map { ref($_) eq 'CODE' ? $_->() : $_; } @{shift->{message}}
+             );
+          },
+       ],
+       M => [
+          s => sub {
+             my ($internal_package) = caller 0;
+             for my $i (1 .. 4) {
+                my ($package) = caller $i;
+                last unless defined $package;
+                return (caller($i + 1))[3] if $package ne $internal_package;
+             }
+             return '*undef*';
+            }
+       ],
+       n => [s => sub { "\n" },],
+       p => [s => sub { $name_of{shift->{level}} },],
+       P => [d => sub { $$ },],
+       r => [d => ( $has_time_hires # install sub depending on Time::HiRes
+          ?  sub {
+                my ($s, $m) = Time::HiRes::gettimeofday();
+                $s -= $start_time->[0];
+                $m = int(($m - $start_time->[1]) / 1000);
+                ($s, $m) = ($s - 1, $m + 1000) if $m < 0;
+                return $m + 1000 * $s;
+             }
+          :  sub {
+                return 1000 * (time() - $start_time);
+             }
+       ) ],
+       R => [d => ( $has_time_hires # install sub depending on Time::HiRes
+          ?  sub {
+                my ($sx, $mx) = Time::HiRes::gettimeofday();
+                my $s = $sx - $last_log->[0];
+                my $m = int(($mx - $last_log->[1]) / 1000);
+                ($s, $m) = ($s - 1, $m + 1000) if $m < 0;
+                $last_log = [ $sx, $mx ];
+                return $m + 1000 * $s;
+             }
+          :  sub {
+                my $l = $last_log;
+                return 1000 * (($last_log = time()) - $l);
+             }
+       ) ],
+       T => [
+          s => sub {
+             my $level = 4;
+             my @chunks;
+             while (my @caller = caller($level++)) {
+                push @chunks,
+                  "$caller[3]() called at $caller[1] line $caller[2]";
+             }
+             join ', ', @chunks;
+          },
+       ],
+    );
+ 
+    # From now on we're going to play with GLOBs...
+    no strict 'refs';
+ 
+    for my $name (qw( FATAL ERROR WARN INFO DEBUG TRACE )) {
+ 
+       # create the ->level methods
+       *{__PACKAGE__ . '::' . lc($name)} = sub {
+          my $self = shift;
+          return $self->log($$name, @_);
+       };
+ 
+       # create ->is_level and ->isLevelEnabled methods as well
+       *{__PACKAGE__ . '::is' . ucfirst(lc($name)) . 'Enabled'} =
+         *{__PACKAGE__ . '::is_' . lc($name)} = sub {
+          return 0 if $_[0]->{level} == $DEAD || $$name > $_[0]->{level};
+          return 1;
+         };
+    } ## end for my $name (qw( FATAL ERROR WARN INFO DEBUG TRACE ))
+ 
+    for my $name (
+       qw(
+       FATAL ERROR WARN INFO DEBUG TRACE
+       LOGWARN LOGDIE LOGEXIT
+       LOGCARP LOGCLUCK LOGCROAK LOGCONFESS
+       )
+      )
+    {
+       *{__PACKAGE__ . '::' . $name} = sub {
+          $_instance->can(lc $name)->($_instance, @_);
+       };
+    } ## end for my $name (qw( FATAL ERROR WARN INFO DEBUG TRACE...
+ 
+    for my $accessor (qw( fh logexit_code )) {
+       *{__PACKAGE__ . '::' . $accessor} = sub {
+          my $self = shift;
+          $self = $_instance unless ref $self;
+          $self->{$accessor} = shift if @_;
+          return $self->{$accessor};
+       };
+    } ## end for my $accessor (qw( fh logexit_code ))
+ 
+    my $index = -1;
+    for my $name (qw( DEAD OFF FATAL ERROR WARN INFO DEBUG TRACE )) {
+       $name_of{$$name = $index} = $name;
+       $id_for{$name}  = $index;
+       $id_for{$index} = $index;
+       ++$index;
+    } ## end for my $name (qw( DEAD OFF FATAL ERROR WARN INFO DEBUG TRACE ))
+ 
+    get_logger();    # initialises $_instance;
+ } ## end BEGIN
+ 
+ 1;                  # Magic true value required at end of module
+ 
+ __END__
+ 
+
+END_OF_FILE
+
+
+# __MOBUNDLE_FILE__
+
+      'Template/Perlish.pm' => <<'END_OF_FILE',
+ package Template::Perlish;
+ 
+ use 5.008_000;
+ use warnings;
+ use strict;
+ use Carp;
+ use English qw( -no_match_vars );
+ use constant ERROR_CONTEXT => 3;
+ { our $VERSION = '1.50'; }
+ 
+ # Function-oriented interface
+ sub import {
+    my ($package, @list) = @_;
+ 
+    for my $sub (@list) {
+       croak "subroutine '$sub' not exportable"
+         unless grep { $sub eq $_ } qw< crumble render traverse >;
+ 
+       my $caller = caller();
+ 
+       no strict 'refs';    ## no critic (ProhibitNoStrict)
+       local $SIG{__WARN__} = \&Carp::carp;
+       *{$caller . q<::> . $sub} = \&{$package . q<::> . $sub};
+    } ## end for my $sub (@list)
+ 
+    return;
+ } ## end sub import
+ 
+ sub render {
+    my ($template, @rest) = @_;
+    my ($variables, %params);
+    if (@rest) {
+       $variables = ref($rest[0]) ? shift(@rest) : {splice @rest, 0};
+       %params = %{shift @rest} if @rest;
+    }
+    return __PACKAGE__->new(%params)->process($template, $variables);
+ } ## end sub render
+ 
+ # Object-oriented interface
+ sub new {
+    my ($package, @rest) = @_;
+    my $self = bless {
+       start     => '[%',
+       stop      => '%]',
+       utf8      => 1,
+       variables => {},
+      },
+      $package;
+    %{$self} = (%{$self}, @rest == 1 ? %{$rest[0]} : @rest);
+    return $self;
+ } ## end sub new
+ 
+ sub process {
+    my ($self, $template, $vars) = @_;
+    return $self->evaluate($self->compile($template), $vars);
+ }
+ 
+ sub evaluate {
+    my ($self, $compiled, $vars) = @_;
+    $self->_compile_sub($compiled)
+      unless exists $compiled->{sub};
+    return $compiled->{sub}->($vars);
+ } ## end sub evaluate
+ 
+ sub compile {    ## no critic (RequireArgUnpacking)
+    my ($self, undef, %args) = @_;
+    my $outcome = $self->_compile_code_text($_[1]);
+    return $outcome if $args{no_check};
+    return $self->_compile_sub($outcome);
+ } ## end sub compile
+ 
+ sub compile_as_sub {    ## no critic (RequireArgUnpacking)
+    my $self = shift;
+    return $self->compile($_[0])->{'sub'};
+ }
+ 
+ sub _compile_code_text {
+    my ($self, $template) = @_;
+ 
+    my $starter = $self->{start};
+    my $stopper = $self->{stop};
+ 
+    my $compiled = "# line 1 'input'\n";
+    $compiled .= "use utf8;\n\n" if $self->{utf8};
+    $compiled .= "print {*STDOUT} '';\n\n";
+    my $pos     = 0;
+    my $line_no = 1;
+    while ($pos < length $template) {
+ 
+       # Find starter and emit all previous text as simple text
+       my $start = index $template, $starter, $pos;
+       last if $start < 0;
+       my $chunk = substr $template, $pos, $start - $pos;
+       $compiled .= _simple_text($chunk)
+         if $start > $pos;
+ 
+       # Update scanning variables. The line counter is advanced for
+       # the chunk but not yet for the $starter, so that error reporting
+       # for unmatched $starter will point to the correct line
+       $pos = $start + length $starter;
+       $line_no += ($chunk =~ tr/\n//);
+ 
+       # Grab code
+       my $stop = index $template, $stopper, $pos;
+       if ($stop < 0) {    # no matching $stopper, bummer!
+          my $section = _extract_section({template => $template}, $line_no);
+          croak "unclosed starter '$starter' at line $line_no\n$section";
+       }
+       my $code = substr $template, $pos, $stop - $pos;
+ 
+       # Now I can advance the line count considering the $starter too
+       $line_no += ($starter =~ tr/\n//);
+ 
+       if (length $code) {
+          if (my $path = crumble($code)) {
+             $compiled .= _variable($path);
+          }
+          elsif (my ($scalar) =
+             $code =~ m{\A\s* (\$ [[:alpha:]_]\w*) \s*\z}mxs)
+          {
+             $compiled .=
+               "\nprint {*STDOUT} $scalar; ### straight scalar\n\n";
+          } ## end elsif (my ($scalar) = $code...)
+          elsif (substr($code, 0, 1) eq q<=>) {
+             $compiled .= "\n# line $line_no 'template<3,$line_no>'\n"
+               . _expression(substr $code, 1);
+          }
+          else {
+             $compiled .=
+               "\n# line $line_no 'template<0,$line_no>'\n" . $code;
+          }
+       } ## end if (length $code)
+ 
+       # Update scanning variables
+       $pos = $stop + length $stopper;
+       $line_no += (($code . $stopper) =~ tr/\n//);
+ 
+    } ## end while ($pos < length $template)
+ 
+    # put last part of input string as simple text
+    $compiled .= _simple_text(substr($template, $pos || 0));
+ 
+    return {
+       template  => $template,
+       code_text => $compiled,
+    };
+ } ## end sub _compile_code_text
+ 
+ # The following function is long and complex because it deals with many
+ # different cases. It is kept as-is to avoid too many calls to other
+ # subroutines; for this reason, it's reasonably commented.
+ sub traverse {  ## no critic (RequireArgUnpacking,ProhibitExcessComplexity)
+ 
+    ## no critic (ProhibitDoubleSigils)
+    my $iref         = ref($_[0]);
+    my $ref_wanted   = ($iref eq 'SCALAR') || ($iref eq 'REF');
+    my $ref_to_value = $ref_wanted ? shift : \shift;
+    return ($ref_wanted ? $ref_to_value : $$ref_to_value) unless @_;
+ 
+    my $path_input = shift;
+    return ($ref_wanted ? undef : '') unless defined $path_input;
+ 
+    my $crumbs;
+    if (ref $path_input) {
+       $crumbs = $path_input;
+    }
+    else {
+       return ($ref_wanted ? $ref_to_value : $$ref_to_value)
+         if defined($path_input) && !length($path_input);
+       $crumbs = crumble($path_input);
+    }
+    return ($ref_wanted ? undef : '') unless defined $crumbs;
+ 
+    # go down the rabbit hole
+    for my $crumb (@$crumbs) {
+ 
+       # $key is what we will look into $$ref_to_value. We don't use
+       # $crumb directly as we might change $key in the loop, and we
+       # don't want to spoil $crumbs
+       my $key = $crumb;
+ 
+       # $ref tells me how to look down into $$ref_to_value, i.e. as
+       # an ARRAY or a HASH
+       my $ref = ref $$ref_to_value;
+ 
+       # if $ref is not true, we hit a wall. How we proceed depends on
+       # whether we were asked to auto-vivify or not.
+       if (!$ref) {
+          return '' unless $ref_wanted;    # don't bother going on
+ 
+          # auto-vivification requested! $key will tell us how to
+          # proceed further, hopefully
+          $ref = ref $key;
+       } ## end if (!$ref)
+ 
+       # if $key is a reference, it will tell us what's expected now
+       if (my $key_ref = ref $key) {
+ 
+          # if $key_ref is not the same as $ref there is a mismatch
+          # between what's available ($ref) and what' expected ($key_ref)
+          return $ref_wanted ? undef : '' if $key_ref ne $ref;
+ 
+          # OK, data and expectations agree. Get the "real" key
+          if ($key_ref eq 'ARRAY') {
+             $key = $crumb->[0];    # it's an array, key is (only) element
+          }
+          elsif ($key_ref eq 'HASH') {
+             ($key) = keys %$crumb;    # hash... key is (only) key
+          }
+       } ## end if (my $key_ref = ref ...)
+ 
+       # if $ref is still not true at this point, we're doing
+       # auto-vivification and we have a plain key. Some guessing
+       # will be needed! Plain non-negative integers resolve to ARRAY,
+       # otherwise we'll consider $key as a HASH key
+       $ref ||= ($key =~ m{\A (?: 0 | [1-9]\d*) \z}mxs) ? 'ARRAY' : 'HASH';
+ 
+       # time to actually do the next step
+       if ($ref eq 'HASH') {
+          $ref_to_value = \($$ref_to_value->{$key});
+       }
+       elsif ($ref eq 'ARRAY') {
+          $ref_to_value = \($$ref_to_value->[$key]);
+       }
+       else {    # don't know what to do with other references!
+          return $ref_wanted ? undef : '';
+       }
+    } ## end for my $crumb (@$crumbs)
+ 
+    # normalize output, substitute undef with '' unless $ref_wanted
+    return
+        $ref_wanted             ? $ref_to_value
+      : defined($$ref_to_value) ? $$ref_to_value
+      :                           '';
+ 
+    ## use critic
+ } ## end sub traverse
+ 
+ sub V  { return '' }
+ sub A  { return }
+ sub H  { return }
+ sub HK { return }
+ sub HV { return }
+ 
+ sub _compile_sub {
+    my ($self, $outcome) = @_;
+ 
+    my @warnings;
+    {
+       my $utf8 = $self->{utf8} ? 1 : 0;
+       local $SIG{__WARN__} = sub { push @warnings, @_ };
+       my $code = <<"END_OF_CODE";
+    sub {
+       my \%variables = \%{\$self->{variables}};
+       my \$V = \\\%variables; # generic kid, as before by default
+ 
+       {
+          my \$vars = shift || {};
+          if (ref(\$vars) eq 'HASH') { # old case
+             \%variables = (\%variables, \%\$vars);
+          }
+          else {
+             \$V = \$vars;
+             \%variables = (HASH => { \%variables }, REF => \$V);
+          }
+       }
+ 
+       no warnings 'redefine';
+       local *V  = sub {
+          my \$path = scalar(\@_) ? shift : [];
+          my \$input = scalar(\@_) ? shift : \$V;
+          return traverse(\$input, \$path);
+       };
+       local *A  = sub {
+          my \$path = scalar(\@_) ? shift : [];
+          my \$input = scalar(\@_) ? shift : \$V;
+          return \@{traverse(\$input, \$path) || []};
+       };
+       local *H  = sub {
+          my \$path = scalar(\@_) ? shift : [];
+          my \$input = scalar(\@_) ? shift : \$V;
+          return \%{traverse(\$input, \$path) || {}};
+       };
+       local *HK = sub {
+          my \$path = scalar(\@_) ? shift : [];
+          my \$input = scalar(\@_) ? shift : \$V;
+          return keys \%{traverse(\$input, \$path) || {}};
+       };
+       local *HV = sub {
+          my \$path = scalar(\@_) ? shift : [];
+          my \$input = scalar(\@_) ? shift : \$V;
+          return values \%{traverse(\$input, \$path) || {}};
+       };
+       use warnings 'redefine';
+ 
+       local *STDOUT;
+       open STDOUT, '>', \\my \$buffer or croak "open(): \$OS_ERROR";
+       binmode STDOUT, ':encoding(utf8)' if $utf8;
+       my \$previous_selection = select(STDOUT);
+       { # double closure to free "my" variables
+          my (\$buffer, \$previous_selection); # hide external ones
+          { # this enclusure allows using "my" again
+ $outcome->{code_text}
+          }
+       }
+       select(\$previous_selection);
+       close STDOUT;
+       if ($utf8) {
+          require Encode;
+          \$buffer = Encode::decode(utf8 => \$buffer);
+       }
+       return \$buffer;
+    }
+ END_OF_CODE
+ 
+       # print {*STDOUT} $code; exit 0;
+       $outcome->{sub} = eval $code;    ## no critic (ProhibitStringyEval)
+       return $outcome if $outcome->{sub};
+    }
+ 
+    my $error = $EVAL_ERROR;
+    my ($offset, $starter, $line_no) =
+      $error =~ m{at[ ]'template<(\d+),(\d+)>'[ ]line[ ](\d+)}mxs;
+    $line_no -= $offset;
+    s{at[ ]'template<\d+,\d+>'[ ]line[ ](\d+)}
+     {'at line ' . ($1 - $offset)}egmxs
+      for @warnings, $error;
+    if ($line_no == $starter) {
+       s{,[ ]near[ ]"[#][ ]line.*?\n\s+}{, near "}gmxs
+         for @warnings, $error;
+    }
+ 
+    my $section = _extract_section($outcome, $line_no);
+    $error = join '', @warnings, $error, "\n", $section;
+ 
+    croak $error;
+ } ## end sub _compile_sub
+ 
+ sub _extract_section {
+    my ($hash, $line_no) = @_;
+    $line_no--;    # for proper comparison with 0-based array
+    my $start = $line_no - ERROR_CONTEXT;
+    my $end   = $line_no + ERROR_CONTEXT;
+ 
+    my @lines = split /\n/mxs, $hash->{template};
+    $start = 0       if $start < 0;
+    $end   = $#lines if $end > $#lines;
+    my $n_chars = length($end + 1);
+    return join '', map {
+       sprintf "%s%${n_chars}d| %s\n",
+         (($_ == $line_no) ? '>>' : '  '), ($_ + 1), $lines[$_];
+    } $start .. $end;
+ } ## end sub _extract_section
+ 
+ sub _simple_text {
+    my $text = shift;
+ 
+    return "print {*STDOUT} '$text';\n\n" if $text !~ /[\n'\\]/mxs;
+ 
+    $text =~ s/^/ /gmxs;    # indent, trick taken from diff -u
+    return <<"END_OF_CHUNK";
+ ### Verbatim text
+ print {*STDOUT} do {
+    my \$text = <<'END_OF_INDENTED_TEXT';
+ $text
+ END_OF_INDENTED_TEXT
+    \$text =~ s/^ //gms;      # de-indent
+    substr \$text, -1, 1, ''; # get rid of added newline
+    \$text;
+ };
+ 
+ END_OF_CHUNK
+ } ## end sub _simple_text
+ 
+ sub crumble {
+    my ($input) = @_;
+    return unless defined $input;
+ 
+    $input =~ s{\A\s+|\s+\z}{}gmxs;
+    return [] unless length $input;
+ 
+    my $sq    = qr{(?mxs: ' [^']* ' )}mxs;
+    my $dq    = qr{(?mxs: " (?:[^\\"] | \\.)* " )}mxs;
+    my $ud    = qr{(?mxs: \w+ )}mxs;
+    my $chunk = qr{(?mxs: $sq | $dq | $ud)+}mxs;
+ 
+    # save and reset current pos() on $input
+    my $prepos = pos($input);
+    pos($input) = undef;
+ 
+    my @path;
+    ## no critic (RegularExpressions::ProhibitCaptureWithoutTest)
+    push @path, $1 while $input =~ m{\G [.]? ($chunk) }cgmxs;
+    ## use critic
+ 
+    # save and restore pos() on $input
+    my $postpos = pos($input);
+    pos($input) = $prepos;
+ 
+    return unless defined $postpos;
+    return if $postpos != length($input);
+ 
+    # cleanup @path components
+    for my $part (@path) {
+       my @subparts;
+       while ((pos($part) || 0) < length($part)) {
+          if ($part =~ m{\G ($sq) }cgmxs) {
+             push @subparts, substr $1, 1, length($1) - 2;
+          }
+          elsif ($part =~ m{\G ($dq) }cgmxs) {
+             my $subpart = substr $1, 1, length($1) - 2;
+             $subpart =~ s{\\(.)}{$1}gmxs;
+             push @subparts, $subpart;
+          }
+          elsif ($part =~ m{\G ($ud) }cgmxs) {
+             push @subparts, $1;
+          }
+          else {    # shouldn't happen ever
+             return;
+          }
+       } ## end while ((pos($part) || 0) ...)
+       $part = join '', @subparts;
+    } ## end for my $part (@path)
+ 
+    return \@path;
+ } ## end sub crumble
+ 
+ sub _variable {
+    my $path = shift;
+    my $DQ   = q<">;    # double quotes
+    $path = join ', ', map { $DQ . quotemeta($_) . $DQ } @{$path};
+ 
+    return <<"END_OF_CHUNK";
+ ### Variable from the stash (\$V)
+ print {*STDOUT} V([$path]);
+ 
+ END_OF_CHUNK
+ } ## end sub _variable
+ 
+ sub _expression {
+    my $expression = shift;
+    return <<"END_OF_CHUNK";
+ # Expression to be evaluated and printed out
+ {
+    my \$value = do {{
+ $expression
+    }};
+    print {*STDOUT} \$value if defined \$value;
+ }
+ 
+ END_OF_CHUNK
+ 
+ } ## end sub _expression
+ 
+ 1;
+
+END_OF_FILE
+
+
+# __MOBUNDLE_FILE__
+
+      'Try/Tiny.pm' => <<'END_OF_FILE',
+ package Try::Tiny; # git description: v0.23-3-g5ee27f1
+ use 5.006;
+ # ABSTRACT: minimal try/catch with proper preservation of $@
+ 
+ our $VERSION = '0.24';
+ 
+ use strict;
+ use warnings;
+ 
+ use Exporter 5.57 'import';
+ our @EXPORT = our @EXPORT_OK = qw(try catch finally);
+ 
+ use Carp;
+ $Carp::Internal{+__PACKAGE__}++;
+ 
+ BEGIN {
+   my $su = $INC{'Sub/Util.pm'} && defined &Sub::Util::set_subname;
+   my $sn = $INC{'Sub/Name.pm'} && eval { Sub::Name->VERSION(0.08) };
+   unless ($su || $sn) {
+     $su = eval { require Sub::Util; } && defined &Sub::Util::set_subname;
+     unless ($su) {
+       $sn = eval { require Sub::Name; Sub::Name->VERSION(0.08) };
+     }
+   }
+ 
+   *_subname = $su ? \&Sub::Util::set_subname
+             : $sn ? \&Sub::Name::subname
+             : sub { $_[1] };
+   *_HAS_SUBNAME = ($su || $sn) ? sub(){1} : sub(){0};
+ }
+ 
+ # Need to prototype as @ not $$ because of the way Perl evaluates the prototype.
+ # Keeping it at $$ means you only ever get 1 sub because we need to eval in a list
+ # context & not a scalar one
+ 
+ sub try (&;@) {
+   my ( $try, @code_refs ) = @_;
+ 
+   # we need to save this here, the eval block will be in scalar context due
+   # to $failed
+   my $wantarray = wantarray;
+ 
+   # work around perl bug by explicitly initializing these, due to the likelyhood
+   # this will be used in global destruction (perl rt#119311)
+   my ( $catch, @finally ) = ();
+ 
+   # find labeled blocks in the argument list.
+   # catch and finally tag the blocks by blessing a scalar reference to them.
+   foreach my $code_ref (@code_refs) {
+ 
+     if ( ref($code_ref) eq 'Try::Tiny::Catch' ) {
+       croak 'A try() may not be followed by multiple catch() blocks'
+         if $catch;
+       $catch = ${$code_ref};
+     } elsif ( ref($code_ref) eq 'Try::Tiny::Finally' ) {
+       push @finally, ${$code_ref};
+     } else {
+       croak(
+         'try() encountered an unexpected argument ('
+       . ( defined $code_ref ? $code_ref : 'undef' )
+       . ') - perhaps a missing semi-colon before or'
+       );
+     }
+   }
+ 
+   # FIXME consider using local $SIG{__DIE__} to accumulate all errors. It's
+   # not perfect, but we could provide a list of additional errors for
+   # $catch->();
+ 
+   # name the blocks if we have Sub::Name installed
+   my $caller = caller;
+   _subname("${caller}::try {...} " => $try)
+     if _HAS_SUBNAME;
+ 
+   # save the value of $@ so we can set $@ back to it in the beginning of the eval
+   # and restore $@ after the eval finishes
+   my $prev_error = $@;
+ 
+   my ( @ret, $error );
+ 
+   # failed will be true if the eval dies, because 1 will not be returned
+   # from the eval body
+   my $failed = not eval {
+     $@ = $prev_error;
+ 
+     # evaluate the try block in the correct context
+     if ( $wantarray ) {
+       @ret = $try->();
+     } elsif ( defined $wantarray ) {
+       $ret[0] = $try->();
+     } else {
+       $try->();
+     };
+ 
+     return 1; # properly set $failed to false
+   };
+ 
+   # preserve the current error and reset the original value of $@
+   $error = $@;
+   $@ = $prev_error;
+ 
+   # set up a scope guard to invoke the finally block at the end
+   my @guards =
+     map { Try::Tiny::ScopeGuard->_new($_, $failed ? $error : ()) }
+     @finally;
+ 
+   # at this point $failed contains a true value if the eval died, even if some
+   # destructor overwrote $@ as the eval was unwinding.
+   if ( $failed ) {
+     # if we got an error, invoke the catch block.
+     if ( $catch ) {
+       # This works like given($error), but is backwards compatible and
+       # sets $_ in the dynamic scope for the body of C<$catch>
+       for ($error) {
+         return $catch->($error);
+       }
+ 
+       # in case when() was used without an explicit return, the C<for>
+       # loop will be aborted and there's no useful return value
+     }
+ 
+     return;
+   } else {
+     # no failure, $@ is back to what it was, everything is fine
+     return $wantarray ? @ret : $ret[0];
+   }
+ }
+ 
+ sub catch (&;@) {
+   my ( $block, @rest ) = @_;
+ 
+   croak 'Useless bare catch()' unless wantarray;
+ 
+   my $caller = caller;
+   _subname("${caller}::catch {...} " => $block)
+     if _HAS_SUBNAME;
+   return (
+     bless(\$block, 'Try::Tiny::Catch'),
+     @rest,
+   );
+ }
+ 
+ sub finally (&;@) {
+   my ( $block, @rest ) = @_;
+ 
+   croak 'Useless bare finally()' unless wantarray;
+ 
+   my $caller = caller;
+   _subname("${caller}::finally {...} " => $block)
+     if _HAS_SUBNAME;
+   return (
+     bless(\$block, 'Try::Tiny::Finally'),
+     @rest,
+   );
+ }
+ 
+ {
+   package # hide from PAUSE
+     Try::Tiny::ScopeGuard;
+ 
+   use constant UNSTABLE_DOLLARAT => ($] < '5.013002') ? 1 : 0;
+ 
+   sub _new {
+     shift;
+     bless [ @_ ];
+   }
+ 
+   sub DESTROY {
+     my ($code, @args) = @{ $_[0] };
+ 
+     local $@ if UNSTABLE_DOLLARAT;
+     eval {
+       $code->(@args);
+       1;
+     } or do {
+       warn
+         "Execution of finally() block $code resulted in an exception, which "
+       . '*CAN NOT BE PROPAGATED* due to fundamental limitations of Perl. '
+       . 'Your program will continue as if this event never took place. '
+       . "Original exception text follows:\n\n"
+       . (defined $@ ? $@ : '$@ left undefined...')
+       . "\n"
+       ;
+     }
+   }
+ }
+ 
+ __PACKAGE__
+ 
+ __END__
+ 
+ =pod
+ 
+ =encoding UTF-8
+ 
+ =head1 NAME
+ 
+ Try::Tiny - minimal try/catch with proper preservation of $@
+ 
+ =head1 VERSION
+ 
+ version 0.24
+ 
+ =head1 SYNOPSIS
+ 
+ You can use Try::Tiny's C<try> and C<catch> to expect and handle exceptional
+ conditions, avoiding quirks in Perl and common mistakes:
+ 
+   # handle errors with a catch handler
+   try {
+     die "foo";
+   } catch {
+     warn "caught error: $_"; # not $@
+   };
+ 
+ You can also use it like a standalone C<eval> to catch and ignore any error
+ conditions.  Obviously, this is an extreme measure not to be undertaken
+ lightly:
+ 
+   # just silence errors
+   try {
+     die "foo";
+   };
+ 
+ =head1 DESCRIPTION
+ 
+ This module provides bare bones C<try>/C<catch>/C<finally> statements that are designed to
+ minimize common mistakes with eval blocks, and NOTHING else.
+ 
+ This is unlike L<TryCatch> which provides a nice syntax and avoids adding
+ another call stack layer, and supports calling C<return> from the C<try> block to
+ return from the parent subroutine. These extra features come at a cost of a few
+ dependencies, namely L<Devel::Declare> and L<Scope::Upper> which are
+ occasionally problematic, and the additional catch filtering uses L<Moose>
+ type constraints which may not be desirable either.
+ 
+ The main focus of this module is to provide simple and reliable error handling
+ for those having a hard time installing L<TryCatch>, but who still want to
+ write correct C<eval> blocks without 5 lines of boilerplate each time.
+ 
+ It's designed to work as correctly as possible in light of the various
+ pathological edge cases (see L</BACKGROUND>) and to be compatible with any style
+ of error values (simple strings, references, objects, overloaded objects, etc).
+ 
+ If the C<try> block dies, it returns the value of the last statement executed in
+ the C<catch> block, if there is one. Otherwise, it returns C<undef> in scalar
+ context or the empty list in list context. The following examples all
+ assign C<"bar"> to C<$x>:
+ 
+   my $x = try { die "foo" } catch { "bar" };
+   my $x = try { die "foo" } || "bar";
+   my $x = (try { die "foo" }) // "bar";
+ 
+   my $x = eval { die "foo" } || "bar";
+ 
+ You can add C<finally> blocks, yielding the following:
+ 
+   my $x;
+   try { die 'foo' } finally { $x = 'bar' };
+   try { die 'foo' } catch { warn "Got a die: $_" } finally { $x = 'bar' };
+ 
+ C<finally> blocks are always executed making them suitable for cleanup code
+ which cannot be handled using local.  You can add as many C<finally> blocks to a
+ given C<try> block as you like.
+ 
+ Note that adding a C<finally> block without a preceding C<catch> block
+ suppresses any errors. This behaviour is consistent with using a standalone
+ C<eval>, but it is not consistent with C<try>/C<finally> patterns found in
+ other programming languages, such as Java, Python, Javascript or C#. If you
+ learnt the C<try>/C<finally> pattern from one of these languages, watch out for
+ this.
+ 
+ =head1 EXPORTS
+ 
+ All functions are exported by default using L<Exporter>.
+ 
+ If you need to rename the C<try>, C<catch> or C<finally> keyword consider using
+ L<Sub::Import> to get L<Sub::Exporter>'s flexibility.
+ 
+ =over 4
+ 
+ =item try (&;@)
+ 
+ Takes one mandatory C<try> subroutine, an optional C<catch> subroutine and C<finally>
+ subroutine.
+ 
+ The mandatory subroutine is evaluated in the context of an C<eval> block.
+ 
+ If no error occurred the value from the first block is returned, preserving
+ list/scalar context.
+ 
+ If there was an error and the second subroutine was given it will be invoked
+ with the error in C<$_> (localized) and as that block's first and only
+ argument.
+ 
+ C<$@> does B<not> contain the error. Inside the C<catch> block it has the same
+ value it had before the C<try> block was executed.
+ 
+ Note that the error may be false, but if that happens the C<catch> block will
+ still be invoked.
+ 
+ Once all execution is finished then the C<finally> block, if given, will execute.
+ 
+ =item catch (&;@)
+ 
+ Intended to be used in the second argument position of C<try>.
+ 
+ Returns a reference to the subroutine it was given but blessed as
+ C<Try::Tiny::Catch> which allows try to decode correctly what to do
+ with this code reference.
+ 
+   catch { ... }
+ 
+ Inside the C<catch> block the caught error is stored in C<$_>, while previous
+ value of C<$@> is still available for use.  This value may or may not be
+ meaningful depending on what happened before the C<try>, but it might be a good
+ idea to preserve it in an error stack.
+ 
+ For code that captures C<$@> when throwing new errors (i.e.
+ L<Class::Throwable>), you'll need to do:
+ 
+   local $@ = $_;
+ 
+ =item finally (&;@)
+ 
+   try     { ... }
+   catch   { ... }
+   finally { ... };
+ 
+ Or
+ 
+   try     { ... }
+   finally { ... };
+ 
+ Or even
+ 
+   try     { ... }
+   finally { ... }
+   catch   { ... };
+ 
+ Intended to be the second or third element of C<try>. C<finally> blocks are always
+ executed in the event of a successful C<try> or if C<catch> is run. This allows
+ you to locate cleanup code which cannot be done via C<local()> e.g. closing a file
+ handle.
+ 
+ When invoked, the C<finally> block is passed the error that was caught.  If no
+ error was caught, it is passed nothing.  (Note that the C<finally> block does not
+ localize C<$_> with the error, since unlike in a C<catch> block, there is no way
+ to know if C<$_ == undef> implies that there were no errors.) In other words,
+ the following code does just what you would expect:
+ 
+   try {
+     die_sometimes();
+   } catch {
+     # ...code run in case of error
+   } finally {
+     if (@_) {
+       print "The try block died with: @_\n";
+     } else {
+       print "The try block ran without error.\n";
+     }
+   };
+ 
+ B<You must always do your own error handling in the C<finally> block>. C<Try::Tiny> will
+ not do anything about handling possible errors coming from code located in these
+ blocks.
+ 
+ Furthermore B<exceptions in C<finally> blocks are not trappable and are unable
+ to influence the execution of your program>. This is due to limitation of
+ C<DESTROY>-based scope guards, which C<finally> is implemented on top of. This
+ may change in a future version of Try::Tiny.
+ 
+ In the same way C<catch()> blesses the code reference this subroutine does the same
+ except it bless them as C<Try::Tiny::Finally>.
+ 
+ =back
+ 
+ =head1 BACKGROUND
+ 
+ There are a number of issues with C<eval>.
+ 
+ =head2 Clobbering $@
+ 
+ When you run an C<eval> block and it succeeds, C<$@> will be cleared, potentially
+ clobbering an error that is currently being caught.
+ 
+ This causes action at a distance, clearing previous errors your caller may have
+ not yet handled.
+ 
+ C<$@> must be properly localized before invoking C<eval> in order to avoid this
+ issue.
+ 
+ More specifically, C<$@> is clobbered at the beginning of the C<eval>, which
+ also makes it impossible to capture the previous error before you die (for
+ instance when making exception objects with error stacks).
+ 
+ For this reason C<try> will actually set C<$@> to its previous value (the one
+ available before entering the C<try> block) in the beginning of the C<eval>
+ block.
+ 
+ =head2 Localizing $@ silently masks errors
+ 
+ Inside an C<eval> block, C<die> behaves sort of like:
+ 
+   sub die {
+     $@ = $_[0];
+     return_undef_from_eval();
+   }
+ 
+ This means that if you were polite and localized C<$@> you can't die in that
+ scope, or your error will be discarded (printing "Something's wrong" instead).
+ 
+ The workaround is very ugly:
+ 
+   my $error = do {
+     local $@;
+     eval { ... };
+     $@;
+   };
+ 
+   ...
+   die $error;
+ 
+ =head2 $@ might not be a true value
+ 
+ This code is wrong:
+ 
+   if ( $@ ) {
+     ...
+   }
+ 
+ because due to the previous caveats it may have been unset.
+ 
+ C<$@> could also be an overloaded error object that evaluates to false, but
+ that's asking for trouble anyway.
+ 
+ The classic failure mode is:
+ 
+   sub Object::DESTROY {
+     eval { ... }
+   }
+ 
+   eval {
+     my $obj = Object->new;
+ 
+     die "foo";
+   };
+ 
+   if ( $@ ) {
+ 
+   }
+ 
+ In this case since C<Object::DESTROY> is not localizing C<$@> but still uses
+ C<eval>, it will set C<$@> to C<"">.
+ 
+ The destructor is called when the stack is unwound, after C<die> sets C<$@> to
+ C<"foo at Foo.pm line 42\n">, so by the time C<if ( $@ )> is evaluated it has
+ been cleared by C<eval> in the destructor.
+ 
+ The workaround for this is even uglier than the previous ones. Even though we
+ can't save the value of C<$@> from code that doesn't localize, we can at least
+ be sure the C<eval> was aborted due to an error:
+ 
+   my $failed = not eval {
+     ...
+ 
+     return 1;
+   };
+ 
+ This is because an C<eval> that caught a C<die> will always return a false
+ value.
+ 
+ =head1 SHINY SYNTAX
+ 
+ Using Perl 5.10 you can use L<perlsyn/"Switch statements">.
+ 
+ =for stopwords topicalizer
+ 
+ The C<catch> block is invoked in a topicalizer context (like a C<given> block),
+ but note that you can't return a useful value from C<catch> using the C<when>
+ blocks without an explicit C<return>.
+ 
+ This is somewhat similar to Perl 6's C<CATCH> blocks. You can use it to
+ concisely match errors:
+ 
+   try {
+     require Foo;
+   } catch {
+     when (/^Can't locate .*?\.pm in \@INC/) { } # ignore
+     default { die $_ }
+   };
+ 
+ =head1 CAVEATS
+ 
+ =over 4
+ 
+ =item *
+ 
+ C<@_> is not available within the C<try> block, so you need to copy your
+ argument list. In case you want to work with argument values directly via C<@_>
+ aliasing (i.e. allow C<$_[1] = "foo">), you need to pass C<@_> by reference:
+ 
+   sub foo {
+     my ( $self, @args ) = @_;
+     try { $self->bar(@args) }
+   }
+ 
+ or
+ 
+   sub bar_in_place {
+     my $self = shift;
+     my $args = \@_;
+     try { $_ = $self->bar($_) for @$args }
+   }
+ 
+ =item *
+ 
+ C<return> returns from the C<try> block, not from the parent sub (note that
+ this is also how C<eval> works, but not how L<TryCatch> works):
+ 
+   sub parent_sub {
+     try {
+       die;
+     }
+     catch {
+       return;
+     };
+ 
+     say "this text WILL be displayed, even though an exception is thrown";
+   }
+ 
+ Instead, you should capture the return value:
+ 
+   sub parent_sub {
+     my $success = try {
+       die;
+       1;
+     };
+     return unless $success;
+ 
+     say "This text WILL NEVER appear!";
+   }
+   # OR
+   sub parent_sub_with_catch {
+     my $success = try {
+       die;
+       1;
+     }
+     catch {
+       # do something with $_
+       return undef; #see note
+     };
+     return unless $success;
+ 
+     say "This text WILL NEVER appear!";
+   }
+ 
+ Note that if you have a C<catch> block, it must return C<undef> for this to work,
+ since if a C<catch> block exists, its return value is returned in place of C<undef>
+ when an exception is thrown.
+ 
+ =item *
+ 
+ C<try> introduces another caller stack frame. L<Sub::Uplevel> is not used. L<Carp>
+ will not report this when using full stack traces, though, because
+ C<%Carp::Internal> is used. This lack of magic is considered a feature.
+ 
+ =for stopwords unhygienically
+ 
+ =item *
+ 
+ The value of C<$_> in the C<catch> block is not guaranteed to be the value of
+ the exception thrown (C<$@>) in the C<try> block.  There is no safe way to
+ ensure this, since C<eval> may be used unhygienically in destructors.  The only
+ guarantee is that the C<catch> will be called if an exception is thrown.
+ 
+ =item *
+ 
+ The return value of the C<catch> block is not ignored, so if testing the result
+ of the expression for truth on success, be sure to return a false value from
+ the C<catch> block:
+ 
+   my $obj = try {
+     MightFail->new;
+   } catch {
+     ...
+ 
+     return; # avoid returning a true value;
+   };
+ 
+   return unless $obj;
+ 
+ =item *
+ 
+ C<$SIG{__DIE__}> is still in effect.
+ 
+ Though it can be argued that C<$SIG{__DIE__}> should be disabled inside of
+ C<eval> blocks, since it isn't people have grown to rely on it. Therefore in
+ the interests of compatibility, C<try> does not disable C<$SIG{__DIE__}> for
+ the scope of the error throwing code.
+ 
+ =item *
+ 
+ Lexical C<$_> may override the one set by C<catch>.
+ 
+ For example Perl 5.10's C<given> form uses a lexical C<$_>, creating some
+ confusing behavior:
+ 
+   given ($foo) {
+     when (...) {
+       try {
+         ...
+       } catch {
+         warn $_; # will print $foo, not the error
+         warn $_[0]; # instead, get the error like this
+       }
+     }
+   }
+ 
+ Note that this behavior was changed once again in L<Perl5 version 18
+ |https://metacpan.org/module/perldelta#given-now-aliases-the-global-_>.
+ However, since the entirety of lexical C<$_> is now L<considered experimental
+ |https://metacpan.org/module/perldelta#Lexical-_-is-now-experimental>, it
+ is unclear whether the new version 18 behavior is final.
+ 
+ =back
+ 
+ =head1 SEE ALSO
+ 
+ =over 4
+ 
+ =item L<TryCatch>
+ 
+ Much more feature complete, more convenient semantics, but at the cost of
+ implementation complexity.
+ 
+ =item L<autodie>
+ 
+ Automatic error throwing for builtin functions and more. Also designed to
+ work well with C<given>/C<when>.
+ 
+ =item L<Throwable>
+ 
+ A lightweight role for rolling your own exception classes.
+ 
+ =item L<Error>
+ 
+ Exception object implementation with a C<try> statement. Does not localize
+ C<$@>.
+ 
+ =item L<Exception::Class::TryCatch>
+ 
+ Provides a C<catch> statement, but properly calling C<eval> is your
+ responsibility.
+ 
+ The C<try> keyword pushes C<$@> onto an error stack, avoiding some of the
+ issues with C<$@>, but you still need to localize to prevent clobbering.
+ 
+ =back
+ 
+ =head1 LIGHTNING TALK
+ 
+ I gave a lightning talk about this module, you can see the slides (Firefox
+ only):
+ 
+ L<http://web.archive.org/web/20100628040134/http://nothingmuch.woobling.org/talks/takahashi.xul>
+ 
+ Or read the source:
+ 
+ L<http://web.archive.org/web/20100305133605/http://nothingmuch.woobling.org/talks/yapc_asia_2009/try_tiny.yml>
+ 
+ =head1 VERSION CONTROL
+ 
+ L<http://github.com/doy/try-tiny/>
+ 
+ =head1 SUPPORT
+ 
+ Bugs may be submitted through L<the RT bug tracker|https://rt.cpan.org/Public/Dist/Display.html?Name=Try-Tiny>
+ (or L<bug-Try-Tiny@rt.cpan.org|mailto:bug-Try-Tiny@rt.cpan.org>).
+ 
+ =head1 AUTHORS
+ 
+ =over 4
+ 
+ =item *
+ 
+ ×××× ×§××'×× (Yuval Kogman) <nothingmuch@woobling.org>
+ 
+ =item *
+ 
+ Jesse Luehrs <doy@tozt.net>
+ 
+ =back
+ 
+ =head1 CONTRIBUTORS
+ 
+ =for stopwords Karen Etheridge Peter Rabbitson Ricardo Signes Mark Fowler Graham Knop Dagfinn Ilmari MannsÃ¥ker Paul Howarth Rudolf Leermakers anaxagoras awalker chromatic Alex cm-perl Andrew Yates David Lowe Glenn Hans Dieter Pearcey Jonathan Yu Marc Mims Stosberg
+ 
+ =over 4
+ 
+ =item *
+ 
+ Karen Etheridge <ether@cpan.org>
+ 
+ =item *
+ 
+ Peter Rabbitson <ribasushi@cpan.org>
+ 
+ =item *
+ 
+ Ricardo Signes <rjbs@cpan.org>
+ 
+ =item *
+ 
+ Mark Fowler <mark@twoshortplanks.com>
+ 
+ =item *
+ 
+ Graham Knop <haarg@haarg.org>
+ 
+ =item *
+ 
+ Dagfinn Ilmari MannsÃ¥ker <ilmari@ilmari.org>
+ 
+ =item *
+ 
+ Paul Howarth <paul@city-fan.org>
+ 
+ =item *
+ 
+ Rudolf Leermakers <rudolf@hatsuseno.org>
+ 
+ =item *
+ 
+ anaxagoras <walkeraj@gmail.com>
+ 
+ =item *
+ 
+ awalker <awalker@sourcefire.com>
+ 
+ =item *
+ 
+ chromatic <chromatic@wgz.org>
+ 
+ =item *
+ 
+ Alex <alex@koban.(none)>
+ 
+ =item *
+ 
+ cm-perl <cm-perl@users.noreply.github.com>
+ 
+ =item *
+ 
+ Andrew Yates <ayates@haddock.local>
+ 
+ =item *
+ 
+ David Lowe <davidl@lokku.com>
+ 
+ =item *
+ 
+ Glenn Fowler <cebjyre@cpan.org>
+ 
+ =item *
+ 
+ Hans Dieter Pearcey <hdp@weftsoar.net>
+ 
+ =item *
+ 
+ Jonathan Yu <JAWNSY@cpan.org>
+ 
+ =item *
+ 
+ Marc Mims <marc@questright.com>
+ 
+ =item *
+ 
+ Mark Stosberg <mark@stosberg.com>
+ 
+ =back
+ 
+ =head1 COPYRIGHT AND LICENCE
+ 
+ This software is Copyright (c) 2009 by ×××× ×§××'×× (Yuval Kogman).
+ 
+ This is free software, licensed under:
+ 
+   The MIT (X11) License
+ 
+ =cut
+
+END_OF_FILE
+
+
+# __MOBUNDLE_FILE__
+
+      'Data/Tubes.pm' => <<'END_OF_FILE',
+ package Data::Tubes;
+ 
+ # vim: ts=3 sts=3 sw=3 et ai :
+ 
+ use strict;
+ use warnings;
+ use English qw< -no_match_vars >;
+ our $VERSION = '0.725001';
+ use Exporter qw< import >;
+ 
+ use Log::Log4perl::Tiny qw< :easy :dead_if_first LOGLEVEL >;
+ use Data::Tubes::Util qw<
+   args_array_with_options
+   load_sub
+   normalize_args
+   resolve_module
+   tube
+ >;
+ 
+ our @EXPORT_OK = (
+    qw<
+      drain
+      pipeline
+      summon
+      tube
+      >
+ );
+ our %EXPORT_TAGS = (all => \@EXPORT_OK,);
+ 
+ sub drain {
+    my $tube = shift;
+    my ($type, $iterator) = $tube->(@_) or return;
+    return unless defined($iterator) && ($type eq 'iterator');
+    while (my @items = $iterator->()) { }
+ } ## end sub drain
+ 
+ sub pipeline {
+    my ($tubes, $args) = args_array_with_options(@_, {name => 'sequence'});
+ 
+    my $tap = delete $args->{tap};
+    $tap = sub {
+       my $iterator = shift;
+       while (my @items = $iterator->()) { }
+       return;
+      }
+      if defined($tap) && ($tap eq 'sink');
+ 
+    if ((!defined($tap)) && (defined($args->{pump}))) {
+       my $pump = delete $args->{pump};
+       $tap = sub {
+          my $iterator = shift;
+          while (my ($record) = $iterator->()) {
+             $pump->($record);
+          }
+          return;
+         }
+    } ## end if ((!defined($tap)) &&...)
+    LOGDIE 'invalid tap or pump'
+      if $tap && ref($tap) ne 'CODE';
+ 
+    my $sequence = tube('+Plumbing::sequence', %$args, tubes => $tubes);
+    return $sequence unless $tap;
+ 
+    return sub {
+       my (undef, $iterator) = $sequence->(@_) or return;
+       return $tap->($iterator);
+    };
+ } ## end sub pipeline
+ 
+ sub summon {    # sort-of import
+    my ($imports, $args) = args_array_with_options(
+       @_,
+       {
+          prefix  => 'Data::Tubes::Plugin',
+          package => (caller(0))[0],
+       }
+    );
+    my $prefix = $args->{prefix};
+    my $cpack = $args->{package};
+ 
+    for my $r (@_) {
+       my @parts;
+       if (ref($r) eq 'ARRAY') {
+          @parts = $r;
+       }
+       else {
+          my ($pack, $name) = $r =~ m{\A(.*)::(\w+)\z}mxs;
+          @parts = [$pack, $name];
+       }
+       for my $part (@parts) {
+          my ($pack, @names) = @$part;
+          $pack = resolve_module($pack, $prefix);
+          (my $fpack = "$pack.pm") =~ s{::}{/}gmxs;
+          require $fpack;
+          for my $name (@names) {
+             my $sub = $pack->can($name)
+               or LOGDIE "package '$pack' has no '$name' inside";
+             no strict 'refs';
+             *{$cpack . '::' . $name} = $sub;
+          } ## end for my $name (@names)
+       } ## end for my $part (@parts)
+    } ## end for my $r (@_)
+ } ## end sub summon
+ 
+ 1;
+ __END__
+
+END_OF_FILE
+
+
+# __MOBUNDLE_FILE__
+
+      'Data/Tubes/Util.pm' => <<'END_OF_FILE',
+ package Data::Tubes::Util;
+ 
+ # vim: ts=3 sts=3 sw=3 et ai :
+ 
+ use strict;
+ use warnings;
+ use Exporter 'import';
+ our $VERSION = '0.725001';
+ 
+ use Log::Log4perl::Tiny qw< :easy :dead_if_first >;
+ 
+ our @EXPORT_OK = qw<
+   args_array_with_options
+   assert_all_different
+   load_module
+   load_sub
+   metadata
+   normalize_args
+   normalize_filename
+   resolve_module
+   shorter_sub_names
+   sprintffy
+   test_all_equal
+   traverse
+   tube
+   unzip
+ >;
+ 
+ sub _load_module {
+    my $module = shift;
+    (my $packfile = $module . '.pm') =~ s{::}{/}gmxs;
+    require $packfile;
+    return $module;
+ } ## end sub _load_module
+ 
+ sub args_array_with_options {
+    my %defaults = %{pop @_};
+    %defaults = (%defaults, %{pop @_})
+      if @_ && (ref($_[-1]) eq 'HASH');
+    return ([@_], \%defaults);
+ } ## end sub args_array_with_options
+ 
+ sub assert_all_different {
+    my $keys = (@_ && ref($_[0])) ? $_[0] : \@_;
+    my %flag_for;
+    for my $key (@$keys) {
+       die {message => $key} if $flag_for{$key}++;
+    }
+    return 1;
+ } ## end sub assert_all_different
+ 
+ sub load_module {
+    my $module = resolve_module(@_);
+    (my $packfile = $module . '.pm') =~ s{::}{/}gmxs;
+    require $packfile;
+    return $module;
+ } ## end sub load_module
+ 
+ sub load_sub {
+    my ($locator, $prefix) = @_;
+    my ($module, $sub) =
+      ref($locator) ? @$locator : $locator =~ m{\A(.*)::(\w+)\z}mxs;
+    $module = resolve_module($module, $prefix);
+ 
+    # optimistic first
+    return $module->can($sub) // _load_module($module)->can($sub);
+ } ## end sub load_sub
+ 
+ sub metadata {
+    my $input = shift;
+    my %args  = normalize_args(
+       @_,
+       {
+          chunks_separator    => ' ',
+          key_value_separator => '=',
+          default_key         => '',
+       }
+    );
+ 
+    # split data into chunks, un-escape on the fly
+    my $separator = $args{chunks_separator};
+    my $qs        = quotemeta($separator);
+    my $regexp    = qr/((?:\\.|[^\\$qs])+)(?:$qs+)?/;
+    my @chunks    = map { s{\\(.)}{$1}g; $_ } $input =~ m{$regexp}gc;
+ 
+    # ensure we consumed the whole $input
+    die {message =>
+         "invalid metadata (separator: '$separator', input: [$input])\n"
+      }
+      if pos($input) < length($input);
+ 
+    $separator = $args{key_value_separator};
+    return {
+       map {
+          my ($k, $v) = _split_pair($_, $separator);
+          defined($v) ? ($k, $v) : ($args{default_key} => $k);
+       } @chunks
+    };
+ } ## end sub metadata
+ 
+ sub normalize_args {
+    my $defaults = pop;
+    my %retval =
+      (%$defaults, ((@_ && ref($_[0]) eq 'HASH') ? %{$_[0]} : @_));
+    return %retval if wantarray();
+    return \%retval;
+ } ## end sub normalize_args
+ 
+ sub normalize_filename {
+    my ($filename, $default_handle) = @_;
+    return $filename       if ref($filename) eq 'GLOB';
+    return $filename       if ref($filename) eq 'SCALAR';
+    return $default_handle if $filename eq '-';
+    return $filename       if $filename =~ s{\Afile:}{}mxs;
+    if (my ($handlename) = $filename =~ m{\Ahandle:(?:std)?(.*)\z}imxs) {
+       $handlename = lc $handlename;
+       return \*STDOUT if $handlename eq 'out';
+       return \*STDIN  if $handlename eq 'err';
+       return \*STDERR if $handlename eq 'in';
+       LOGDIE "normalize_filename: invalid filename '$filename', "
+         . "use 'file:$filename' if name is correct";
+    } ## end if (my ($handlename) =...)
+    return $filename;
+ } ## end sub normalize_filename
+ 
+ sub resolve_module {
+    my ($module, $prefix) = @_;
+ 
+    my ($first) = substr $module, 0, 1;
+    return substr $module, 1 if $first eq '!';
+ 
+    $prefix //= 'Data::Tubes::Plugin';
+    if ($first eq '+') {
+       $module = substr $module, 1;
+    }
+    elsif ($module =~ m{::}mxs) {
+       $prefix = undef;
+    }
+    return $module unless defined $prefix;
+    return $prefix . '::' . $module;
+ } ## end sub resolve_module
+ 
+ sub shorter_sub_names {
+    my $stash = shift(@_) . '::';
+ 
+    no strict 'refs';
+ 
+    # isolate all subs
+    my %sub_for =
+      map { *{$stash . $_}{CODE} ? ($_ => *{$stash . $_}{CODE}) : (); }
+      keys %$stash;
+ 
+    # iterate through inputs, work only on isolated subs and don't
+    # consider shortened ones
+    for my $prefix (@_) {
+       while (my ($name, $sub) = each %sub_for) {
+          next if index($name, $prefix) < 0;
+          my $shortname = substr $name, length($prefix);
+          *{$stash . $shortname} = $sub;
+       }
+    } ## end for my $prefix (@_)
+ 
+    return;
+ } ## end sub shorter_sub_names
+ 
+ sub _split_pair {
+    my ($input, $separator) = @_;
+    my $qs     = quotemeta($separator);
+    my $regexp = qr{(?mxs:\A((?:\\.|[^\\$qs])+)$qs(.*)\z)};
+    my ($first, $second) = $input =~ m{$regexp};
+    ($first, $second) = ($input, undef) unless defined($first);
+    $first =~ s{\\(.)}{$1}gmxs;    # unescape metadata
+    return ($first, $second);
+ } ## end sub _split_pair
+ 
+ sub sprintffy {
+    my ($template, $substitutions) = @_;
+    my $len = length $template;
+    pos($template) = 0;            # initialize
+    my @chunks;
+  QUEST:
+    while (pos($template) < $len) {
+       $template =~ m{\G (.*?) (% | \z)}mxscg;
+       my ($plain, $term) = ($1, $2);
+       my $pos = pos($template);
+       push @chunks, $plain;
+       last unless $term;          # got a percent, have to continue
+     CANDIDATE:
+       for my $candidate ([qr{%} => '%'], @$substitutions) {
+          my ($regex, $value) = @$candidate;
+          $template =~ m{\G$regex}cg or next CANDIDATE;
+          $value = $value->() if ref($value) eq 'CODE';
+          push @chunks, $value;
+          next QUEST;
+       } ## end CANDIDATE: for my $candidate ([qr{%}...])
+ 
+       # didn't find a matchin thing... time to complain
+       die {message => "invalid sprintffy template '$template'"};
+    } ## end QUEST: while (pos($template) < $len)
+    return join '', @chunks;
+ } ## end sub sprintffy
+ 
+ sub test_all_equal {
+    my $reference = shift;
+    for my $candidate (@_) {
+       return if $candidate ne $reference;
+    }
+    return 1;
+ } ## end sub test_all_equal
+ 
+ sub traverse {
+    my ($data, @keys) = @_;
+    for my $key (@keys) {
+       if (ref($data) eq 'HASH') {
+          $data = $data->{$key};
+       }
+       elsif (ref($data) eq 'ARRAY') {
+          $data = $data->[$key];
+       }
+       else {
+          return undef;
+       }
+       return undef unless defined $data;
+    } ## end for my $key (@keys)
+    return $data;
+ } ## end sub traverse
+ 
+ sub tube {
+    my $locator = shift;
+    return load_sub($locator)->(@_);
+ } ## end sub tube
+ 
+ sub unzip {
+    my $items = (@_ && ref($_[0])) ? $_[0] : \@_;
+    my $n_items = scalar @$items;
+    my (@evens, @odds);
+    my $i = 0;
+    while ($i < $n_items) {
+       push @evens, $items->[$i++];
+       push @odds, $items->[$i++] if $i < $n_items;
+    }
+    return (\@evens, \@odds);
+ } ## end sub unzip
+ 
+ 1;
+
+END_OF_FILE
+
+
+# __MOBUNDLE_FILE__
+
+      'Data/Tubes/Plugin/Source.pm' => <<'END_OF_FILE',
+ package Data::Tubes::Plugin::Source;
+ 
+ # vim: ts=3 sts=3 sw=3 et ai :
+ 
+ use strict;
+ use warnings;
+ use English qw< -no_match_vars >;
+ use Log::Log4perl::Tiny qw< :easy :dead_if_first LOGLEVEL >;
+ our $VERSION = '0.725001';
+ 
+ use Data::Tubes::Util
+   qw< normalize_args normalize_filename args_array_with_options >;
+ use Data::Tubes::Plugin::Util qw< identify log_helper >;
+ my %global_defaults = (
+    input  => 'source',
+    output => 'raw',
+ );
+ 
+ sub iterate_array {
+    my %args = normalize_args(@_, {name => 'array iterator'});
+    identify(\%args);
+    my $logger       = log_helper(\%args);
+    my $global_array = $args{array} || [];
+    my $n_global     = @$global_array;
+    return sub {
+       my $local_array = shift || [];
+       my $n_local     = @$local_array;
+       my $i           = 0;
+       return (
+          iterator => sub {
+             return if $i >= $n_global + $n_local;
+             my $element =
+               ($i < $n_global)
+               ? $global_array->[$i++]
+               : $local_array->[($i++) - $n_global];
+             $logger->($element, \%args) if $logger;
+             return $element;
+          },
+       );
+    };
+ } ## end sub iterate_array
+ 
+ sub open_file {
+    my %args = normalize_args(
+       @_,
+       {
+          binmode => ':encoding(UTF-8)',
+          output  => 'source',
+          name    => 'open file',
+       }
+    );
+    identify(\%args);
+ 
+    # valid "output" sub-fields must be defined and at least one char long
+    # otherwise output will be ignored
+    my $binmode   = $args{binmode};
+    my $output    = $args{output};
+    my $input     = $args{input};
+    my $has_input = defined($input) && length($input);
+ 
+    return sub {
+       my ($record, $file) =
+         $has_input ? ($_[0], $_[0]{$input}) : ({}, $_[0]);
+       $file = normalize_filename($file);
+ 
+       if (ref($file) eq 'GLOB') {
+          my $is_stdin = fileno($file) == fileno(\*STDIN);
+          my $name = $is_stdin ? 'STDIN' : "$file";
+          $record->{$output} = {
+             fh    => $file,
+             input => $file,
+             type  => 'handle',
+             name  => "handle\:$name",
+          };
+       } ## end if (ref($file) eq 'GLOB')
+       else {
+          open my $fh, '<', $file
+            or die "open('$file'): $OS_ERROR";
+          binmode $fh, $binmode;
+          my $type = (ref($file) eq 'SCALAR') ? 'scalar' : 'file';
+          $record->{$output} = {
+             fh    => $fh,
+             input => $file,
+             type  => $type,
+             name  => "$type\:$file",
+          };
+       } ## end else [ if (ref($file) eq 'GLOB')]
+ 
+       return $record;
+    };
+ } ## end sub open_file
+ 
+ sub iterate_files {
+    my ($files, $args) = args_array_with_options(
+       @_,
+       {    # these are the default options
+          name    => 'files',
+ 
+          # options specific for sub-tubes
+          iterate_array_args => {},
+          open_file_args     => {},
+          logger_args        => {
+             target => sub {
+                my $record = shift;
+                return 'reading from ' . $record->{source}{name},;
+             },
+          },
+       }
+    );
+    identify($args);
+ 
+    use Data::Tubes::Plugin::Plumbing;
+    return Data::Tubes::Plugin::Plumbing::sequence(
+       tubes => [
+          iterate_array(
+             %{$args->{iterate_array_args}}, array => $files,
+          ),
+          open_file(%{$args->{open_file_args}}),
+          Data::Tubes::Plugin::Plumbing::logger(%{$args->{logger_args}}),
+       ]
+    );
+ } ## end sub iterate_files
+ 
+ 1;
+
+END_OF_FILE
+
+
+# __MOBUNDLE_FILE__
+
+      'Data/Tubes/Plugin/Parser.pm' => <<'END_OF_FILE',
+ package Data::Tubes::Plugin::Parser;
+ use strict;
+ use warnings;
+ use English qw< -no_match_vars >;
+ use Data::Dumper;
+ our $VERSION = '0.725001';
+ 
+ use Log::Log4perl::Tiny qw< :easy :dead_if_first >;
+ 
+ use Data::Tubes::Util qw<
+   assert_all_different
+   metadata
+   normalize_args
+   shorter_sub_names
+   test_all_equal
+   unzip
+ >;
+ use Data::Tubes::Plugin::Util qw< identify >;
+ my %global_defaults = (
+    input  => 'raw',
+    output => 'structured',
+ );
+ 
+ sub parse_by_format {
+    my %args = normalize_args(@_, {%global_defaults,});
+    identify(\%args);
+ 
+    my $format = $args{format};
+    LOGDIE "parser of type 'format' needs a definition"
+      unless defined $format;
+ 
+    my @items = split m{(\W+)}, $format;
+    return parse_single(key => $items[0]) if @items == 1;
+ 
+    my ($keys, $separators) = unzip(\@items);
+ 
+    # all keys MUST be different, otherwise some fields are just trumping
+    # on each other
+    eval { assert_all_different($keys); }
+      or LOGDIE "'format' parser [$format] "
+      . "has duplicate key $EVAL_ERROR->{message}";
+ 
+    # a simple split will do if all separators are the same
+    return parse_by_split(
+       %args,
+       keys      => $keys,
+       separator => $separators->[0]
+    ) if test_all_equal(@$separators);
+ 
+    return parse_by_separators(
+       %args,
+       keys       => $keys,
+       separators => $separators
+    );
+ } ## end sub parse_by_format
+ 
+ sub parse_by_regex {
+    my %args =
+      normalize_args(@_, {%global_defaults, name => 'parse by regex'});
+    identify(\%args);
+ 
+    my $name  = $args{name};
+    my $regex = $args{regex};
+    LOGDIE "parse_by_regex needs a regex"
+      unless defined $regex;
+ 
+    $regex = qr{$regex};
+    my $input  = $args{input};
+    my $output = $args{output};
+    return sub {
+       my $record = shift;
+       $record->{$input} =~ m{$regex}
+         or die {
+          message => "'$name': invalid record, regex is $regex",
+          input   => $input,
+          record  => $record,
+         };
+       my $retval = {%+};
+       $record->{$output} = $retval;
+       return $record;
+    };
+ } ## end sub parse_by_regex
+ 
+ sub parse_by_separators {
+    my %args = normalize_args(@_, {%global_defaults,});
+    identify(\%args);
+ 
+    my $keys = $args{keys};
+    LOGDIE "parse_by_separators needs keys"
+      unless defined $keys;
+    my $separators = $args{separators};
+    LOGDIE "parse_by_separators needs separators"
+      unless defined $separators;
+    my $delta = scalar(@$keys) - scalar(@$separators);
+    LOGDIE "parse_by_separators 0 <= #keys - #separators <= 1"
+      if ($delta < 0) || ($delta > 1);
+ 
+    my @items;
+    for my $i (0 .. $#$keys) {
+       push @items, '(.*?)';                                     # keys
+       push @items, '(?:' . quotemeta($separators->[$i]) . ')'
+         if $i <= $#$separators;
+    }
+ 
+    # if not a separator, the last item becomes a catchall
+    $items[-1] = '(.*)' if $delta > 0;
+ 
+    # ready to generate the regexp. We bind the end to \z anyway because
+    # the last element might be a separator
+    my $format = join '', '(?:\\A', @items, '\\z)';
+    my $regex = qr{$format};
+    DEBUG "regex will be: $regex";
+ 
+    # this sub will use the regexp above, do checking and return captured
+    # values in a hash with @keys
+    my $n_keys     = scalar @$keys;
+    my $input      = $args{input};
+    my $output     = $args{output};
+    return sub {
+       my $record = shift;
+       my @values = $record->{$input} =~ m{$regex}
+         or die {message => 'invalid record', record => $record};
+       die      {message => "invalid record, wrong number of items", record => $record}
+         if scalar(@values) != $n_keys;
+       $record->{$output} = \my %retval;
+       @retval{@$keys} = @values;
+       return $record;
+    };
+ } ## end sub parse_by_separators
+ 
+ sub parse_by_split {
+    my %args =
+      normalize_args(@_, {%global_defaults, name => 'parse by split'});
+    identify(\%args);
+ 
+    my $name      = $args{name};
+    my $separator = $args{separator};
+    LOGDIE "parse_by_split needs a separator"
+      unless defined $separator;
+    if (!ref $separator) {
+       $separator = quotemeta($separator);
+       $separator = qr{$separator};
+    }
+ 
+    my $keys   = $args{keys};
+    my $n_keys = defined($keys) ? scalar(@$keys) : 0;
+    my $input  = $args{input};
+    my $output = $args{output};
+ 
+    return sub {
+       my $record = shift;
+ 
+       my @values = split /$separator/, $record->{$input}, $n_keys;
+       my $n_values = @values;
+       die {
+          message => "'$name': invalid record, expected $n_keys items, "
+            . "got $n_values",
+          input  => $input,
+          record => $record,
+         }
+         if $n_values != $n_keys;
+ 
+       $record->{$output} = \my %retval;
+       @retval{@$keys} = @values;
+       return $record;
+      }
+      if $n_keys;
+ 
+    return sub {
+       my $record = shift;
+       my @retval = split /$separator/, $record->{$input};
+       $record->{$output} = \@retval;
+       return $record;
+    };
+ 
+ } ## end sub parse_by_split
+ 
+ sub parse_hashy {
+    my %args = normalize_args(
+       @_,
+       {
+          chunks_separator    => ' ',
+          default_key         => '',
+          key_value_separator => '=',
+          %global_defaults,
+       }
+    );
+    identify(\%args);
+    my %defaults = %{$args{defaults} || {}};
+    my $input    = $args{input};
+    my $output   = $args{output};
+    return sub {
+       my $record = shift;
+       my $parsed = metadata($record->{$input}, %args);
+       $record->{$output} = {%defaults, %$parsed};
+       return $record;
+    };
+ } ## end sub parse_hashy
+ 
+ sub parse_single {
+    my %args = normalize_args(
+       @_,
+       {
+          key => 'key',
+          %global_defaults,
+       }
+    );
+    identify(\%args);
+    my $key     = $args{key};
+    my $has_key = defined($key) && length($key);
+    my $input   = $args{input};
+    my $output  = $args{output};
+    return sub {
+       my $record = shift;
+       $record->{$output} =
+         $has_key ? {$key => $record->{$input}} : $record->{$input};
+       return $record;
+      }
+ } ## end sub parse_single
+ 
+ shorter_sub_names(__PACKAGE__, 'parse_');
+ 
+ 1;
+
+END_OF_FILE
+
+
+# __MOBUNDLE_FILE__
+
+      'Data/Tubes/Plugin/Renderer.pm' => <<'END_OF_FILE',
+ package Data::Tubes::Plugin::Renderer;
+ use strict;
+ use warnings;
+ use English qw< -no_match_vars >;
+ our $VERSION = '0.725001';
+ 
+ use Log::Log4perl::Tiny qw< :easy :dead_if_first >;
+ 
+ use Data::Tubes::Util qw< normalize_args shorter_sub_names >;
+ my %global_defaults = (
+    input  => 'structured',
+    output => 'rendered',
+ );
+ 
+ sub render_with_template_perlish {
+    my %args = normalize_args(
+       @_,
+       {
+          %global_defaults,
+          start     => '[%',
+          stop      => '%]',
+          variables => {},
+          name => 'render with Template::Perlish',
+       }
+    );
+    my $name = $args{name};
+    LOGDIE "$name: template is mandatory"
+       unless defined $args{template};
+ 
+    require Template::Perlish;
+    my $tp = Template::Perlish->new(
+       map { $_ => $args{$_} }
+       grep { defined $args{$_} } qw< start stop variables >
+    );
+    my $template = $tp->compile($args{template});
+ 
+    my $input      = $args{input};
+    my $output     = $args{output};
+    return sub {
+       my $record    = shift;
+       $record->{$output} = $tp->evaluate($template, $record->{$input});
+       return $record;
+    };
+ } ## end sub render_template_perlish
+ 
+ shorter_sub_names(__PACKAGE__, 'render_');
+ 
+ 1;
+
+END_OF_FILE
+
+
+# __MOBUNDLE_FILE__
+
+      'Data/Tubes/Plugin/Reader.pm' => <<'END_OF_FILE',
+ package Data::Tubes::Plugin::Reader;
+ use strict;
+ use warnings;
+ use English qw< -no_match_vars >;
+ our $VERSION = '0.725001';
+ 
+ use Log::Log4perl::Tiny qw< :easy :dead_if_first LOGLEVEL >;
+ 
+ use Data::Tubes::Util qw< normalize_args shorter_sub_names >;
+ use Data::Tubes::Plugin::Util qw< identify >;
+ my %global_defaults = (
+    input  => 'source',
+    output => 'raw',
+ );
+ 
+ sub read_by_line {
+    return read_by_separator(
+       normalize_args(
+          @_,
+          {
+             name           => 'read_by_line',
+             identification => {caller => [caller(0)]},
+          }
+       ),
+       separator => "\n",
+    );
+ } ## end sub read_by_line
+ 
+ sub read_by_paragraph {
+    return read_by_separator(
+       normalize_args(
+          @_,
+          {
+             name           => 'read_by_paragraph',
+             identification => {caller => [caller(0)]},
+          }
+       ),
+       separator => '',
+    );
+ } ## end sub read_by_paragraph
+ 
+ sub read_by_record_reader {
+    my %args = normalize_args(
+       @_,
+       {
+          %global_defaults,
+          emit_eof       => 0,
+          name           => 'read_by_record_reader',
+          identification => {caller => [caller(0)]},
+       },
+    );
+    identify(\%args);
+    my $emit_eof      = $args{emit_eof};
+    my $input         = $args{input};
+    my $has_input     = defined($input) && length($input);
+    my $output        = $args{output};
+    my $record_reader = $args{record_reader};
+    return sub {
+       my $record = shift;
+       my $source = $has_input ? $record->{$input} : $record;
+       my $fh     = $source->{fh};
+ 
+       return (
+          iterator => sub {
+             my $read = $record_reader->($fh);
+             my $retval = {%$record, $output => $read};
+             return $retval if defined $read;
+             if ($emit_eof) {
+                $emit_eof = 0;
+                return $retval;
+             }
+             return;
+          },
+       );
+    };
+ } ## end sub read_by_record_reader
+ 
+ sub read_by_separator {
+    my %args = normalize_args(
+       @_,
+       {
+          name           => 'read_by_separator',
+          chomp          => 1,
+          identification => {caller => [caller(0)]},
+       }
+    );
+    my $separator = $args{separator};
+    my $chomp     = $args{chomp};
+    return read_by_record_reader(
+       %args,
+       record_reader => sub {
+          my $fh = shift;
+          local $INPUT_RECORD_SEPARATOR = $separator;
+          my $retval = <$fh>;
+          chomp($retval) if defined($retval) && $chomp;
+          return $retval;
+       },
+    );
+ } ## end sub read_by_separator
+ 
+ shorter_sub_names(__PACKAGE__, 'read_');
+ 
+ 1;
+
+END_OF_FILE
+
+
+# __MOBUNDLE_FILE__
+
+      'Data/Tubes/Plugin/Plumbing.pm' => <<'END_OF_FILE',
+ package Data::Tubes::Plugin::Plumbing;
+ 
+ # vim: ts=3 sts=3 sw=3 et ai :
+ 
+ use strict;
+ use warnings;
+ use English qw< -no_match_vars >;
+ use Data::Dumper;
+ use Scalar::Util qw< blessed >;
+ our $VERSION = '0.725001';
+ 
+ use Log::Log4perl::Tiny
+   qw< :easy :dead_if_first get_logger LOGLEVEL LEVELID_FOR >;
+ use Data::Tubes::Util
+   qw< args_array_with_options normalize_args traverse >;
+ use Data::Tubes::Plugin::Util qw< identify log_helper tubify >;
+ 
+ sub alternatives {
+    my ($tubes, $args) =
+      args_array_with_options(@_, {name => 'alternatives'});
+    identify($args);
+    my $name = $args->{name};
+ 
+    my @tubes = tubify(@$tubes);
+ 
+    return sub {
+       my $record = shift;
+       for my $tube (@tubes) {
+          if (my @retval = $tube->($record)) {
+             return @retval;
+          }
+       }
+       return;
+    };
+ } ## end sub alternatives
+ 
+ sub dispatch {
+    my %args = normalize_args(@_,
+       {default => undef, name => 'dispatch', loglevel => $INFO});
+    identify(\%args);
+    my $name = $args{name};
+ 
+    my $selector = $args{selector};
+    if (!defined($selector) && defined($args{key})) {
+       my @key = ref($args{key}) ? @{$args{key}} : ($args{key});
+       $selector = sub { return traverse($_[0], @key); };
+    }
+    LOGDIE "$name: required dispatch key or selector"
+      unless defined $selector;
+ 
+    my $handler_for = {%{$args{handlers} || {}}};    # our cache
+    my $factory = $args{factory};
+    if (!defined($factory)) {
+       $factory = sub {
+          my ($key, $record) = @_;
+          die {
+             message => "$name: unhandled selection key '$key'",
+             record  => $record,
+          };
+       };
+    } ## end if (!defined($factory))
+    LOGDIE "$name: required factory or handlers"
+      unless defined $factory;
+ 
+    my $default = $args{default};
+    return sub {
+       my $record = shift;
+ 
+       # get a key into the cache
+       my $key = $selector->($record) // $default;
+       die {
+          message => "$name: selector key is undefined",
+          record  => $record,
+         }
+         unless defined $key;
+ 
+       # register a new handler... or die!
+       $handler_for->{$key} = $factory->($key, $record)
+         unless exists $handler_for->{$key};
+ 
+       return $handler_for->{$key}->($record);
+    };
+ } ## end sub dispatch
+ 
+ sub fallback {
+ 
+    # we lose syntax sugar but allow for Try::Tiny to remain optional
+    eval { require Try::Tiny; }
+      or LOGCONFESS 'Data::Tubes::Plugin::Plumbing::fallback '
+      . 'needs Try::Tiny, please install';
+ 
+    my ($tubes, $args) = args_array_with_options(@_, {name => 'fallback'});
+    identify($args);
+    my $name = $args->{name};
+ 
+    my @tubes = tubify(@$tubes);
+ 
+    my $catch = $args->{catch};
+    return sub {
+       my $record = shift;
+       for my $tube (@tubes) {
+          my (@retval, $do_fallback);
+          Try::Tiny::try(
+             sub {
+                @retval = $tube->($record);
+             },
+             Try::Tiny::catch(
+                sub {
+                   $catch->($_, $record) if $catch;
+                   $do_fallback = 1;
+                }
+             )
+          );
+          return @retval unless $do_fallback;
+       } ## end for my $tube (@tubes)
+       return;
+    };
+ } ## end sub fallback
+ 
+ sub logger {
+    my %args = normalize_args(@_, {name => 'log pipe', loglevel => $INFO});
+    identify(\%args);
+    my $loglevel = LEVELID_FOR($args{loglevel});
+    my $mangler  = $args{target};
+    if (!defined $mangler) {
+       $mangler = sub { return shift; }
+    }
+    elsif (ref($mangler) ne 'CODE') {
+       my @keys = ref($mangler) ? @$mangler : ($mangler);
+       $mangler = sub {
+          my $record = shift;
+          return traverse($record, @keys);
+       };
+    } ## end elsif (ref($mangler) ne 'CODE')
+    my $logger = get_logger();
+    return sub {
+       my $record = shift;
+       $logger->log($loglevel, $mangler->($record));
+       return $record;
+    };
+ } ## end sub logger
+ 
+ sub pipeline {
+    my ($tubes, $args) = args_array_with_options(@_, {name => 'pipeline'});
+    return sequence(%$args, tubes => $tubes);
+ }
+ 
+ sub sequence {
+    my %args = normalize_args(@_, {name => 'sequence'});
+    identify(\%args);
+ 
+    # cope with an empty list of tubes - equivalent to an "id" function but
+    # always returning an iterator for consistency
+    my $tubes = $args{tubes} || [];
+    return sub {
+       my @record = shift;
+       return (
+          iterator => sub {
+             return unless @record;
+             return shift @record;
+          }
+       );
+      }
+      unless @$tubes;
+ 
+    # auto-generate tubes if you get definitions
+    my @tubes = tubify(@$tubes);
+ 
+    my $logger = log_helper(\%args);
+    my $name   = $args{name};
+    return sub {
+       my $record = shift;
+       $logger->($record, \%args) if $logger;
+ 
+       my @stack = ({record => $record});
+       my $iterator = sub {
+        STEP:
+          while (@stack) {
+             my $pos = $#stack;
+ 
+             my $f = $stack[$pos];
+             my @record =
+                 exists($f->{record})   ? delete $f->{record}
+               : exists($f->{iterator}) ? $f->{iterator}->()
+               : @{$f->{records} || []} ? shift @{$f->{records}}
+               :                          ();
+             if (!@record) {    # no more at this level...
+                my $n = @stack;
+                TRACE "$name: level $n backtracking, no more records";
+                pop @stack;
+                next STEP;
+             } ## end if (!@record)
+ 
+             my $record = $record[0];
+             return $record if @stack > @tubes;    # output cache
+ 
+             # something must be done...
+             my @outcome = $tubes[$pos]->($record)
+               or next STEP;
+ 
+             unshift @outcome, 'record' if @outcome == 1;
+             push @stack, {@outcome};              # and go to next level
+          } ## end STEP: while (@stack)
+ 
+          return;    # end of output, empty list
+       };
+       return (iterator => $iterator);
+    };
+ } ## end sub sequence
+ 
+ 1;
+
+END_OF_FILE
+
+
+# __MOBUNDLE_FILE__
+
+      'Data/Tubes/Plugin/Validator.pm' => <<'END_OF_FILE',
+ package Data::Tubes::Plugin::Validator;
+ use strict;
+ use warnings;
+ use English qw< -no_match_vars >;
+ our $VERSION = '0.725001';
+ 
+ use Log::Log4perl::Tiny qw< :easy :dead_if_first >;
+ 
+ use Data::Tubes::Util qw< args_array_with_options shorter_sub_names >;
+ use Data::Tubes::Plugin::Util qw< identify >;
+ my %global_defaults = (input => 'structured',);
+ 
+ sub validate_with_subs {
+    my ($validators, $args) = args_array_with_options(
+       @_,
+       {
+          %global_defaults,
+          name           => 'validate with subs',
+          output         => 'validation',
+          keep_positives => 0,
+          keep_empty     => 0,
+          wrapper        => undef,
+       }
+    );
+    identify($args);
+    my $name = $args->{name};
+ 
+    my $wrapper = $args->{wrapper};
+    if ($wrapper && $wrapper eq 'try') {
+       eval { require Try::Tiny; }
+         or LOGCONFESS '+Validator::validate_with_subs '
+         . 'needs Try::Tiny, please install';
+ 
+       $wrapper = sub {
+          my ($validator, @params) = @_;
+          return Try::Tiny::try(
+             sub { $validator->(@params); },
+             Try::Tiny::catch(sub { return (0, $_); }),
+          );
+       };
+    } ## end if ($wrapper && $wrapper...)
+ 
+    my $input          = $args->{input};
+    my $output         = $args->{output};
+    my $keep_positives = $args->{keep_positives};
+    my $keep_empty     = $args->{keep_empty};
+    return sub {
+       my $record = shift;
+       my $target = defined($input) ? $record->{$input} : $record;
+       my @outcomes;
+       for my $i (0 .. $#$validators) {
+          my ($name, $validator, @params) =
+            (ref($validators->[$i]) eq 'ARRAY')
+            ? @{$validators->[$i]}
+            : ("validator-$i", $validators->[$i]);
+          my @outcome =
+              $wrapper
+            ? $wrapper->($validator, $target, $record, $args, @params)
+            : $validator->($target, $record, $args, @params);
+          push @outcome, 0 unless @outcome;
+          push @outcomes, [$name, @outcome]
+            if !$outcome[0] || $keep_positives;
+       } ## end for my $i (0 .. $#$validators)
+       $record->{$output} = undef;
+       $record->{$output} = \@outcomes if @outcomes || $keep_empty;
+       return $record;
+    };
+ } ## end sub validate_with_subs
+ 
+ shorter_sub_names(__PACKAGE__, 'validate_');
+ 
+ 1;
+
+END_OF_FILE
+
+
+# __MOBUNDLE_FILE__
+
+      'Data/Tubes/Plugin/Util.pm' => <<'END_OF_FILE',
+ package Data::Tubes::Plugin::Util;
+ use strict;
+ use warnings;
+ use English qw< -no_match_vars >;
+ use Data::Dumper;
+ our $VERSION = '0.725001';
+ 
+ use Template::Perlish;
+ use Log::Log4perl::Tiny qw< :easy :dead_if_first get_logger >;
+ use Data::Tubes::Util qw< normalize_args tube >;
+ 
+ use Exporter qw< import >;
+ our @EXPORT_OK = qw< identify log_helper read_file tubify >;
+ 
+ sub identify {
+    my ($args, $opts) = @_;
+    $args //= {};
+    $opts //= $args->{identification} // {};
+ 
+    my $name = $args->{name};
+    $name = '*unknown*' unless defined $name;
+ 
+    my @caller_fields = qw<
+      package
+      filename
+      line
+      subroutine
+      hasargs
+      wantarray
+      evaltext
+      is_require
+      hints
+      bitmask
+      hintsh
+    >;
+    my %caller;
+ 
+    if (exists $opts->{caller}) {
+       @caller{@caller_fields} = @{$opts->{caller}};
+    }
+    else {
+       my $level = $opts->{level};
+       $level = 1 unless defined $level;
+       @caller{@caller_fields} = caller($level);
+    }
+ 
+    my $message = $opts->{message};
+    $message = 'building [% name %] as [% subroutine %]'
+      unless defined $message;
+ 
+    my $tp = Template::Perlish->new(%{$opts->{tp_opts} || {}});
+    $message = $tp->process(
+       $message,
+       {
+          %caller,
+          name => $name,
+          args => $args,
+          opts => $opts,
+       }
+    );
+ 
+    my $loglevel = $opts->{loglevel};
+    $loglevel = $DEBUG unless defined $loglevel;
+    get_logger->log($loglevel, $message);
+ 
+    return;
+ } ## end sub identify
+ 
+ sub log_helper {
+    my ($args, $opts) = @_;
+    $opts //= $args->{logger};
+    return unless $opts;
+    return $opts if ref($opts) eq 'CODE';
+ 
+    # generate one
+    my $name = $args->{name};
+    $name = '*unknown*' unless defined $name;
+ 
+    my $message = $opts->{message};
+    $message = '==> [% args.name %]' unless defined $message;
+ 
+    my $tp = Template::Perlish->new(%{$opts->{tp_opts} || {}});
+    $message = $tp->compile($message);
+ 
+    my $logger   = get_logger();
+    my $loglevel = $opts->{loglevel};
+    $loglevel = $DEBUG unless defined $loglevel;
+ 
+    return sub {
+       my $level = $logger->level();
+       return if $level < $loglevel;
+       my $record = shift;
+       my $rendered =
+         $tp->evaluate($message,
+          {record => $record, args => $args, opts => $opts});
+       $logger->log($loglevel, $rendered);
+    };
+ } ## end sub log_helper
+ 
+ sub read_file {
+    my %args = normalize_args(
+       @_,
+       {
+          binmode => ':encoding(UTF-8)',
+       }
+    );
+    open my $fh, '<', $args{filename}
+      or LOGDIE "open('$args{filename}'): $OS_ERROR";
+    binmode $fh, $args{binmode} if defined $args{binmode};
+    local $INPUT_RECORD_SEPARATOR;
+    return <$fh>;
+ } ## end sub read_file
+ 
+ sub tubify {
+    map {
+       my $ref = ref $_;
+       ($ref eq 'CODE')
+         ? $_
+         : tube(($ref eq 'ARRAY') ? @$_ : $_)
+    } @_;
+ }
+ 
+ 1;
+
+END_OF_FILE
+
+
+# __MOBUNDLE_FILE__
+
+      'Data/Tubes/Plugin/Writer.pm' => <<'END_OF_FILE',
+ package Data::Tubes::Plugin::Writer;
+ 
+ # vim: ts=3 sts=3 sw=3 et ai :
+ 
+ use strict;
+ use warnings;
+ use English qw< -no_match_vars >;
+ use POSIX qw< strftime >;
+ our $VERSION = '0.725001';
+ 
+ use Log::Log4perl::Tiny qw< :easy :dead_if_first LOGLEVEL >;
+ use Template::Perlish;
+ 
+ use Data::Tubes::Util qw< normalize_args shorter_sub_names sprintffy >;
+ use Data::Tubes::Plugin::Util qw< identify log_helper >;
+ use Data::Tubes::Plugin::Plumbing;
+ my %global_defaults = (input => 'rendered',);
+ 
+ sub _filenames_generator {
+    my $template = shift;
+ 
+    my $n             = 0; # counter, used in closures inside $substitutions
+    my $substitutions = [
+       [qr{(\d*)n} => sub { return sprintf "%${1}d",    $n; }],
+       [qr{Y}      => sub { return strftime('%Y',       localtime()); }],
+       [qr{m}      => sub { return strftime('%m',       localtime()); }],
+       [qr{d}      => sub { return strftime('%d',       localtime()); }],
+       [qr{H}      => sub { return strftime('%H',       localtime()); }],
+       [qr{M}      => sub { return strftime('%M',       localtime()); }],
+       [qr{S}      => sub { return strftime('%S',       localtime()); }],
+       [qr{z}      => sub { return strftime('%z',       localtime()); }],
+       [qr{D}      => sub { return strftime('%Y%m%d',   localtime()); }],
+       [qr{T}      => sub { return strftime('%H%M%S%z', localtime()); }],
+       [qr{t} => sub { return strftime('%Y%m%dT%H%M%S%z', localtime()); }],
+    ];
+ 
+    # see if the template depends on the counter
+    my $expanded = sprintffy($template, $substitutions);
+    return sub {
+       my $retval = sprintffy($template, $substitutions);
+       ++$n;
+       return $retval;
+      }
+      if ($expanded ne $template);    # it does!
+ 
+    # then, by default, revert to poor's man expansion of name...
+    return sub {
+       my $retval = $n ? "${template}_$n" : $template;
+       ++$n;
+       return $retval;
+    };
+ } ## end sub _filenames_generator
+ 
+ sub dispatch_to_files {
+    my %args = normalize_args(
+       @_,
+       {
+          %global_defaults,
+          name    => 'write dispatcher',
+          binmode => ':encoding(UTF-8)'
+       }
+    );
+    identify(\%args);
+    my $name = delete $args{name};    # so that it can be overridden
+ 
+    my $factory = delete $args{filename_factory};
+    if (!defined($factory) && defined($args{filename_template})) {
+       my $tp = Template::Perlish->new(%{$args{tp_opts} || {}});
+       my $template = $tp->compile($args{filename_template});
+       $factory = sub {
+          my ($key, $record) = @_;
+          return $tp->evaluate($template, {key => $key, record => $record});
+       };
+    } ## end if (!defined($factory)...)
+ 
+    $args{factory} //= sub {
+       my $filename = $factory->(@_);
+       return write_to_files(%args, filename => $filename);
+    };
+ 
+    return Data::Tubes::Plugin::Plumbing::dispatch(%args);
+ } ## end sub dispatch_to_files
+ 
+ sub write_to_files {
+    my %args = normalize_args(
+       @_,
+       {
+          %global_defaults,
+          name    => 'write to file',
+          binmode => ':encoding(UTF-8)'
+       }
+    );
+    identify(\%args);
+    my $name = $args{name};
+    LOGDIE "$name: need a filename" unless defined $args{filename};
+    LOGDIE "$name: need an input"   unless defined $args{input};
+ 
+    my $output = $args{filename};
+    $output = _filenames_generator($output)
+      unless ref($output);
+    require Data::Tubes::Util::Output;
+    my $output_handler = Data::Tubes::Util::Output->new(
+       output => $output,
+       map { ($_ => $args{$_}) }
+         grep { exists $args{$_} }
+         qw< binmode footer header interlude policy >
+    );
+ 
+    my $input = $args{input};
+    return sub {
+       my $record = shift;
+       $output_handler->print($record->{$input});
+       return $record;    # relaunch for further processing
+    };
+ } ## end sub write_to_files
+ 
+ shorter_sub_names(__PACKAGE__, 'write_');
+ 
+ 1;
+
+END_OF_FILE
+
+
+# __MOBUNDLE_FILE__
+
+      'Data/Tubes/Util/Output.pm' => <<'END_OF_FILE',
+ package Data::Tubes::Util::Output;
+ use strict;
+ use warnings;
+ use English qw< -no_match_vars >;
+ use 5.010;
+ use File::Path qw< make_path >;
+ use File::Basename qw< dirname >;
+ our $VERSION = '0.725001';
+ 
+ use Log::Log4perl::Tiny qw< :easy :dead_if_first >;
+ use Mo qw< default >;
+ has binmode => (default => ':raw');
+ has footer  => ();
+ has header  => ();
+ has interlude => ();
+ has output  => (default => \*STDOUT);
+ has policy  => (default => undef);
+ has track   => (
+    default => sub {
+       return {
+          files       => 0,
+          records     => 0,
+          chars_file  => 0,
+          chars_total => 0,
+       };
+    }
+ );
+ 
+ sub open {
+    my ($self, $hint) = @_;
+ 
+    # reset some tracking parameters
+    my $track = $self->track();
+    $track->{files}++;
+    $track->{records}    = 0;
+    $track->{chars_file} = 0;
+ 
+    # get new filehandle
+    my ($fh, $fh_releaser) =
+      @{$track}{qw< current_fh current_fh_releaser>} = $self->get_fh($hint);
+ 
+    # do header handling
+    $self->_print($fh, $self->header(), $track);
+ 
+    return $fh;
+ } ## end sub open
+ 
+ sub __open_file {
+    my ($filename, $binmode) = @_;
+ 
+    # ensure its directory exists
+    make_path(dirname($filename), {error => \my $errors});
+    if (@$errors) {
+       my ($error) = values %{$errors->[0]};
+       LOGCONFESS "make_path() for '$filename': $error";
+    }
+ 
+    # can open the file, at last
+    CORE::open my $fh, '>', $filename
+      or LOGCONFESS "open('$filename'): $OS_ERROR";
+    binmode $fh, $binmode;
+ 
+    return $fh;
+ } ## end sub __open_file
+ 
+ sub get_fh {
+    my ($self, $handle) = @_;
+    $handle //= $self->output();
+ 
+    # define a default releaser, but not for GLOBs as they have their own
+    # life outside of here
+    my $releaser =
+      ref($handle) eq 'GLOB' ? undef : sub {
+         CORE::close $_[0] or LOGCONFESS "close(): $OS_ERROR";
+         return undef;
+      };
+ 
+    # if $handle is a factory, treat it as such
+    if (ref($handle) eq 'CODE') {
+       my @items = $handle->($self);
+       $handle = shift @items;
+ 
+       # override the $releaser if and only if the factory instructed to
+       # do so. Otherwise, the default one will be kept.
+       $releaser = shift @items if @items;
+    } ## end if (ref($handle) eq 'CODE')
+ 
+    # now, we either have a filehandle, or a filename
+    return ($handle, $releaser) if ref($handle) eq 'GLOB';
+    return (__open_file($handle, $self->binmode()), $releaser);
+ } ## end sub get_fh
+ 
+ sub release_fh {
+    my ($self, $fh) = @_;
+    my $track = $self->track();
+    if (my $releaser = delete $track->{current_fh_releaser}) {
+       $releaser->($fh);
+    }
+    delete $track->{current_fh};
+    return undef;
+ } ## end sub release_fh
+ 
+ sub close {
+    my ($self, $fh, $track) = @_;
+ 
+    # do footer handling
+    $self->_print($fh, $self->footer(), $track);
+ 
+    # call close, prepare $fh for other possible records
+    return $self->release_fh($fh);
+ } ## end sub close
+ 
+ sub just_close {
+    my $self  = shift;
+    my $track = $self->track();
+    my $fh    = $track->{current_fh} or return;
+    $self->close($fh, $track);
+    return;
+ } ## end sub just_close
+ 
+ sub print {
+    my $self = shift;
+ 
+    my $iterator = ref($_[0]) && $_[0];
+    my $checker  = $self->checker();
+    my $track    = $self->track();
+    my $fh       = $track->{current_fh};
+    my $interlude = $self->interlude();
+ 
+    while ('necessary') {
+       my $record = $iterator ? $iterator->() : shift(@_);
+       last unless defined $record;
+ 
+       # get filehandle if needed
+       $fh ||= $self->open();
+ 
+       # print interlude if we have previous records, increase count
+       $self->_print($fh, $interlude, $track)
+         if $track->{records};
+ 
+       # print record
+       $self->_print($fh, $record, $track);
+ 
+       # increment number of records, for next print
+       $track->{records}++;
+ 
+       # do checks if activated
+       $fh = $self->close($fh, $track)
+         if $checker && (!$checker->($self));
+    } ## end while ('necessary')
+ 
+    return;
+ } ## end sub print
+ 
+ sub _print {
+    my ($self, $fh, $data, $track) = @_;
+    return unless defined $data;
+    $data = $data->($self) if ref $data;
+ 
+    # do print data
+    ref($fh) or LOGCONFESS("$fh is not a reference");
+    print {$fh} $data or LOGCONFESS "print(): $OS_ERROR";
+ 
+    # update trackers
+    my $new_chars = length($data);
+    $track->{chars_file}  += $new_chars;
+    $track->{chars_total} += $new_chars;
+ 
+    return $new_chars;
+ } ## end sub _print
+ 
+ sub default_check {
+    my $self = shift;
+ 
+    my $policy = $self->policy()
+      or return 1;    # no policy, always fine
+    my $track = $self->track();
+    if (my $mr = $policy->{records_threshold}) {
+       return 0 if $track->{records} >= $mr;
+    }
+    if (my $cpf = $policy->{characters_threshold}) {
+       return 0 if $track->{chars_file} >= $cpf;
+    }
+    return 1;
+ } ## end sub default_check
+ 
+ sub checker {
+    my $self = shift;
+ 
+    # allow for overriding tout-court
+    if (my $method = $self->can('check')) {
+       return $method;    # will eventually be called in the right way
+    }
+ 
+    # if no policy is set, there's no reason to do checks
+    my $policy = $self->policy() or return;
+ 
+    # at this point, let's use the default_check, whatever it is
+    return $self->can('default_check');
+ } ## end sub checker
+ 
+ sub DESTROY { shift->just_close() }
+ 
+ sub writer {
+    my $package = shift;
+    my $self    = $package->new(@_);
+    return sub { return $self->print(@_) };
+ }
+ 
+ 1;
+
+END_OF_FILE
+
+
+
+# __MOBUNDLE_FILE__
+   );
+
+   unshift @INC, sub {
+      my ($me, $packfile) = @_;
+      return unless exists $file_for{$packfile};
+      (my $text = $file_for{$packfile}) =~ s/^\ //gmxs;
+      chop($text); # added \n at the end
+      open my $fh, '<', \$text or die "open(): $!\n";
+      return $fh;
+   };
+} ## end BEGIN
+# __MOBUNDLE_INCLUSION__
+
+__END__
+
+########################################################################
+# __SECTION__
+#
+# POD 
+#
+########################################################################
+
+=pod
+
+=encoding utf8
+
+=head1 NAME
+
+weddinv - wedding invitations
+
+=head1 USAGE
+
+   weddinv [--usage] [--help] [--man] [--version]
+
+   weddinv
+
+=head1 EXAMPLES
+
+   shell$ weddinv
+
+=for author, to fill in
+    Put a few examples of how to use your program
+
+
+=head1 DESCRIPTION
+
+=for author, to fill in
+    Put a thorough description of your program
+
+
+=head1 OPTIONS
+
+=for author, to fill in
+    Description of all command-line options
+
+=over
+
+=item --help
+
+print a somewhat more verbose help, showing usage, this description of
+the options and some examples from the synopsis.
+
+=item --man
+
+print out the full documentation for the script.
+
+=item --usage
+
+print a concise usage line and exit.
+
+=item --version
+
+print the version of the script.
+
+=back
+
+=head1 DIAGNOSTICS
+
+=for author, to fill in
+    List and describe all warnings/error messages
+
+=over
+
+=item C<< Error message here, perhaps with %s placeholders >>
+
+[Error description...]
+
+=item C<< Another error message here >>
+
+[Error description...]
+
+[You get the idea...]
+
+=back
+
+
+=head1 CONFIGURATION AND ENVIRONMENT
+
+=for author, to fill in
+    Explain any configuration that can be used by the program, via some
+    file or via environment variables.
+
+weddinv requires no configuration files or environment variables.
+
+
+=head1 BUGS AND LIMITATIONS
+
+=for author, to fill in
+    List any known bugs and limitations of your program
+
+No bugs have been reported.
+
+
+=head1 AUTHOR
+
+me me@example.com
+
+
+=head1 LICENCE AND COPYRIGHT
+
+Copyright (c) 2016, me me@example.com
+
+=for author, to fill in
+   Put your licensing terms here, leaving the terms for the embedded
+   modules. If you're fine with the Artistic License 2.0, you can find
+   them in the two paragraphs below, delete them if you want to use
+   something different.
+
+This program is free software.  You can redistribute it and/or
+modify it under the terms of the Artistic License 2.0.
+
+This program is distributed in the hope that it will be useful,
+but without any warranty; without even the implied warranty of
+merchantability or fitness for a particular purpose.
+
+This program embeds all modules from distribution Data::Tubes, that is
+Copyright (C) 2016 by Flavio Poletti and licensed under the Artistic
+License 2.0. See L<https://metacpan.org/pod/Data::Tubes> for further
+details.
+
+This program embeds Log::Log4perl::Tiny, that is Copyright (C) 2010-2016
+by Flavio Poletti and licensed under the Artistic License 2.0. See
+L<https://metacpan.org/pod/Log::Log4perl::Tiny> for further details.
+
+This program embeds Template::Perlish, that is Copyright (C) 2008-2016
+by Flavio Poletti and licensed under the Artistic License 2.0. See
+L<https://metacpan.org/pod/Template::Perlish> for further details.
+
+This program embeds Try::Tiny, that is Copyright (c) 2009 by יובל קוג'מן
+(Yuval Kogman) and licensed under The MIT (X11) License. See
+L<https://metacpan.org/pod/Try::Tiny> for further details.
+
+=cut
