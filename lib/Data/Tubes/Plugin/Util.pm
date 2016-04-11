@@ -98,9 +98,13 @@ sub log_helper {
 } ## end sub log_helper
 
 sub read_file {
+   my %preargs;
+   $preargs{filename} = shift(@_)
+     if (scalar(@_) % 2) && (ref($_[0]) ne 'HASH');
    my %args = normalize_args(
       @_,
       {
+         %preargs,
          binmode => ':encoding(UTF-8)',
       }
    );
