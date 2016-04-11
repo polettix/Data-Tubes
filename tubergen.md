@@ -96,17 +96,18 @@ from the inclusion of the modules.
 
 You can consider `RUSE` at the same level of a `use` line, though, so
 you can add elements in the import list should you need to. For example,
-if you need the ["summon" in Data::Tubes](https://metacpan.org/pod/Data::Tubes#summon) you can modify the relevant
-`RUSE` line from this:
+if you need the
+["drain" in Data::Tubes](https://metacpan.org/pod/Data::Tubes#drain) you
+can modify the relevant `RUSE` line from this:
 
 ```
-RUSE('Data::Tubes', qw< pipeline >);
+RUSE('Data::Tubes', qw< pipeline summon >);
 ```
 
 to this:
 
 ```
-RUSE('Data::Tubes', qw< pipeline summon >);
+RUSE('Data::Tubes', qw< pipeline summon drain >);
 ```
 
 You will also notice that the preamble includes the forward-declaration
