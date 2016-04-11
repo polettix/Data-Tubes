@@ -99,9 +99,20 @@ sub metadata {
 } ## end sub metadata
 
 sub normalize_args {
-   my $defaults = pop;
-   my %retval =
-     (%$defaults, ((@_ && ref($_[0]) eq 'HASH') ? %{$_[0]} : @_));
+   my $defaults = pop(@_);
+
+   my %retval;
+   if (ref($defaults) eq 'ARRAY') {
+      ($defaults, my $key) = @$defaults;
+      $retval{$key} = shift(@_)
+        if (scalar(@_) % 2) && (ref($_[0]) ne 'HASH');
+   }
+   %retval = (
+      %$defaults,    # defaults go first
+      %retval,       # anything already present goes next
+      ((@_ && ref($_[0]) eq 'HASH') ? %{$_[0]} : @_),    # then... the rest
+   );
+
    return %retval if wantarray();
    return \%retval;
 } ## end sub normalize_args
@@ -228,7 +239,7 @@ sub traverse {
 sub tube {
    my $locator = shift;
    return load_sub($locator)->(@_);
-} ## end sub tube
+}
 
 sub unzip {
    my $items = (@_ && ref($_[0])) ? $_[0] : \@_;
