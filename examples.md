@@ -6,6 +6,8 @@ tagline: "Examples"
 comments: false
 ---
 
+# Data::Tubes - Examples
+
 Here you can find a few examples for using [Data::Tubes](manual) and
 [tubergen](tuberge):
 
