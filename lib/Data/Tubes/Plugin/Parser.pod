@@ -84,6 +84,28 @@ The following arguments are supported:
 
 =over
 
+=item C<allow_missing>
+
+set to the number of missing trailing elements that you are fine to
+lose, in case the format is only compound of a single separator and
+L</parse_by_split> is used behind the scenes. This allows you setting an
+optional I<catchall> trailing parameter to collect whatever you are not
+really interested into, also allowing for its absence.
+
+As an example, consider the following input lines:
+
+   FOO0,BAR0,BAZ0,WHATEVER
+   FOO1,BAR1,BAZ1
+   FOO2,BAR2,BAZ2,WHAT2,EVER2,
+
+Assuming that you're really interested into the first three parameter,
+disregarding whatever comes after, you can set the following format:
+
+   foo,bar,baz,rest
+
+and also set C<allow_missing> to 1, indicating that you can sustain the
+lack of C<rest> (which you really don't care about);
+
 =item C<format>
 
 the format to use for splitting the inputs. This parameter is the
@@ -204,6 +226,27 @@ first unnamed parameter C<$separator> or as hash options C<separator>.
 The following arguments are supported:
 
 =over
+
+=item C<allow_missing>
+
+set to the number of missing trailing elements that you are fine to
+lose, in case you also provide C<keys> (see below). This is particularly
+important when this function is called behind the scenes by
+L</parse_by_format>, because I<that> sets C<keys>.
+
+In practice, suppose that you set the following C<keys>:
+
+   [qw< foo bar baz whatever >]
+
+A normal parsing will expect to find at least four elements, so the
+following input would fail:
+
+   FOO,BAR,BAZ
+
+On the other hand, if you set C<allow_missing> to 1, you are accepting
+that there might be a missing value for C<whatever>, that will be filled
+with the undefined value.
+
 
 =item C<input>
 
