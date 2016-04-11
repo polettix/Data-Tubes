@@ -101,15 +101,12 @@ sub log_helper {
 } ## end sub log_helper
 
 sub read_file {
-   my %preargs;
-   $preargs{filename} = shift(@_)
-     if (scalar(@_) % 2) && (ref($_[0]) ne 'HASH');
    my %args = normalize_args(
       @_,
-      {
-         %preargs,
-         binmode => ':encoding(UTF-8)',
-      }
+      [
+         {binmode => ':encoding(UTF-8)'},
+         'filename',    # default key for "straight" unnamed parameter
+      ]
    );
    defined $args{filename}
      or LOGDIE 'read_file(): undefined filename';
@@ -117,8 +114,8 @@ sub read_file {
      or LOGDIE "read_file(): open('$args{filename}'): $OS_ERROR";
    if (defined $args{binmode}) {
       binmode $fh, $args{binmode}
-        or LOGDIE "read_file(): binmode()".
-         " for $args{filename} failed: $OS_ERROR";
+        or LOGDIE "read_file(): binmode()"
+        . " for $args{filename} failed: $OS_ERROR";
    }
    local $INPUT_RECORD_SEPARATOR;
    return <$fh>;
@@ -131,6 +128,6 @@ sub tubify {
         ? $_
         : tube(($ref eq 'ARRAY') ? @$_ : $_)
    } @_;
-}
+} ## end sub tubify
 
 1;
