@@ -9,7 +9,7 @@ comments: true
 # Data::Tubes Example - Let's Marry! Appendix
 
 Here you will find a session of using the program explained in [Let's
-Marry](example01), enjoy!
+Marry](example01.html), enjoy!
 
 ## Program
 
