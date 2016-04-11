@@ -6,7 +6,7 @@ tagline: "Let's Marry!"
 comments: true
 ---
 
-# Data::Tubes Example - Let's Marry!
+# Let's Marry!
 
 You're planning to marry and you have to think about invitations!
 

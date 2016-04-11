@@ -6,7 +6,7 @@ tagline: 'The Missing Manual'
 comments: true
 ---
 
-# Data::Tubes - The Missing Manual
+# The Missing Manual
 
 [Data::Tubes](https://metacpan.org/pod/Data::Tubes) helps you manage transformations steps on a stream of
 data that can be though as a sequence of _records_. It does it by

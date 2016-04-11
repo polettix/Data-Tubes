@@ -6,7 +6,7 @@ tagline: 'The Missing Manual'
 comments: true
 ---
 
-# Data::Tubes - Tubergen
+# Tubergen
 
 [tubergen](https://github.com/polettix/Data-Tubes/raw/master/script/tubergen)
 is a little program that helps you get up to speed with
