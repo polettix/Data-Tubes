@@ -181,7 +181,8 @@ Examples:
 =item B<< normalize_args >>
 
    my $args = normalize_args( %args, \%defaults); # OR
-   my $args = normalize_args(\%args, \%defaults);
+   my $args = normalize_args(\%args, \%defaults); # OR
+   my $args = normalize_args($value, %args, [\%defaults, $key]);
 
 helper function to handle input parameters, with some defaults. Allows
 accepting both a series of key/value pairs, or a hash reference with
@@ -193,6 +194,28 @@ A typical usage is as follows:
       my $args = normalize_args(@_, {bar => 'baz'});
       ...
    }
+
+The last version allows you to accept an initial C<$value> without a key
+in your functions, because you pass the I<default> C<$key> during the
+call to C<normalize_args>. A typical usage is as follows:
+
+   sub foo {
+      my $args = normalize_args(@_, [{bar => 'baz'}, 'aargh']);
+      ...
+   }
+
+In this case, you can accept calling C<foo> like this:
+
+   foo('some value', salutation => 'aloha');
+
+and C<$args> will be populated as follows:
+
+   $args = {
+      aargh => 'some value', # thanks to the default $key
+      salutation => 'aloha', # passed as %args
+      bar => 'baz',          # from defaults
+   };
+
 
 =item B<< normalize_filename >>
 
