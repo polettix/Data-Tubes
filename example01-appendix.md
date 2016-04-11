@@ -156,7 +156,7 @@ Cheers,
 This seems good as well.
 
 
-[nice-relatives/invitation-00.txt](example01/nice-relatives/invitation-02.txt):
+[nice-relatives/invitation-00.txt](example01/nice-relatives/invitation-00.txt):
 
 ```
 Hello Aunt Jean & Uncle John,
