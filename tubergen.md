@@ -135,19 +135,16 @@ alternative has the following structure:
 - the following elements are key-value pairs that are put in a hash of
 options. Recognised keys are:
 
-    - `default`
-
-        a default value for the option. This is used to initialize the returned
+    `default`
+    :   a default value for the option. This is used to initialize the returned
         hash _before_ the command line is analyzed;
 
-    - `fallback`
-
-        a default value for the option. This is used to initialize the returned
+    `fallback`
+    :   a default value for the option. This is used to initialize the returned
         hash _after_ the command line is analyzed;
 
-    - `required`
-
-        this marks whether an option is _required_ or not, set via anything
+    `required`
+    :   this marks whether an option is _required_ or not, set via anything
         that Perl considers _true_ or _false_ depending on your needs. Default
         is _false_.
 
