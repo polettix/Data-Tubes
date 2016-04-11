@@ -157,7 +157,7 @@ options. Recognised keys are:
     unless you really need ["fallback"](#fallback).
 
 The newly minted program contains a few examples to get you started. You
-might want to keep the first one on [loglevel](https://metacpan.org/pod/loglevel) though, as it will help
+might want to keep the first one on `loglevel` though, as it will help
 you set the logging level of the script automatically.
 
 ### Business Logic
@@ -215,16 +215,16 @@ BEGIN {
    # contents of the heredoc is indented by one space at
    # each line
    "Some/Module.pm" => <<'END_OF_FILE';
- #
- # Some::Module contents, each line is indented by one space
- # so that e.g. the following lines will not mess all things
- # up:
- my $something = <<'END_OF_FILE'
- What...ever!
- END_OF_FILE
- # The line above is indented, so it is ignored by the
- # program's heredoc. The real boundary for the included
- # module is the line below.
+␠#
+␠# Some::Module contents, each line is indented by one space
+␠# so that e.g. the following lines will not mess all things
+␠# up:
+␠my $something = <<'END_OF_FILE'
+␠What...ever!
+␠END_OF_FILE
+␠# The line above is indented, so it is ignored by the
+␠# program's heredoc. The real boundary for the included
+␠# module is the line below.
 END_OF_FILE
 
 # __MOBUNDLE_FILE
