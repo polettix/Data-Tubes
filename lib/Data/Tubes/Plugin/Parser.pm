@@ -135,7 +135,8 @@ sub parse_by_separators {
 
 sub parse_by_split {
    my %args =
-     normalize_args(@_, {%global_defaults, name => 'parse by split'});
+     normalize_args(@_,
+      [{%global_defaults, name => 'parse by split'}, 'separator']);
    identify(\%args);
 
    my $name      = $args{name};

@@ -49,11 +49,13 @@ or C<pipeline> from L<Data::Tubes>.
 
    my $tube = by_format(%args); # OR
    my $tube = by_format(\%args); # OR
+   my $tube = by_format($format, %args);
 
 parse the input text according to a template format string (passed via
-factory argument C<format>). This string is supposed to be composed of
-word and non-word sequences, where each word sequence is assumed to be
-the name of a field, and each non-word sequence is a separator. Example:
+factory argument C<format> or through first unnamed parameter
+C<$format>). This string is supposed to be composed of word and non-word
+sequences, where each word sequence is assumed to be the name of a
+field, and each non-word sequence is a separator. Example:
 
    $format = 'foo;bar;baz';
 
@@ -84,7 +86,9 @@ The following arguments are supported:
 
 =item C<format>
 
-the format to use for splitting the inputs;
+the format to use for splitting the inputs. This parameter is the
+I<main> one, so it can also be passed as the first, unnamed parameter
+(see third calling convention);
 
 =item C<input>
 
@@ -106,10 +110,12 @@ name of the output field, defaults to C<structured>;
 
    my $tube = by_regex(%args); # OR
    my $tube = by_regex(\%args); # OR
+   my $tube = by_regex($regex, %args);
 
 parse the input text based on a regular expression, passed as argument
-C<regex>. The regular expression is supposed to have named captures,
-that will eventually be used to populate the rendered output.
+C<regex> or C<$regex> as unnamed first parameter. The regular expression
+is supposed to have named captures, that will eventually be used to
+populate the rendered output.
 
 The following arguments are supported:
 
@@ -129,7 +135,9 @@ name of the output field, defaults to C<structured>;
 
 =item C<regex>
 
-the regular expression to use for splitting the inputs.
+the regular expression to use for splitting the inputs. This is the
+I<main> argument, and can be passed also as the first unnamed one in the
+argument list.
 
 =back
 
@@ -188,8 +196,10 @@ used for splitting the input.
 
    my $tube = by_split(%args); # OR
    my $tube = by_split(\%args); # OR
+   my $tube = by_split($separator, %args);
 
-split the input according to a separator string.
+split the input according to a separator string, passed either as the
+first unnamed parameter C<$separator> or as hash options C<separator>.
 
 The following arguments are supported:
 
@@ -216,7 +226,8 @@ name of the output field, defaults to C<structured>;
 =item C<separator>
 
 a reference to an array containing the list of separators to be
-used for splitting the input.
+used for splitting the input. This is the I<main> argument, and can be
+passed also as the first unnamed one in the argument list.
 
 =back
 
