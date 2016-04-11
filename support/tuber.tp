@@ -272,12 +272,12 @@ No bugs have been reported.
 
 =head1 AUTHOR
 
-[% author %] [% email %]
+[% author %] <[% email %]>
 
 
 =head1 LICENCE AND COPYRIGHT
 
-Copyright (c) [% year %], [% author %] [% email %]
+Copyright (c) [% year %], [% author %] <[% email %]>
 
 =for author, to fill in
    Put your licensing terms here, leaving the terms for the embedded
