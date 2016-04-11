@@ -10,8 +10,8 @@
 use strict;
 use warnings;
 my $VERSION = '0.0.1';
-RUSE('Data::Tubes',         qw< pipeline >);
-RUSE('Log::Log4perl::Tiny', qw< :easy LOGLEVEL >);
+RUSE('Data::Tubes',         qw< pipeline summon >);
+RUSE('Log::Log4perl::Tiny', qw< :easy LOGLEVEL :no_extra_logdie_message >);
 RUSE('Template::Perlish',   qw< render >);
 RUSE('Try::Tiny',           qw< try catch finally >);
 sub try (&;@); sub catch (&;@); sub finally (&;@);
@@ -23,11 +23,12 @@ sub try (&;@); sub catch (&;@); sub finally (&;@);
 #
 ########################################################################
 my %config = get_options(
-   ['loglevel|log=s', 'INFO'],    # leave this alone unless you know better
+   ['loglevel|log=s', default => 'INFO'], # leave it or remove it
 
    # start putting your options here
    'foo|f=s',
-   ['bar|b=s', 'default value for bar'], 'baz|B=i',
+   ['bar|b=s', default  => 'default value for bar'],
+   ['baz|B=i', required => 1],
 );
 
 # Remove following line if you remove 'loglevel' in options above
