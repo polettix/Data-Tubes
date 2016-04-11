@@ -115,18 +115,22 @@ sub parse_by_separators {
 
    # this sub will use the regexp above, do checking and return captured
    # values in a hash with @keys
-   my $n_keys = scalar @$keys;
-   my $input  = $args{input};
-   my $output = $args{output};
+   my $n_keys       = scalar @$keys;
+   my $name         = $args{name};
+   my $input        = $args{input};
+   my $output       = $args{output};
+
    return sub {
       my $record = shift;
       my @values = $record->{$input} =~ m{$regex}
         or die {message => 'invalid record', record => $record};
+      my $n_values = @values;
       die {
-         message => "invalid record, wrong number of items",
-         record  => $record
+         message => "'$name': invalid record, expected $n_keys items, "
+           . "got $n_values",
+         record => $record
         }
-        if scalar(@values) != $n_keys;
+        if $n_values != $n_keys;
       $record->{$output} = \my %retval;
       @retval{@$keys} = @values;
       return $record;
@@ -148,10 +152,11 @@ sub parse_by_split {
       $separator = qr{$separator};
    }
 
-   my $keys   = $args{keys};
-   my $n_keys = defined($keys) ? scalar(@$keys) : 0;
-   my $input  = $args{input};
-   my $output = $args{output};
+   my $keys         = $args{keys};
+   my $n_keys       = defined($keys) ? scalar(@$keys) : 0;
+   my $input        = $args{input};
+   my $output       = $args{output};
+   my $allow_missing = $args{allow_missing} || 0;
 
    return sub {
       my $record = shift;
@@ -164,7 +169,7 @@ sub parse_by_split {
          input  => $input,
          record => $record,
         }
-        if $n_values != $n_keys;
+        if $n_values + $allow_missing < $n_keys;
 
       $record->{$output} = \my %retval;
       @retval{@$keys} = @values;

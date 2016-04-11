@@ -63,4 +63,25 @@ for my $pair (
         'parsed by format, first parameter unnamed';
    }
 } ## end for my $pair (['what|ever|you|do'...])
+
+{
+   my $string = 'FOO;BAR';
+   my $parser = parse_by_format('foo;bar;rest');
+   my $record = eval { $parser->({raw => $string}) };
+   is $record, undef, 'no allow_missing, no party';
+}
+
+{
+   my $string = 'FOO;BAR';
+   my $parser = parse_by_format('foo;bar;rest', allow_missing => 1);
+   my $record = $parser->({raw => $string});
+   is ref($record), 'HASH', 'record is a hash';
+   is_deeply $record,
+     {
+      structured => {foo => 'FOO', bar => 'BAR', rest => undef},
+      raw        => $string
+     },
+     'parsed by format, allow_missing is 1';
+}
+
 done_testing();
