@@ -4,7 +4,7 @@
 use strict;
 use warnings;
 use 5.010;
-my $VERSION = "0.725001";
+my $VERSION = "0.725002";
 RUSE('Log::Log4perl::Tiny', qw< :easy LOGLEVEL >);
 RUSE('Data::Tubes',         qw< pipeline >);
 
@@ -1976,7 +1976,7 @@ END_OF_FILE
  use strict;
  use warnings;
  use English qw< -no_match_vars >;
- our $VERSION = '0.725001';
+ our $VERSION = '0.725002';
  use Exporter qw< import >;
  
  use Log::Log4perl::Tiny qw< :easy :dead_if_first LOGLEVEL >;
@@ -2089,7 +2089,7 @@ END_OF_FILE
  use strict;
  use warnings;
  use Exporter 'import';
- our $VERSION = '0.725001';
+ our $VERSION = '0.725002';
  
  use Log::Log4perl::Tiny qw< :easy :dead_if_first >;
  
@@ -2342,7 +2342,7 @@ END_OF_FILE
  use warnings;
  use English qw< -no_match_vars >;
  use Log::Log4perl::Tiny qw< :easy :dead_if_first LOGLEVEL >;
- our $VERSION = '0.725001';
+ our $VERSION = '0.725002';
  
  use Data::Tubes::Util
    qw< normalize_args normalize_filename args_array_with_options >;
@@ -2470,7 +2470,7 @@ END_OF_FILE
  use warnings;
  use English qw< -no_match_vars >;
  use Data::Dumper;
- our $VERSION = '0.725001';
+ our $VERSION = '0.725002';
  
  use Log::Log4perl::Tiny qw< :easy :dead_if_first >;
  
@@ -2699,7 +2699,7 @@ END_OF_FILE
  use strict;
  use warnings;
  use English qw< -no_match_vars >;
- our $VERSION = '0.725001';
+ our $VERSION = '0.725002';
  
  use Log::Log4perl::Tiny qw< :easy :dead_if_first >;
  
@@ -2754,7 +2754,7 @@ END_OF_FILE
  use strict;
  use warnings;
  use English qw< -no_match_vars >;
- our $VERSION = '0.725001';
+ our $VERSION = '0.725002';
  
  use Log::Log4perl::Tiny qw< :easy :dead_if_first LOGLEVEL >;
  
@@ -2869,7 +2869,7 @@ END_OF_FILE
  use English qw< -no_match_vars >;
  use Data::Dumper;
  use Scalar::Util qw< blessed >;
- our $VERSION = '0.725001';
+ our $VERSION = '0.725002';
  
  use Log::Log4perl::Tiny
    qw< :easy :dead_if_first get_logger LOGLEVEL LEVELID_FOR >;
@@ -3082,7 +3082,7 @@ END_OF_FILE
  use strict;
  use warnings;
  use English qw< -no_match_vars >;
- our $VERSION = '0.725001';
+ our $VERSION = '0.725002';
  
  use Log::Log4perl::Tiny qw< :easy :dead_if_first >;
  
@@ -3158,11 +3158,14 @@ END_OF_FILE
 
       'Data/Tubes/Plugin/Util.pm' => <<'END_OF_FILE',
  package Data::Tubes::Plugin::Util;
+ 
+ # vim: ts=3 sts=3 sw=3 et ai :
+ 
  use strict;
  use warnings;
  use English qw< -no_match_vars >;
  use Data::Dumper;
- our $VERSION = '0.725001';
+ our $VERSION = '0.725002';
  
  use Template::Perlish;
  use Log::Log4perl::Tiny qw< :easy :dead_if_first get_logger >;
@@ -3267,9 +3270,15 @@ END_OF_FILE
           binmode => ':encoding(UTF-8)',
        }
     );
+    defined $args{filename}
+      or LOGDIE 'read_file(): undefined filename';
     open my $fh, '<', $args{filename}
-      or LOGDIE "open('$args{filename}'): $OS_ERROR";
-    binmode $fh, $args{binmode} if defined $args{binmode};
+      or LOGDIE "read_file(): open('$args{filename}'): $OS_ERROR";
+    if (defined $args{binmode}) {
+       binmode $fh, $args{binmode}
+         or LOGDIE "read_file(): binmode()".
+          " for $args{filename} failed: $OS_ERROR";
+    }
     local $INPUT_RECORD_SEPARATOR;
     return <$fh>;
  } ## end sub read_file
@@ -3299,7 +3308,7 @@ END_OF_FILE
  use warnings;
  use English qw< -no_match_vars >;
  use POSIX qw< strftime >;
- our $VERSION = '0.725001';
+ our $VERSION = '0.725002';
  
  use Log::Log4perl::Tiny qw< :easy :dead_if_first LOGLEVEL >;
  use Template::Perlish;
@@ -3424,7 +3433,7 @@ END_OF_FILE
  use 5.010;
  use File::Path qw< make_path >;
  use File::Basename qw< dirname >;
- our $VERSION = '0.725001';
+ our $VERSION = '0.725002';
  
  use Log::Log4perl::Tiny qw< :easy :dead_if_first >;
  use Mo qw< default >;
@@ -3923,12 +3932,12 @@ sub template {
  
  =head1 AUTHOR
  
- [% author %] [% email %]
+ [% author %] <[% email %]>
  
  
  =head1 LICENCE AND COPYRIGHT
  
- Copyright (c) [% year %], [% author %] [% email %]
+ Copyright (c) [% year %], [% author %] <[% email %]>
  
  =for author, to fill in
     Put your licensing terms here, leaving the terms for the embedded
