@@ -52,9 +52,11 @@ also optionally pass argument *output*, to set the output filename
 notice (the current year is used by default).
 
 See the program's manual for a comprehensive description of all options.
-You can read it via option C<--man>:
+You can read it via option `--man`:
 
-    shell$ tubergen --man
+```
+shell$ tubergen --man
+```
 
 ## The Minted Program Structure
 
@@ -97,11 +99,15 @@ you can add elements in the import list should you need to. For example,
 if you need the ["summon" in Data::Tubes](https://metacpan.org/pod/Data::Tubes#summon) you can modify the relevant
 `RUSE` line from this:
 
-    RUSE('Data::Tubes', qw< pipeline >);
+```
+RUSE('Data::Tubes', qw< pipeline >);
+```
 
 to this:
 
-    RUSE('Data::Tubes', qw< pipeline summon >);
+```
+RUSE('Data::Tubes', qw< pipeline summon >);
+```
 
 You will also notice that the preamble includes the forward-declaration
 for all functions in [Try::Tiny](https://metacpan.org/pod/Try::Tiny). This is necessary so that you will be
