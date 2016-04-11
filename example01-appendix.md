@@ -247,9 +247,9 @@ drwxr-xr-x 2 foo bar   4096 Apr 11 09:19 nice-relatives
 -rwxr-xr-x 1 foo bar 105067 Apr 11 08:54 weddinv
 ```
 
-Ouch! It seems that we lost our close friends! This happened because we
-got an exception after the processing or our beloved nice relatives, but
-before our close friends.
+*Ouch!* It seems that we lost our close friends! This happened because
+we got an exception after the processing or our beloved nice relatives,
+but before our close friends.
 
 Is this a good or a bad thing? It's up to you to decide. In this case,
 it's probably fine, because you get to know about errors in your data
