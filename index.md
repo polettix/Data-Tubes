@@ -3,8 +3,7 @@ title: 'Data::Tubes'
 layout: page
 author: 'polettix'
 tagline: 'Text and data canalising'
-comments: true
-
+comments: false
 ---
 
 # Welcome
