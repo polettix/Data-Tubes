@@ -40,4 +40,21 @@ my $regex  = qr{(?mxs:
      'hash was parsed via regex';
 }
 
+{
+   my $parser = parse_by_regex($regex);
+   my $record = $parser->({raw => $string});
+   is ref($record), 'HASH', 'record is a hash';
+   is_deeply $record, {structured => $expected, raw => $string},
+     'hash was parsed via regex, unnamed parameter';
+}
+
+{
+   my $parser =
+     parse_by_regex($regex, input => 'foo', output => 'bar');
+   my $record = $parser->({foo => $string});
+   is ref($record), 'HASH', 'record is a hash';
+   is_deeply $record, {bar => $expected, foo => $string},
+     'hash was parsed via regex, unnamed first parameter';
+}
+
 done_testing();

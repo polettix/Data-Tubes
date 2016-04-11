@@ -22,7 +22,8 @@ my %global_defaults = (
 );
 
 sub parse_by_format {
-   my %args = normalize_args(@_, {%global_defaults,});
+   my %args = normalize_args(@_,
+      [{%global_defaults, name => 'parse by format'}, 'format']);
    identify(\%args);
 
    my $format = $args{format};
@@ -56,7 +57,8 @@ sub parse_by_format {
 
 sub parse_by_regex {
    my %args =
-     normalize_args(@_, {%global_defaults, name => 'parse by regex'});
+     normalize_args(@_,
+      [{%global_defaults, name => 'parse by regex'}, 'regex']);
    identify(\%args);
 
    my $name  = $args{name};
@@ -113,14 +115,17 @@ sub parse_by_separators {
 
    # this sub will use the regexp above, do checking and return captured
    # values in a hash with @keys
-   my $n_keys     = scalar @$keys;
-   my $input      = $args{input};
-   my $output     = $args{output};
+   my $n_keys = scalar @$keys;
+   my $input  = $args{input};
+   my $output = $args{output};
    return sub {
       my $record = shift;
       my @values = $record->{$input} =~ m{$regex}
         or die {message => 'invalid record', record => $record};
-      die      {message => "invalid record, wrong number of items", record => $record}
+      die {
+         message => "invalid record, wrong number of items",
+         record  => $record
+        }
         if scalar(@values) != $n_keys;
       $record->{$output} = \my %retval;
       @retval{@$keys} = @values;

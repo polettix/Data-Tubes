@@ -134,7 +134,7 @@ ok __PACKAGE__->can('fallback'), "summoned fallback";
          record => {raw => 'hey'},
          input  => 'raw',
          message =>
-           "'parse by split': invalid record, expected 2 items, got 1",
+           "'parse by format': invalid record, expected 2 items, got 1",
       }
      ],
      'catch receives exception';

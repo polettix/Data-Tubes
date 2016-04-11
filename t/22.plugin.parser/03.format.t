@@ -43,5 +43,24 @@ for my $pair (
         'parsed by format';
    }
 
+   {
+      my $parser = parse_by_format($format);
+      my $record = $parser->({raw => $string});
+      is ref($record), 'HASH', 'record is a hash';
+      is_deeply $record, {structured => $expected, raw => $string},
+        'parsed by format, straight unnamed parameter';
+   }
+
+   {
+      my $parser = parse_by_format(
+         $format,
+         input  => 'foo',
+         output => 'bar'
+      );
+      my $record = $parser->({foo => $string});
+      is ref($record), 'HASH', 'record is a hash';
+      is_deeply $record, {bar => $expected, foo => $string},
+        'parsed by format, first parameter unnamed';
+   }
 } ## end for my $pair (['what|ever|you|do'...])
 done_testing();
