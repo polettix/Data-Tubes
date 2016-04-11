@@ -1,4 +1,7 @@
 package Data::Tubes::Plugin::Util;
+
+# vim: ts=3 sts=3 sw=3 et ai :
+
 use strict;
 use warnings;
 use English qw< -no_match_vars >;
@@ -108,9 +111,15 @@ sub read_file {
          binmode => ':encoding(UTF-8)',
       }
    );
+   defined $args{filename}
+     or LOGDIE 'read_file(): undefined filename';
    open my $fh, '<', $args{filename}
-     or LOGDIE "open('$args{filename}'): $OS_ERROR";
-   binmode $fh, $args{binmode} if defined $args{binmode};
+     or LOGDIE "read_file(): open('$args{filename}'): $OS_ERROR";
+   if (defined $args{binmode}) {
+      binmode $fh, $args{binmode}
+        or LOGDIE "read_file(): binmode()".
+         " for $args{filename} failed: $OS_ERROR";
+   }
    local $INPUT_RECORD_SEPARATOR;
    return <$fh>;
 } ## end sub read_file
