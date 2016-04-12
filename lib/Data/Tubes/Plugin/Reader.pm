@@ -2,7 +2,7 @@ package Data::Tubes::Plugin::Reader;
 use strict;
 use warnings;
 use English qw< -no_match_vars >;
-our $VERSION = '0.725003';
+our $VERSION = '0.726';
 
 use Log::Log4perl::Tiny qw< :easy :dead_if_first LOGLEVEL >;
 
