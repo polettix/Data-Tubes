@@ -134,12 +134,7 @@ fleshing it out.
 
 ## Adjust Preamble
 
-We will use function `Util::read_file` to slurp the template, so we will
-also import `summon`:
-
-```
-RUSE('Data::Tubes', qw< pipeline summon >);
-```
+The default preamble is already fine... nothing to do here!
 
 ## Command-line Options
 

@@ -90,7 +90,7 @@ must provide one. It's also quite evident that we need to fill the POD
 in... This is left as an excercise!
 
 ```
-shell$ ./weddinv --place 'our home'
+shell$ ./weddinv --place 'our house'
 shell$ ls -l
 drwxr-xr-x 2 foo bar   4096 Apr 11 08:55 close-friends
 -rw-r--r-- 1 foo bar    387 Apr 11 07:34 guests.txt

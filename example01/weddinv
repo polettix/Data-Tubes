@@ -11,7 +11,7 @@ use strict;
 use warnings;
 my $VERSION = '0.0.1';
 RUSE('Data::Tubes',         qw< pipeline summon >);
-RUSE('Log::Log4perl::Tiny', qw< :easy LOGLEVEL >);
+RUSE('Log::Log4perl::Tiny', qw< :easy LOGLEVEL :no_extra_logdie_message >);
 RUSE('Template::Perlish',   qw< render >);
 RUSE('Try::Tiny',           qw< try catch finally >);
 sub try (&;@); sub catch (&;@); sub finally (&;@);
@@ -26,9 +26,9 @@ my %config = get_options(
    ['loglevel|log=s', default => 'INFO'],
 
    # wedding-related
-   ['date|d=s',   default => 'April 1st, 2018'],
-   ['dinner|D=s', default => 'Restaurant Bui-a-Car'],
-   ['hotel|h=s',  default => 'Hotel Namaddormi'],
+   ['date|d=s',   default  => 'April 1st, 2018'],
+   ['dinner|D=s', default  => 'Restaurant Bui-a-Car'],
+   ['hotel|h=s',  default  => 'Hotel Namaddormi'],
    ['place|p=s',  required => 1], # no default available
 
    # inputs
@@ -77,6 +77,7 @@ catch {
    use Data::Dumper; local $Data::Dumper::Indent = 1;
    LOGEXIT(Dumper($_));
 };
+
 
 ########################################################################
 # __SECTION__
@@ -2000,7 +2001,7 @@ END_OF_FILE
  use strict;
  use warnings;
  use English qw< -no_match_vars >;
- our $VERSION = '0.725001';
+ our $VERSION = '0.725003';
  use Exporter qw< import >;
  
  use Log::Log4perl::Tiny qw< :easy :dead_if_first LOGLEVEL >;
@@ -2113,7 +2114,7 @@ END_OF_FILE
  use strict;
  use warnings;
  use Exporter 'import';
- our $VERSION = '0.725001';
+ our $VERSION = '0.725003';
  
  use Log::Log4perl::Tiny qw< :easy :dead_if_first >;
  
@@ -2207,9 +2208,20 @@ END_OF_FILE
  } ## end sub metadata
  
  sub normalize_args {
-    my $defaults = pop;
-    my %retval =
-      (%$defaults, ((@_ && ref($_[0]) eq 'HASH') ? %{$_[0]} : @_));
+    my $defaults = pop(@_);
+ 
+    my %retval;
+    if (ref($defaults) eq 'ARRAY') {
+       ($defaults, my $key) = @$defaults;
+       $retval{$key} = shift(@_)
+         if (scalar(@_) % 2) && (ref($_[0]) ne 'HASH');
+    }
+    %retval = (
+       %$defaults,    # defaults go first
+       %retval,       # anything already present goes next
+       ((@_ && ref($_[0]) eq 'HASH') ? %{$_[0]} : @_),    # then... the rest
+    );
+ 
     return %retval if wantarray();
     return \%retval;
  } ## end sub normalize_args
@@ -2336,7 +2348,7 @@ END_OF_FILE
  sub tube {
     my $locator = shift;
     return load_sub($locator)->(@_);
- } ## end sub tube
+ }
  
  sub unzip {
     my $items = (@_ && ref($_[0])) ? $_[0] : \@_;
@@ -2366,7 +2378,7 @@ END_OF_FILE
  use warnings;
  use English qw< -no_match_vars >;
  use Log::Log4perl::Tiny qw< :easy :dead_if_first LOGLEVEL >;
- our $VERSION = '0.725001';
+ our $VERSION = '0.725003';
  
  use Data::Tubes::Util
    qw< normalize_args normalize_filename args_array_with_options >;
@@ -2494,7 +2506,7 @@ END_OF_FILE
  use warnings;
  use English qw< -no_match_vars >;
  use Data::Dumper;
- our $VERSION = '0.725001';
+ our $VERSION = '0.725003';
  
  use Log::Log4perl::Tiny qw< :easy :dead_if_first >;
  
@@ -2513,7 +2525,8 @@ END_OF_FILE
  );
  
  sub parse_by_format {
-    my %args = normalize_args(@_, {%global_defaults,});
+    my %args = normalize_args(@_,
+       [{%global_defaults, name => 'parse by format'}, 'format']);
     identify(\%args);
  
     my $format = $args{format};
@@ -2547,7 +2560,8 @@ END_OF_FILE
  
  sub parse_by_regex {
     my %args =
-      normalize_args(@_, {%global_defaults, name => 'parse by regex'});
+      normalize_args(@_,
+       [{%global_defaults, name => 'parse by regex'}, 'regex']);
     identify(\%args);
  
     my $name  = $args{name};
@@ -2604,15 +2618,22 @@ END_OF_FILE
  
     # this sub will use the regexp above, do checking and return captured
     # values in a hash with @keys
-    my $n_keys     = scalar @$keys;
-    my $input      = $args{input};
-    my $output     = $args{output};
+    my $n_keys       = scalar @$keys;
+    my $name         = $args{name};
+    my $input        = $args{input};
+    my $output       = $args{output};
+ 
     return sub {
        my $record = shift;
        my @values = $record->{$input} =~ m{$regex}
          or die {message => 'invalid record', record => $record};
-       die      {message => "invalid record, wrong number of items", record => $record}
-         if scalar(@values) != $n_keys;
+       my $n_values = @values;
+       die {
+          message => "'$name': invalid record, expected $n_keys items, "
+            . "got $n_values",
+          record => $record
+         }
+         if $n_values != $n_keys;
        $record->{$output} = \my %retval;
        @retval{@$keys} = @values;
        return $record;
@@ -2621,7 +2642,8 @@ END_OF_FILE
  
  sub parse_by_split {
     my %args =
-      normalize_args(@_, {%global_defaults, name => 'parse by split'});
+      normalize_args(@_,
+       [{%global_defaults, name => 'parse by split'}, 'separator']);
     identify(\%args);
  
     my $name      = $args{name};
@@ -2633,10 +2655,11 @@ END_OF_FILE
        $separator = qr{$separator};
     }
  
-    my $keys   = $args{keys};
-    my $n_keys = defined($keys) ? scalar(@$keys) : 0;
-    my $input  = $args{input};
-    my $output = $args{output};
+    my $keys         = $args{keys};
+    my $n_keys       = defined($keys) ? scalar(@$keys) : 0;
+    my $input        = $args{input};
+    my $output       = $args{output};
+    my $allow_missing = $args{allow_missing} || 0;
  
     return sub {
        my $record = shift;
@@ -2649,7 +2672,7 @@ END_OF_FILE
           input  => $input,
           record => $record,
          }
-         if $n_values != $n_keys;
+         if $n_values + $allow_missing < $n_keys;
  
        $record->{$output} = \my %retval;
        @retval{@$keys} = @values;
@@ -2723,7 +2746,7 @@ END_OF_FILE
  use strict;
  use warnings;
  use English qw< -no_match_vars >;
- our $VERSION = '0.725001';
+ our $VERSION = '0.725003';
  
  use Log::Log4perl::Tiny qw< :easy :dead_if_first >;
  
@@ -2778,7 +2801,7 @@ END_OF_FILE
  use strict;
  use warnings;
  use English qw< -no_match_vars >;
- our $VERSION = '0.725001';
+ our $VERSION = '0.725003';
  
  use Log::Log4perl::Tiny qw< :easy :dead_if_first LOGLEVEL >;
  
@@ -2893,7 +2916,7 @@ END_OF_FILE
  use English qw< -no_match_vars >;
  use Data::Dumper;
  use Scalar::Util qw< blessed >;
- our $VERSION = '0.725001';
+ our $VERSION = '0.725003';
  
  use Log::Log4perl::Tiny
    qw< :easy :dead_if_first get_logger LOGLEVEL LEVELID_FOR >;
@@ -3106,13 +3129,72 @@ END_OF_FILE
  use strict;
  use warnings;
  use English qw< -no_match_vars >;
- our $VERSION = '0.725001';
+ our $VERSION = '0.725003';
  
  use Log::Log4perl::Tiny qw< :easy :dead_if_first >;
  
- use Data::Tubes::Util qw< args_array_with_options shorter_sub_names >;
+ use Data::Tubes::Util
+   qw< args_array_with_options normalize_args shorter_sub_names >;
  use Data::Tubes::Plugin::Util qw< identify >;
  my %global_defaults = (input => 'structured',);
+ 
+ sub validate_admit {
+    my ($validators, $args) = args_array_with_options(
+       @_,
+       {
+          input => 'raw',
+          name  => 'validate with acceptance regexp',
+       }
+    );
+    identify($args);
+    my $name   = $args->{name};
+    my $input  = $args->{input};
+    my $refuse = $args->{refuse};
+    return sub {
+       my $record = shift;
+       my $target = defined($input) ? $record->{$input} : $record;
+       for my $validator (@$validators) {
+          my $outcome =
+            (ref($validator) eq 'CODE')
+            ? $validator->($target)
+            : ($target =~ m{$validator});
+          return unless ($outcome xor $refuse);
+       } ## end for my $validator (@$validators)
+       return $record;
+    };
+ } ## end sub validate_admit
+ 
+ sub validate_refuse {
+    my ($validators, $args) = args_array_with_options(
+       @_,
+       {
+          input => 'raw',
+          name  => 'validate with rejection regexp',
+       }
+    );
+    $args->{refuse} = 1;
+    return validate_admit(@$validators, $args);
+ } ## end sub validate_refuse
+ 
+ sub validate_refuse_comment {
+    my $args = normalize_args(@_, {name => 'validate reject comment line'});
+    identify($args);
+    return validate_refuse(qr{(?mxs:\A \s* \#)}, $args);
+ }
+ 
+ sub validate_refuse_comment_or_empty {
+    my $args = normalize_args(@_,
+       {name => 'validate reject comment or non-spaces-only line'});
+    identify($args);
+    return validate_refuse(qr{(?mxs:\A \s* (?: \# | \z ))}, $args);
+ } ## end sub validate_refuse_comment_or_empty
+ 
+ sub validate_refuse_empty {
+    my $args = normalize_args(@_,
+       {name => 'validate reject empty (non-spaces only) string'});
+    identify($args);
+    return validate_refuse(qr{(?mxs:\A \s* \z)}, $args);
+ } ## end sub validate_refuse_empty
  
  sub validate_with_subs {
     my ($validators, $args) = args_array_with_options(
@@ -3182,11 +3264,14 @@ END_OF_FILE
 
       'Data/Tubes/Plugin/Util.pm' => <<'END_OF_FILE',
  package Data::Tubes::Plugin::Util;
+ 
+ # vim: ts=3 sts=3 sw=3 et ai :
+ 
  use strict;
  use warnings;
  use English qw< -no_match_vars >;
  use Data::Dumper;
- our $VERSION = '0.725001';
+ our $VERSION = '0.725003';
  
  use Template::Perlish;
  use Log::Log4perl::Tiny qw< :easy :dead_if_first get_logger >;
@@ -3283,13 +3368,20 @@ END_OF_FILE
  sub read_file {
     my %args = normalize_args(
        @_,
-       {
-          binmode => ':encoding(UTF-8)',
-       }
+       [
+          {binmode => ':encoding(UTF-8)'},
+          'filename',    # default key for "straight" unnamed parameter
+       ]
     );
+    defined $args{filename}
+      or LOGDIE 'read_file(): undefined filename';
     open my $fh, '<', $args{filename}
-      or LOGDIE "open('$args{filename}'): $OS_ERROR";
-    binmode $fh, $args{binmode} if defined $args{binmode};
+      or LOGDIE "read_file(): open('$args{filename}'): $OS_ERROR";
+    if (defined $args{binmode}) {
+       binmode $fh, $args{binmode}
+         or LOGDIE "read_file(): binmode()"
+         . " for $args{filename} failed: $OS_ERROR";
+    }
     local $INPUT_RECORD_SEPARATOR;
     return <$fh>;
  } ## end sub read_file
@@ -3301,7 +3393,7 @@ END_OF_FILE
          ? $_
          : tube(($ref eq 'ARRAY') ? @$_ : $_)
     } @_;
- }
+ } ## end sub tubify
  
  1;
 
@@ -3319,7 +3411,7 @@ END_OF_FILE
  use warnings;
  use English qw< -no_match_vars >;
  use POSIX qw< strftime >;
- our $VERSION = '0.725001';
+ our $VERSION = '0.725003';
  
  use Log::Log4perl::Tiny qw< :easy :dead_if_first LOGLEVEL >;
  use Template::Perlish;
@@ -3444,7 +3536,7 @@ END_OF_FILE
  use 5.010;
  use File::Path qw< make_path >;
  use File::Basename qw< dirname >;
- our $VERSION = '0.725001';
+ our $VERSION = '0.725003';
  
  use Log::Log4perl::Tiny qw< :easy :dead_if_first >;
  use Mo qw< default >;
@@ -3768,12 +3860,12 @@ No bugs have been reported.
 
 =head1 AUTHOR
 
-me me@example.com
+me <me@example.com>
 
 
 =head1 LICENCE AND COPYRIGHT
 
-Copyright (c) 2016, me me@example.com
+Copyright (c) 2016, me <me@example.com>
 
 =for author, to fill in
    Put your licensing terms here, leaving the terms for the embedded
