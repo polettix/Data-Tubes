@@ -194,18 +194,18 @@ pipeline(
 ```
 
 Now the reader puts the line in field `raw`, so we can filter it to
-eliminate empty lines and comments:
-
+eliminate empty lines and comments. Luckily, there's a plugin for this as
+of release 1.726:
 
 ```
-sub { return ($_[0]{raw} =~ m{^ \s* (?: \# | $)}mxs) ? () : $_[0]; },
+'Validator::refuse_comment_or_empty',
 ```
 
 We're ready for parsing at this point. The input format is simple and we
 can use the `Parser::by_format` as we have fixed columns:
 
 ```
-['Parser::by_format', format =>
+['Parser::by_format',
  'name;group;initial_salutation;final_salutation;dinner;hotel'],
 ```
 
@@ -217,7 +217,7 @@ command line. We will rely upon `Util::read_file`:
 summon('Util::read_file');
 ...
 ['Renderer::with_template_perlish',
- template => read_file(filename => $config{template}),
+ template => read_file($config{template}),
  variables => {
     wedding => {
        date   => $config{date},
@@ -258,11 +258,11 @@ summon('Util::read_file');
 pipeline(
    'Source::open_file',
    'Reader::by_line',
-   sub { return ($_[0]{raw} =~ m{^ \s* (?: \# | $)}mxs) ? () : $_[0]; },
-   ['Parser::by_format', format =>
+   'Validator::refuse_comment_or_empty',
+   ['Parser::by_format',
      'name;group;initial_salutation;final_salutation;dinner;hotel'],
    ['Renderer::with_template_perlish',
-     template => read_file(filename => $config{template}),
+     template => read_file($config{template}),
      variables => {
         wedding => {
         date   => $config{date},
