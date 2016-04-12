@@ -1,5 +1,10 @@
 {{$NEXT}}
 
+0.725003  2016-04-12 09:01:27 CEST
+   - extended and tested helper function normalize_args
+   - extended a few functions based on new normalize_args, w/ docs
+   - added a few text filtering validators
+
 0.725002  2016-04-11 19:30:44 CEST
    - read_file accepts direct filename now and has more checks
    - fixed bugs and enhanced tuber.tp template file
