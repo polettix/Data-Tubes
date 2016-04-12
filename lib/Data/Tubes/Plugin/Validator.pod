@@ -37,6 +37,101 @@ when using C<tube> or C<pipeline> from L<Data::Tubes>.
 
 =over
 
+=item B<< admit >>
+
+=item B<< validate_admit >>
+
+   $tube = admit(@validators); # OR
+   $tube = admit(@validators, \%args);
+
+simple validator mainly aimed at providing regular expressions to be
+tested against text input. For this reason, the default input field from
+the record is C<raw> and not C<structured> like in L</validate_subs>,
+although you can override it.
+
+The goal of this validator is to get rid of uninteresting parts quickly.
+For this reason, there is no on-the-fly collection of validation
+outcomes; see L</validate_subs> if you need them.
+
+The input record MUST be a hash reference I<except> when C<input> is set
+to C<undef>. In this case it can be almost anything, although it SHOULD
+be a string if you plan using regular expressions (anything that
+stringifies will do, anyway).
+
+C<@validators> can be either regular expressions or sub references. All
+of them MUST pass to get the input record out, otherwise you will get
+nothing (which means that the particular section of the pipeline will
+stop here for the specific record). You can revert this behaviour
+setting option C<refuse> to a I<true> value.
+
+Accepts the following options:
+
+=over
+
+=item C<input>
+
+the name of the input field in the input record. Defaults to C<raw>,
+which means that this validator is mainly aimed at filtering input
+records before they are parsed. You can set it to C<undef> and the input
+record itself will be validated, not a subfield;
+
+=item C<name>
+
+name of the tube, useful for debugging;
+
+=item C<refuse>
+
+boolean flag to indicate that the test should be reversed, i.e. that all
+provided C<@validators> MUST fail for getting the record on. If this is
+the case, you might be interested in using L</validate_refuse>, because
+it advertises your intentions a bit more clearly.
+
+=back
+
+=item B<< refuse >>
+
+=item B<< validate_refuse >>
+
+   $tube = refuse(@validators); # OR
+   $tube = refuse(@validators, \%args);
+
+This is the same as L</validate_admit>, except that the parameter
+C<refuse> is inconditionally set to a true value. No, you cannot revert
+this setting C<refuse> to a false value explicitly, because it would not
+be sane.
+
+=item B<< refuse_comment >>
+
+=item B<< validate_refuse_comment >>
+
+   $tube = refuse_comment(%args); # OR
+   $tube = refuse_comment(\%args);
+
+Thin wrapper around L</validate_refuse> to eliminate comment lines,
+defined as any line that starts with optional spaces and whose first
+non-space character is the hash C<#>.
+
+=item B<< refuse_comment_or_empty >>
+
+=item B<< validate_refuse_comment_or_empty >>
+
+   $tube = refuse_comment(%args); # OR
+   $tube = refuse_comment(\%args);
+
+Thin wrapper around L</validate_refuse> to eliminate comment or empty
+lines, defined as any line that starts with optional spaces and whose
+first non-space character, if present, is the hash C<#>.
+
+=item B<< refuse_empty >>
+
+=item B<< validate_refuse_empty >>
+
+   $tube = refuse_comment(%args); # OR
+   $tube = refuse_comment(\%args);
+
+Thin wrapper around L</validate_refuse> to eliminate empty lines,
+defined as any line that only contains optional whitespaces.
+
 =item B<< with_subs >>
 
 =item B<< validate_with_subs >>

@@ -66,7 +66,7 @@ sub validate_refuse_empty {
    my $args = normalize_args(@_,
       {name => 'validate reject empty (non-spaces only) string'});
    identify($args);
-   return validate_admit(qr{\S}, $args);
+   return validate_refuse(qr{(?mxs:\A \s* \z)}, $args);
 } ## end sub validate_refuse_empty
 
 sub validate_with_subs {
