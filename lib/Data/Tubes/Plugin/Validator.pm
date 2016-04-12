@@ -6,9 +6,68 @@ our $VERSION = '0.725002';
 
 use Log::Log4perl::Tiny qw< :easy :dead_if_first >;
 
-use Data::Tubes::Util qw< args_array_with_options shorter_sub_names >;
+use Data::Tubes::Util
+  qw< args_array_with_options normalize_args shorter_sub_names >;
 use Data::Tubes::Plugin::Util qw< identify >;
 my %global_defaults = (input => 'structured',);
+
+sub validate_admit {
+   my ($validators, $args) = args_array_with_options(
+      @_,
+      {
+         input => 'raw',
+         name  => 'validate with acceptance regexp',
+      }
+   );
+   identify($args);
+   my $name   = $args->{name};
+   my $input  = $args->{input};
+   my $refuse = $args->{refuse};
+   return sub {
+      my $record = shift;
+      my $target = defined($input) ? $record->{$input} : $record;
+      for my $validator (@$validators) {
+         my $outcome =
+           (ref($validator) eq 'CODE')
+           ? $validator->($target)
+           : ($target =~ m{$validator});
+         return unless ($outcome xor $refuse);
+      } ## end for my $validator (@$validators)
+      return $record;
+   };
+} ## end sub validate_admit
+
+sub validate_refuse {
+   my ($validators, $args) = args_array_with_options(
+      @_,
+      {
+         input => 'raw',
+         name  => 'validate with rejection regexp',
+      }
+   );
+   $args->{refuse} = 1;
+   return validate_admit(@$validators, $args);
+} ## end sub validate_refuse
+
+sub validate_refuse_comment {
+   my $args = normalize_args(@_, {name => 'validate reject comment line'});
+   identify($args);
+   return validate_refuse(qr{(?mxs:\A \s* \#)}, $args);
+}
+
+sub validate_refuse_comment_or_empty {
+   my $args = normalize_args(@_,
+      {name => 'validate reject comment or non-spaces-only line'});
+   identify($args);
+   return validate_refuse(qr{(?mxs:\A \s* (?: \# | \z ))}, $args);
+} ## end sub validate_refuse_comment_or_empty
+
+sub validate_refuse_empty {
+   my $args = normalize_args(@_,
+      {name => 'validate reject empty (non-spaces only) string'});
+   identify($args);
+   return validate_refuse(qr{(?mxs:\A \s* \z)}, $args);
+} ## end sub validate_refuse_empty
 
 sub validate_with_subs {
    my ($validators, $args) = args_array_with_options(
