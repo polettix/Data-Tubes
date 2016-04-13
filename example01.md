@@ -190,7 +190,7 @@ pipeline(
 
 Now the reader puts the line in field `raw`, so we can filter it to
 eliminate empty lines and comments. Luckily, there's a plugin for this as
-of release 1.726:
+of release 0.726:
 
 ```
 'Validator::refuse_comment_or_empty',
@@ -341,8 +341,6 @@ interested into it you can take a look at the
 This is the total amount of *code* that we wrote:
 
 ```
-# ...
-RUSE('Data::Tubes', qw< pipeline summon >);
 # ...
 my %config = get_options(
    ['loglevel|log=s', default => 'INFO'],
