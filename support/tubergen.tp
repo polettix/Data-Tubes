@@ -606,6 +606,11 @@ Copyright (C) 2016 by Flavio Poletti and licensed under the Artistic
 License 2.0. See L<https://metacpan.org/pod/Data::Tubes> for further
 details.
 
+This program embeds Mo and Mo::default from distribution Mo, that is
+Copyright (c) 2011-2013. Ingy döt Net and licensed under the same terms
+of Perl itself. See L<See http://www.perl.com/perl/misc/Artistic.html>
+for the license and L<https://metacpan.org/pod/Mo> for further details.
+
 This program embeds Log::Log4perl::Tiny, that is Copyright (C) 2010-2016
 by Flavio Poletti and licensed under the Artistic License 2.0. See
 L<https://metacpan.org/pod/Log::Log4perl::Tiny> for further details.

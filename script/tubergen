@@ -708,6 +708,26 @@ END_OF_FILE
 
 # __MOBUNDLE_FILE__
 
+      'Mo.pm' => <<'END_OF_FILE',
+ package Mo;
+ $VERSION=0.39;
+ no warnings;my$M=__PACKAGE__.'::';*{$M.Object::new}=sub{my$c=shift;my$s=bless{@_},$c;my%n=%{$c.::.':E'};map{$s->{$_}=$n{$_}->()if!exists$s->{$_}}keys%n;$s};*{$M.import}=sub{import warnings;$^H|=1538;my($P,%e,%o)=caller.'::';shift;eval"no Mo::$_",&{$M.$_.::e}($P,\%e,\%o,\@_)for@_;return if$e{M};%e=(extends,sub{eval"no $_[0]()";@{$P.ISA}=$_[0]},has,sub{my$n=shift;my$m=sub{$#_?$_[0]{$n}=$_[1]:$_[0]{$n}};@_=(default,@_)if!($#_%2);$m=$o{$_}->($m,$n,@_)for sort keys%o;*{$P.$n}=$m},%e,);*{$P.$_}=$e{$_}for keys%e;@{$P.ISA}=$M.Object};
+
+END_OF_FILE
+
+
+# __MOBUNDLE_FILE__
+
+      'Mo/default.pm' => <<'END_OF_FILE',
+ package Mo::default;my$M="Mo::";
+ $VERSION=0.39;
+ *{$M.'default::e'}=sub{my($P,$e,$o)=@_;$o->{default}=sub{my($m,$n,%a)=@_;exists$a{default}or return$m;my($d,$r)=$a{default};my$g='HASH'eq($r=ref$d)?sub{+{%$d}}:'ARRAY'eq$r?sub{[@$d]}:'CODE'eq$r?$d:sub{$d};my$i=exists$a{lazy}?$a{lazy}:!${$P.':N'};$i or ${$P.':E'}{$n}=$g and return$m;sub{$#_?$m->(@_):!exists$_[0]{$n}?$_[0]{$n}=$g->(@_):$m->(@_)}}};
+
+END_OF_FILE
+
+
+# __MOBUNDLE_FILE__
+
       'Template/Perlish.pm' => <<'END_OF_FILE',
  package Template::Perlish;
  
@@ -4486,6 +4506,11 @@ This program embeds all modules from distribution Data::Tubes, that is
 Copyright (C) 2016 by Flavio Poletti and licensed under the Artistic
 License 2.0. See L<https://metacpan.org/pod/Data::Tubes> for further
 details.
+
+This program embeds Mo and Mo::default from distribution Mo, that is
+Copyright (c) 2011-2013. Ingy döt Net and licensed under the same terms
+of Perl itself. See L<See http://www.perl.com/perl/misc/Artistic.html>
+for the license and L<https://metacpan.org/pod/Mo> for further details.
 
 This program embeds Log::Log4perl::Tiny, that is Copyright (C) 2010-2016
 by Flavio Poletti and licensed under the Artistic License 2.0. See

@@ -25,6 +25,8 @@ my @modules = (
          $c;
       }
    ],
+   ['Mo.pm', $local->child(qw< Mo.pm >)->slurp_raw()],
+   ['Mo/default.pm', $local->child(qw< Mo default.pm >)->slurp_raw()],
    [
       'Template/Perlish.pm',
       $local->child(qw< Template Perlish.pm >)->slurp_raw(),
