@@ -365,7 +365,7 @@ try {
       ['Parser::by_format', format =>
         'name;group;initial_salutation;final_salutation;dinner;hotel'],
       ['Renderer::with_template_perlish',
-        template => read_file(filename => $config{template}),
+        template => read_file($config{template}),
         variables => {
           wedding => {
             date   => $config{date},
