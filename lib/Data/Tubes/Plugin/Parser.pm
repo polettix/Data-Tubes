@@ -9,6 +9,7 @@ use Log::Log4perl::Tiny qw< :easy :dead_if_first >;
 
 use Data::Tubes::Util qw<
   assert_all_different
+  generalized_hashy
   metadata
   normalize_args
   shorter_sub_names
@@ -185,6 +186,31 @@ sub parse_by_split {
    };
 
 } ## end sub parse_by_split
+
+sub parse_ghashy {
+   my %args = normalize_args(@_, { %global_defaults, default_key => ''});
+   identify(\%args);
+
+   my %defaults = %{$args{defaults} || {}};
+   my $input    = $args{input};
+   my $output   = $args{output};
+
+   # pre-compile capture thing from generalized_hashy
+   $args{capture} = generalized_hashy(%args, text => undef)->{capture};
+
+   return sub {
+      my $record = shift;
+      my $outcome = generalized_hashy(%args, text => $record->{$input});
+      die {
+         input   => $input,
+         message => $outcome->{failure},
+         outcome => $outcome,
+         record  => $record,
+      } unless exists $outcome->{hash};
+      $record->{$output} = $outcome->{hash};
+      return $record;
+   };
+}
 
 sub parse_hashy {
    my %args = normalize_args(
