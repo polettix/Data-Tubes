@@ -16,7 +16,7 @@ my $expected = {
    to   => 'do',
 };
 my $string = '<<ever>> >like< "do"';
-my $regex  = qr{(?mxs: 
+my $regex  = qr{(?mxs:
    \A
       <<(?<what>.*?)>> \s+
       >(?<you>.*?)< \s+
