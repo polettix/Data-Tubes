@@ -109,6 +109,8 @@ sub generalized_hashy {
       },
    };
    my $args = normalize_args(@_, [$default_handler_for, 'text']);
+   $args->{key_default} = delete $args->{default_key}
+      if exists $args->{default_key};
    my $text = $args->{text};
 
    my %h = (%$default_handler_for, %$args);
@@ -124,7 +126,7 @@ sub generalized_hashy {
    $text =~ m{\G$h{open}}gmxs or return {%retval, failure => 'no opening'};
 
    my ($dkey, $dupkey, $kdec, $vdec) =
-     @h{qw< default_key key_duplicate key_decoder value_decoder >};
+     @h{qw< key_default key_duplicate key_decoder value_decoder >};
    my ($closed, %hash);
    while (!$closed && pos($text) < length($text)) {
       my $pos = pos($text);

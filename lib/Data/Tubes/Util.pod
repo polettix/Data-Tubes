@@ -52,12 +52,306 @@ to take this into consideration.
 
 =item B<< assert_all_different >>
 
-   my $bool = assert_all_different(@strings);
+   $bool = assert_all_different(@strings);
 
 checks that all strings in C<@strings> are different. Returns C<1> if
 the check is successful, throws an exception otherwise. The exception is
 a hash reference with a key C<message> set to the first string that is
 found repeated.
+
+=item B<< generalized_hashy >>
+
+   $outcome = generalized_hashy($text, %args); # OR
+   $outcome = generalized_hashy(%args);        # OR
+   $outcome = generalized_hashy(\%args);
+
+very generic parsing function that tries to figure out a hash out of an
+input text.
+
+The default settings are optimezed for I<whipuptitude> and I<DWIMmery>.
+This means that a lot of strings that you would hardly consider I<sane>
+are parsed anyway, just to give you something fast. If you need to be
+precise instead, you can either customize the different C<%args>, use a
+different parsing function or... roll your own.
+
+The returned value is a hash with the following keys:
+
+=over
+
+=item C<failpos>
+
+in case of failure, it reports the C<pos>ition in the input text where
+the parsing was unsuccessful. It is absent when the parsing succeeds;
+
+=item C<failure>
+
+in case of failure, it reports an error message. It is absent when the
+parsing succeeds;
+
+=item C<hash>
+
+the parsed hash. It is absent when the parsing fails;
+
+=item C<pos>
+
+the position at which the parsing ended, because the L</close> sequence
+was found;
+
+=item C<res>
+
+the number of characters in the input text that were not parsed;
+
+=back
+
+The model is the following:
+
+=over
+
+=item *
+
+the string is considered a sequence of I<chunks>, optionally marked at
+the beginning by an C<open> sequence, and at the end by a C<close>
+sequence. I<Chunks> are separated by a I<chunk separator>;
+
+=item *
+
+each I<chunk> can be either a stand-alone I<value> or a I<key>/I<value>
+pair. In the latter case, I<key> and I<value> are separated by a
+I<key-value separator>
+
+=item *
+
+there is something that defines what a valid I<key> and I<value> looks
+like.
+
+=back
+
+This gives you the following options via C<%args>:
+
+=over
+
+=item C<capture>
+
+the regular expression that dominates all the other ones. You normally
+don't want to set it directly, but you can if you look at how the code
+uses it.
+
+You can use this input argument using something that has already been
+compiled in a previous invocation of C<generalized_hashy>, because it is
+returned at every invocation. So, the typical idiom for avoiding the
+recompilation of this regular expression every time is:
+
+   # get the capture, set text to undef to avoid any parsing
+   $args{capture} = generalized_hashy(undef, %args)->{capture};
+
+From now on, C<$args{capture}> contains the regular expression and
+C<generalized_hashy> will not need to compute it again when called with
+this C<%args> list.
+
+It has no default value.
+
+=item C<chunks_separator>
+
+a regular expression for telling I<chunks> apart. Defaults to:
+
+   chunks_separator => qr{(?mxs: \s* [\s,;\|/] \s*)}
+
+i.e. it eats up surrounding spaces, and can be a space, comma,
+semicolon, pipe or slash character;
+
+=item C<close>
+
+a regular expression for stating that the hash ends. Defaults to:
+
+   close => qr{(?mxs: \s*\z)}
+
+i.e. it eats up optional trailing whitespace and expects to find the end
+of the string;
+
+=item C<key>
+
+a regular expression for valid keys. This allows you to be quite
+I<precise> as to what you admit for keys, but be sure to take a look at
+L</key_admitted> below for a quicker way to set this parameter.
+
+It does not have a default value as it relies upon L</key_admitted>'s
+one.
+
+=item C<key_admitted>
+
+a specification for valid, unquoted keys. When specifying this parameter
+and not setting a L</key>, the key is computed according to the
+algorithm explained below for I<admitted sequences>.
+
+This parameter can be either a regular expression, or a plain string
+containing the admitted characters. Defaults to:
+
+   key_admitted => qr{[^\\'":=\s,;\|/]};
+
+i.e. whatever cannot fit in either separator.
+
+=item C<key_decoder>
+
+a decoding function for a parsed key. You might want to set it when you
+allow quoting and/or escape sequences in your keys.
+
+By default, it removes quotes and escaping characters related to
+L</key_admitted>;
+
+=item C<key_default>
+
+=item C<default_key>
+
+a default key to use when there is a stand-alone value. The
+C<default_key> variant is provided for compatibility with L</metadata>
+and L<Data::Dumper::Plugin::Parser/hashy>.
+
+When not set and a stand-alone value is found, the parsing fails and an
+error is returned.
+
+There is no default. Note that this is different from the default
+setting/behaviour of L<Data::Dumper::Plugin::Parser/ghashy>, although
+that function used C<generalized_hashy> behind the scenes. Again, this
+is for similarity with C<hashy> and backwards compatibility.
+
+=item C<key_duplicated>
+
+a sub reference that will be called whenever a key is already present in
+the output hash. This allows you to e.g. complain loudly in case your
+input has a duplicated key.
+
+By default, when a duplicate key is found for the first time the current
+value is transformed into an array reference whose first element is the
+old value and the second one is the new value. Any following value for
+that key is appended to the array;
+
+=item C<key_value_separator>
+
+a regular expression for telling a I<key> from a I<value>. Defaults to:
+
+   key_value_separator => qr{(?mxs: \s* [:=] \s*)}
+
+i.e. it eats up surrounding spaces, and can be a colon or an equal sign;
+
+=item C<open>
+
+a regular expression for the hash beginning. Defaults to:
+
+   open => qr{(?mxs: \s* )}
+
+i.e. it eats up optional leading whitespace;
+
+=item C<pos>
+
+an integer value to set the initial position for parsing the input
+string. Default to 0, i.e. the start of the string;
+
+=item C<text>
+
+the text to parse. This can also appear as the first unnamed parameter
+in the argument list;
+
+=item C<value>
+
+a regular expression for valid values. This allows you to be quite
+I<precise> as to what you admit for values, but be sure to take a look
+at L</value_admitted> below for a quicker way to set this parameter.
+
+It does not have a default value as it relies upon L</value_admitted>'s
+one.
+
+=item C<value_admitted>
+
+a specification for valid, unquoted values. When specifying this
+parameter and not setting a L</value>, the key is computed according to
+the algorithm explained below for I<admitted sequences>.
+
+This parameter can be either a regular expression, or a plain string
+containing the admitted characters. Defaults to:
+
+   value_admitted => qr{[^\\'":=\s,;\|/]};
+
+i.e. whatever cannot fit in either separator.
+
+=item C<value_decoder>
+
+a decoding function for a parsed value. You might want to set it when
+you allow quoting and/or escape sequences in your values.
+
+By default, it removes quotes and escaping characters related to
+L</value_admitted>;
+
+=back
+
+When using either L</key_admitted> or L</value_admitted>, the L</key>
+and L</value> regular expressions will be computed automatically
+allowing for single and double quoted strings. This is what we refer to
+as I<admitted sequences>. In this case, the admitted regular expression
+(we will call it C<$admitted>) is used as follows:
+
+   allowed_sequence => qr{(?mxs:
+      (?mxs:
+         (?: "(?: [^\\"]+ | \\. )*") # double quotes
+         | (?: '[^']*')              # single quotes
+      )
+      | (?: (?: $admitted | \\.)+? ) # unquoted sequence, with escapes
+   )}
+
+In case C<$admitted> is not a regular expression, it is transformed into
+one like this:
+
+   $admitted = qr{[\Q$admitted\E]}
+
+i.e. it is considered a set of valid characters and transformed into a
+characters class.
+
+One I<admitted sequence> can then be either of the following:
+
+=over
+
+=item I<double-quoted>
+
+in this case, it is bound by double quotes characters, and can contain
+any character, including the double quotes themselves, by escaping using
+the backslash. As a matter of fact, every sequence of a backslash and a
+character is accepted whatever the second character is (including the
+backslash itself and the quoting character);
+
+=item I<single-quoted>
+
+in this case, it is bound by single quote characters, and can contain
+any character I<except> the single quote itself. This differs from what
+Perl accepts in single-quoted strings, and is more in line with what
+happens in other languages (e.g. the shell);
+
+=item I<unquoted>
+
+in this case, no quotation character is considered, and the C<$admitted>
+characters are used, with a twist: you can still escape otherwise
+invalid characters with the backslash.
+
+=back
+
+If you don't like all this I<DWIMmery> you can set L</key> and L</value>
+independently, of course.
+
+Some examples are due. The following inputs all produce the same output
+in the default settings, ranging from I<mostly OK> to
+I<definitely weird>:
+
+    input text -> q< what:ever you:do >
+    input text -> q< what: ever you: do >
+    input text -> q< what: ever you= do | wow: yay >
+    input text -> q< what: ever , you= do | wow: yay >
+   output hash -> {what => 'ever', you => 'do', wow => 'yay'}
+
+This shows you that you can do some escaping in the keys and values:
+
+    input text -> q< what: ever\ \"\,\"\ you\=\ do | wow: yay >
+    input text -> q< what: 'ever "," you= do'      | wow: yay >
+    input text -> q< what: "ever \",\" you= do"    | wow: yay >
+   output hash -> {what => 'ever "," you= do', wow => 'yay'}
+
 
 =item B<< load_module >>
 
