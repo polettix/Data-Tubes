@@ -9,6 +9,7 @@ use Log::Log4perl::Tiny qw< :easy :dead_if_first >;
 
 use Data::Tubes::Util qw<
   assert_all_different
+  generalized_hashy
   metadata
   normalize_args
   shorter_sub_names
@@ -115,10 +116,10 @@ sub parse_by_separators {
 
    # this sub will use the regexp above, do checking and return captured
    # values in a hash with @keys
-   my $n_keys       = scalar @$keys;
-   my $name         = $args{name};
-   my $input        = $args{input};
-   my $output       = $args{output};
+   my $n_keys = scalar @$keys;
+   my $name   = $args{name};
+   my $input  = $args{input};
+   my $output = $args{output};
 
    return sub {
       my $record = shift;
@@ -152,10 +153,10 @@ sub parse_by_split {
       $separator = qr{$separator};
    }
 
-   my $keys         = $args{keys};
-   my $n_keys       = defined($keys) ? scalar(@$keys) : 0;
-   my $input        = $args{input};
-   my $output       = $args{output};
+   my $keys          = $args{keys};
+   my $n_keys        = defined($keys) ? scalar(@$keys) : 0;
+   my $input         = $args{input};
+   my $output        = $args{output};
    my $allow_missing = $args{allow_missing} || 0;
 
    return sub {
@@ -186,14 +187,42 @@ sub parse_by_split {
 
 } ## end sub parse_by_split
 
+sub parse_ghashy {
+   my %args = normalize_args(@_,
+      {%global_defaults, default_key => '', name => 'parse ghashy'});
+   identify(\%args);
+
+   my %defaults = %{$args{defaults} || {}};
+   my $input    = $args{input};
+   my $output   = $args{output};
+
+   # pre-compile capture thing from generalized_hashy
+   $args{capture} = generalized_hashy(%args, text => undef)->{capture};
+
+   return sub {
+      my $record = shift;
+      my $outcome = generalized_hashy(%args, text => $record->{$input});
+      die {
+         input   => $input,
+         message => $outcome->{failure},
+         outcome => $outcome,
+         record  => $record,
+        }
+        unless exists $outcome->{hash};
+      $record->{$output} = {%defaults, %{$outcome->{hash}}};
+      return $record;
+   };
+} ## end sub parse_ghashy
+
 sub parse_hashy {
    my %args = normalize_args(
       @_,
       {
+         %global_defaults,
          chunks_separator    => ' ',
          default_key         => '',
          key_value_separator => '=',
-         %global_defaults,
+         name                => 'parse hashy',
       }
    );
    identify(\%args);

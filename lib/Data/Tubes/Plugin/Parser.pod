@@ -274,6 +274,45 @@ passed also as the first unnamed one in the argument list.
 
 =back
 
+=item B<< ghashy >>
+
+=item B<< parse_ghashy >>
+
+   my $tube = ghashy(%args); # OR
+   my $tube = ghashy(\%args);
+
+parse the input thext as a hash, generalized. The algorithm used is the
+same as L<Data::Tubes::Util/generalized_hash>. It is a generalization of
+L</hashy> below.
+
+Accepts all arguments as L<Data::Tubes::Util/generalized_hash>, with the
+same default values except for C<default_key> that is set to the empty
+string (as opposed to not being defined). This means that stand-alone
+values will always be accepted. This setting is in line with L</hashy>
+and has been set for backwards/mutual compatibility.
+
+The following arguements are recognised too:
+
+=over
+
+=item C<defaults>
+
+a hash reference with default values for the output;
+
+=item C<input>
+
+name of the input field, defaults to C<raw>;
+
+=item C<name>
+
+name of the tube, useful for debugging. Defaults to C<parse ghashy>;
+
+=item C<output>
+
+name of the output field, defaults to C<structured>;
+
+=back
+
 =item B<< hashy >>
 
 =item B<< parse_hashy >>
@@ -282,7 +321,7 @@ passed also as the first unnamed one in the argument list.
    my $tube = hashy(\%args);
 
 parse the input text as a hash. The algorithm used is the same as
-C<metadata> in L<Data::Tubes::Util>.
+L<Data::Tubes::Util/metadata>.
 
 =over
 
@@ -294,6 +333,10 @@ character used to divide chunks in the input;
 
 the default key to be used when a key is not present in a chunk;
 
+=item C<defaults>
+
+a hash reference with default values for the output;
+
 =item C<input>
 
 name of the input field, defaults to C<raw>;
@@ -304,13 +347,17 @@ character used to divide the key from the value in a chunk;
 
 =item C<name>
 
-name of the tube, useful for debugging;
+name of the tube, useful for debugging. Defaults to C<parse hashy>;
 
 =item C<output>
 
 name of the output field, defaults to C<structured>;
 
 =back
+
+This tube factory is strict in what accepts as inputs, in that the
+separators MUST be single characters and there is no escaping mechanism.
+If you need something more flexible, see L</ghashy> above.
 
 =item B<< single >>
 

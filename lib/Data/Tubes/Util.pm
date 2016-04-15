@@ -12,6 +12,7 @@ use Log::Log4perl::Tiny qw< :easy :dead_if_first >;
 our @EXPORT_OK = qw<
   args_array_with_options
   assert_all_different
+  generalized_hashy
   load_module
   load_sub
   metadata
@@ -48,6 +49,134 @@ sub assert_all_different {
    }
    return 1;
 } ## end sub assert_all_different
+
+sub _compile_capture {
+   my %h = @_;
+   use feature 'state';
+
+   state $quoted = qr{(?mxs:
+      (?: "(?: [^\\"]+ | \\. )*") # double quotes
+      | (?: '[^']*')              # single quotes
+   )};
+
+   my ($key, $value, $kvs, $cs) =
+     @h{qw< key value key_value_separator chunks_separator>};
+
+   if (!defined($key)) {
+      my $admitted = $h{key_admitted};
+      $admitted = qr{[\Q$admitted\E]} unless ref $admitted;
+      $key = qr{(?mxs: $quoted | (?:(?:$admitted | \\.)+?))};
+   }
+
+   if (!defined($value)) {
+      my $admitted = $h{value_admitted};
+      $admitted = qr{[\Q$admitted\E]} unless ref $admitted;
+      $value = qr{(?mxs: $quoted | (?:(?:$admitted | \\.)+?))};
+   }
+
+   my $close = qr{(?<close>$h{close})};
+   return qr{(?mxs:
+      (?: (?<key> $key) $kvs)?  # optional key with kv-separator
+      (?<value> $value)         # a value, for sure
+      (?: $close | $cs $close?) # close or chunk separator next
+   )};
+} ## end sub _compile_capture
+
+sub generalized_hashy {
+   use feature 'state';
+   state $admitted_default = qr{[^\\'":=\s,;\|/]};
+   state $kvdecoder        = sub {
+      my $kv = shift;
+      my $first = substr $kv, 0, 1;
+      $kv = substr $kv, 1, length($kv) - 2
+        if ($first eq q{'}) || ($first eq q{"});
+      $kv =~ s{\\(.)}{$1}gmxs unless $first eq q{'};
+      return $kv;
+   };
+   state $default_handler_for = {
+      open                => qr{(?mxs: \s* )},
+      key_value_separator => qr{(?mxs: \s* [:=] \s*)},
+      chunks_separator    => qr{(?mxs: \s* [\s,;\|/] \s*)},
+      close               => qr{(?mxs: \s*\z)},
+      key_admitted        => $admitted_default,
+      value_admitted      => $admitted_default,
+      key_decoder         => $kvdecoder,
+      value_decoder       => $kvdecoder,
+      key_duplicate       => sub {
+         my ($h, $k, $v) = @_;
+         $h->{$k} = [$h->{$k}] unless ref $h->{$k};
+         push @{$h->{$k}}, $v;
+      },
+   };
+   my $args = normalize_args(@_, [$default_handler_for, 'text']);
+   $args->{key_default} = delete $args->{default_key}
+      if exists $args->{default_key};
+   my $text = $args->{text};
+
+   my %h = (%$default_handler_for, %$args);
+   my $capture = $h{capture} ||= _compile_capture(%h);
+   my %retval = (capture => $capture);
+   return {%retval, failure => 'undefined input'} unless defined $text;
+
+   my $len    = length $text;
+   pos($text) = my $startpos = $args->{pos} || 0;
+   %retval    = (%retval, pos => $startpos, res => ($len - $startpos));
+
+   # let's check open first, no need to define anything otherwise
+   $text =~ m{\G$h{open}}gmxs or return {%retval, failure => 'no opening'};
+
+   my ($dkey, $dupkey, $kdec, $vdec) =
+     @h{qw< key_default key_duplicate key_decoder value_decoder >};
+   my ($closed, %hash);
+   while (!$closed && pos($text) < length($text)) {
+      my $pos = pos($text);
+      $text =~ m{\G$capture}gcmxs
+        or return {
+         %retval,
+         failure => "failed match at $pos",
+         failpos => $pos
+        };
+
+      my $key =
+          exists($+{key}) ? ($kdec      ? $kdec->($+{key}) : $+{key})
+        : defined($dkey)  ? (ref($dkey) ? $dkey->()        : $dkey)
+        :                   undef;
+      return {
+         %retval,
+         failure => 'stand-alone value, no default key set',
+         failpos => $pos
+        }
+        unless defined $key;
+
+      my $value = $vdec ? $vdec->($+{value}) : $+{value};
+
+      if (!exists $hash{$key}) {
+         $hash{$key} = $value;
+      }
+      elsif ($dupkey) {
+         $dupkey->(\%hash, $key, $value);
+      }
+      else {
+         return {
+            %retval,
+            failure => "duplicate key $key",
+            failpos => $pos
+         };
+      } ## end else [ if (!exists $hash{$key...})]
+
+      $closed = exists $+{close};
+   } ## end while (!$closed && pos($text...))
+
+   return {%retval, failure => 'no closure found'} unless $closed;
+
+   my $pos = pos $text;
+   return {
+      %retval,
+      pos  => $pos,
+      res  => ($len - $pos),
+      hash => \%hash,
+   };
+} ## end sub ghashy
 
 sub load_module {
    my $module = resolve_module(@_);
