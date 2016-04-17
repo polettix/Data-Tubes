@@ -48,10 +48,13 @@ or C<pipeline> from L<Data::Tubes>.
 
 =item B<< render_with_template_perlish >>
 
+   my $tube = with_template_perlish($template, %args); # OR
    my $tube = with_template_perlish(%args); # OR
    my $tube = with_template_perlish(\%args);
 
-render input variables using a L<Template::Perlish> template.
+render input variables using a L<Template::Perlish> template. The
+I<template> is the I<main> parameter, and can be passed as unnamed first
+argument or with key C<template> inside the C<%args> hash.
 
 Allowed arguments are:
 
@@ -72,22 +75,73 @@ the name of the output field in the output record;
 
 =item C<start>
 
-parameter for L<Template::Perlish>, defaults to C<[%>;
+parameter for L<Template::Perlish>, defaults to C<[%>. It will be
+ignored if C<template_perlish> is present in the arguments. It will also
+be ignored if C<template> is already compiled or gets compiled not using
+the L<Template::Perlish> instance generated with this setting;
 
 =item C<stop>
 
-parameter for L<Template::Perlish>, defaults to C<%]>;
+parameter for L<Template::Perlish>, defaults to C<%]>. It will be
+ignored if C<template_perlish> is present in the arguments. It will also
+be ignored if C<template> is already compiled or gets compiled not using
+the L<Template::Perlish> instance generated with this setting;
 
 =item C<template>
 
-template that will be expanded, MUST be compliant with the rules
-explained in L<Template::Perlish> and the setting above for L</start>
-and L</stop>;
+template that will be expanded. It can be either of the following:
+
+=over
+
+=item *
+
+a plain string. In this case, it MUST be compliant with the rules
+explained in L<Template::Perlish> and the settings for C<start>
+and C<stop>, or whatever set in C<template_perlish>;
+
+=item *
+
+a hash reference. In this case, the template is assumed to be a
+I<pre-compiled> template that is immediately useable with
+L<Template::Perlish/evaluate>. Depending on whether it has been compiled
+with checks or not (see L<Template::Perlish/compile>), it might actually
+ignore C<variables> or C<template_perlish>'s variables or not. If you go
+this route, it is usually a good idea to pass the L<Template::Perlish>
+instance that compiled this template via argument C<template_perlish>;
+
+=item *
+
+a code reference. This is provided for maximum flexibility. It will be
+invoked to get the template, getting the full arguments hash as input
+(the arguments has will always have C<template_perlish> populated,
+either with the provided value or with a newly created one). It can
+return either a plain string or a hash reference, see above for the
+rules;
+
+=item *
+
+an array reference. This will be expanded into an argument list for
+L<Data::Tubes::Plugin::Util/read_file>, that allows reading the template
+from a file (or whatever can be C<open>ed, like a scalar reference).
+
+=back
+
+This is the I<main> parameter, so it can be provided I<un-named> as the
+first stand-alone argument.
+
+=item C<template_perlish>
+
+an instance of L<Template::Perlish> that has to be used for all
+compilations and evaluation of templates. If this is present, options
+C<start>, C<stop> and C<variables> will be ignored; otherwise, a
+L<Template::Perlish> instance will be created with these three
+parameters;
 
 =item C<variables>
 
 hash reference with variables that will always be available when
-expanding the template.
+expanding the template. Defaults to the empty hash. Will be ignored if
+C<template_perlish> is present in the arguments.
 
 =back
 

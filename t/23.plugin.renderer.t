@@ -180,4 +180,121 @@ END
    $tf->remove();
 }
 
+require Template::Perlish;
+my $tp = Template::Perlish->new(
+   start     => '{{',
+   stop      => '}}',
+   variables => {
+      what => 'XXXX',         # overridden by data in record
+      new  => 'something',    # preserved
+   },
+);
+$target_string = "Have you ever felt like you [[have]] to do something?\n";
+
+{
+   my $template = <<'END';
+Have you {{ what }} felt {{ you }} you [[have]] to {{ please }} {{ new }}?
+END
+
+   my $rend = render_with_template_perlish(
+      template         => $template,
+      input            => 'foo',
+      output           => 'bar',
+      template_perlish => $tp,
+      start            => '[[',        # ignored
+      stop             => ']]',        # ignored
+      variables        => {            # ignored
+         have => 'boooo',
+         what => 'XXXX',
+         new  => 'whatever',
+      },
+   );
+   my $record = $rend->({foo => $structured});
+   is ref($record), 'HASH', 'custom template_perlish, record is a hash';
+   is_deeply $record,
+     {foo => $structured, bar => $target_string},
+     'custom template_perlish, rendering of the string';
+}
+
+{
+   my $template = <<'END';
+Have you {{ what }} felt {{ you }} you [[have]] to {{ please }} {{ new }}?
+END
+   $template = $tp->compile($template);
+
+   my $rend = render_with_template_perlish(
+      template         => $template,
+      input            => 'foo',
+      output           => 'bar',
+      template_perlish => $tp,
+      start            => '[[',        # ignored
+      stop             => ']]',        # ignored
+      variables        => {            # ignored
+         have => 'boooo',
+         what => 'XXXX',
+         new  => 'whatever',
+      },
+   );
+   my $record = $rend->({foo => $structured});
+   is ref($record), 'HASH',
+     'pre-compiled, custom template_perlish, record is a hash';
+   is_deeply $record,
+     {foo => $structured, bar => $target_string},
+     'pre-compiled, custom template_perlish, rendering of the string';
+}
+
+{
+   my $template = <<'END';
+Have you {{ what }} felt {{ you }} you [[have]] to {{ please }} {{ new }}?
+END
+   $template = $tp->compile($template);
+
+   my $rend = render_with_template_perlish(
+      template  => $template,
+      input     => 'foo',
+      output    => 'bar',
+      start     => '[[',        # ignored
+      stop      => ']]',        # ignored
+      variables => {            # ignored
+         have => 'boooo',
+         what => 'XXXX',
+         new  => 'whatever',
+      },
+   );
+   my $record = $rend->({foo => $structured});
+   is ref($record), 'HASH',
+     'pre-compiled, no custom template_perlish, record is a hash';
+   is_deeply $record,
+     {foo => $structured, bar => $target_string},
+     'pre-compiled, no custom template_perlish, rendering of the string';
+}
+
+{
+   my $template = <<'END';
+Have you {{ what }} felt {{ you }} you [[have]] to {{ please }} {{ new }}?
+END
+   $template = $tp->compile($template, no_check => 1);
+   my $target_string =
+     "Have you ever felt like you [[have]] to do whatever?\n";
+
+   my $rend = render_with_template_perlish(
+      template  => $template,
+      input     => 'foo',
+      output    => 'bar',
+      start     => '[[',        # ignored
+      stop      => ']]',        # ignored
+      variables => {            # considered!!!
+         have => 'boooo',
+         what => 'XXXX',
+         new  => 'whatever',    # this wins
+      },
+   );
+   my $record = $rend->({foo => $structured});
+   is ref($record), 'HASH',
+     'pre-compiled, no custom template_perlish, record is a hash';
+   is_deeply $record,
+     {foo => $structured, bar => $target_string},
+     'pre-compiled, no custom template_perlish, rendering of the string';
+}
+
 done_testing();
