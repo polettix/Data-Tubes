@@ -4,7 +4,7 @@
 use strict;
 use warnings;
 use 5.010;
-my $VERSION = "0.727";
+my $VERSION = "0.727001";
 RUSE('Log::Log4perl::Tiny', qw< :easy LOGLEVEL >);
 RUSE('Data::Tubes',         qw< pipeline >);
 
@@ -1996,7 +1996,7 @@ END_OF_FILE
  use strict;
  use warnings;
  use English qw< -no_match_vars >;
- our $VERSION = '0.727';
+ our $VERSION = '0.727001';
  use Exporter qw< import >;
  
  use Log::Log4perl::Tiny qw< :easy :dead_if_first LOGLEVEL >;
@@ -2108,8 +2108,9 @@ END_OF_FILE
  
  use strict;
  use warnings;
+ use English qw< -no_match_vars >;
  use Exporter 'import';
- our $VERSION = '0.727';
+ our $VERSION = '0.727001';
  
  use Log::Log4perl::Tiny qw< :easy :dead_if_first >;
  
@@ -2122,6 +2123,8 @@ END_OF_FILE
    metadata
    normalize_args
    normalize_filename
+   read_file
+   read_file_maybe
    resolve_module
    shorter_sub_names
    sprintffy
@@ -2214,7 +2217,7 @@ END_OF_FILE
     };
     my $args = normalize_args(@_, [$default_handler_for, 'text']);
     $args->{key_default} = delete $args->{default_key}
-       if exists $args->{default_key};
+      if exists $args->{default_key};
     my $text = $args->{text};
  
     my %h = (%$default_handler_for, %$args);
@@ -2222,9 +2225,9 @@ END_OF_FILE
     my %retval = (capture => $capture);
     return {%retval, failure => 'undefined input'} unless defined $text;
  
-    my $len    = length $text;
+    my $len = length $text;
     pos($text) = my $startpos = $args->{pos} || 0;
-    %retval    = (%retval, pos => $startpos, res => ($len - $startpos));
+    %retval = (%retval, pos => $startpos, res => ($len - $startpos));
  
     # let's check open first, no need to define anything otherwise
     $text =~ m{\G$h{open}}gmxs or return {%retval, failure => 'no opening'};
@@ -2280,7 +2283,7 @@ END_OF_FILE
        res  => ($len - $pos),
        hash => \%hash,
     };
- } ## end sub ghashy
+ } ## end sub generalized_hashy
  
  sub load_module {
     my $module = resolve_module(@_);
@@ -2352,6 +2355,7 @@ END_OF_FILE
  
  sub normalize_filename {
     my ($filename, $default_handle) = @_;
+    return unless defined $filename;
     return $filename       if ref($filename) eq 'GLOB';
     return $filename       if ref($filename) eq 'SCALAR';
     return $default_handle if $filename eq '-';
@@ -2366,6 +2370,42 @@ END_OF_FILE
     } ## end if (my ($handlename) =...)
     return $filename;
  } ## end sub normalize_filename
+ 
+ sub read_file {
+    my %args = normalize_args(
+       @_,
+       [
+          {binmode  => ':encoding(UTF-8)'},
+          'filename',    # default key for "straight" unnamed parameter
+       ]
+    );
+    defined(my $filename = normalize_filename($args{filename}, \*STDIN))
+      or LOGDIE 'read_file(): undefined filename';
+ 
+    my $fh;
+    if (ref($filename) eq 'GLOB') {
+       $fh = $filename;
+    }
+    else {
+       open $fh, '<', $filename
+         or LOGDIE "read_file() for <$args{filename}>: open(): $OS_ERROR";
+    }
+ 
+    if (defined $args{binmode}) {
+       binmode $fh, $args{binmode}
+         or LOGDIE "read_file(): binmode()"
+         . " for $args{filename} failed: $OS_ERROR";
+    }
+ 
+    local $INPUT_RECORD_SEPARATOR;
+    return <$fh>;
+ } ## end sub read_file
+ 
+ sub read_file_maybe {
+    my $x = shift;
+    return read_file(@$x) if ref($x) eq 'ARRAY';
+    return $x;
+ }
  
  sub resolve_module {
     my ($module, $prefix) = @_;
@@ -2502,7 +2542,7 @@ END_OF_FILE
  use warnings;
  use English qw< -no_match_vars >;
  use Log::Log4perl::Tiny qw< :easy :dead_if_first LOGLEVEL >;
- our $VERSION = '0.727';
+ our $VERSION = '0.727001';
  
  use Data::Tubes::Util
    qw< normalize_args normalize_filename args_array_with_options >;
@@ -2630,7 +2670,7 @@ END_OF_FILE
  use warnings;
  use English qw< -no_match_vars >;
  use Data::Dumper;
- our $VERSION = '0.727';
+ our $VERSION = '0.727001';
  
  use Log::Log4perl::Tiny qw< :easy :dead_if_first >;
  
@@ -2899,12 +2939,12 @@ END_OF_FILE
  use strict;
  use warnings;
  use English qw< -no_match_vars >;
- our $VERSION = '0.727';
+ our $VERSION = '0.727001';
  
  use Log::Log4perl::Tiny qw< :easy :dead_if_first >;
  
  use Data::Tubes::Util qw< normalize_args shorter_sub_names >;
- use Data::Tubes::Plugin::Util qw< read_file >;
+ use Data::Tubes::Util qw< read_file_maybe >;
  my %global_defaults = (
     input  => 'structured',
     output => 'rendered',
@@ -2912,17 +2952,13 @@ END_OF_FILE
  
  sub _resolve_template {
     my $args = shift;
- 
-    my $ref = ref($args->{template});
-    my $template =
-        (!$ref || $ref eq 'HASH') ? $args->{template}
-      : ($ref eq 'CODE')  ? $args->{template}->($args)
-      : ($ref eq 'ARRAY') ? read_file(@{$args->{template}})
-      :                     LOGDIE "invalid template of type $ref";
-    LOGDIE 'invalid input template' unless defined $template;
- 
+    my $template = read_file_maybe($args->{template});
+    $template = $template->($args) if ref($template) eq 'CODE';
+    LOGDIE 'undefined template' unless defined $template;
+    $template = $args->{template_perlish}->compile($template)
+      unless ref $template;
     return $template if ref($template) eq 'HASH';
-    return $args->{template_perlish}->compile($template);
+    LOGDIE 'invalid template of type ' . ref($template);
  } ## end sub _resolve_template
  
  sub _create_tp {
@@ -2976,7 +3012,7 @@ END_OF_FILE
  use strict;
  use warnings;
  use English qw< -no_match_vars >;
- our $VERSION = '0.727';
+ our $VERSION = '0.727001';
  
  use Log::Log4perl::Tiny qw< :easy :dead_if_first LOGLEVEL >;
  
@@ -3091,7 +3127,7 @@ END_OF_FILE
  use English qw< -no_match_vars >;
  use Data::Dumper;
  use Scalar::Util qw< blessed >;
- our $VERSION = '0.727';
+ our $VERSION = '0.727001';
  
  use Log::Log4perl::Tiny
    qw< :easy :dead_if_first get_logger LOGLEVEL LEVELID_FOR >;
@@ -3304,7 +3340,7 @@ END_OF_FILE
  use strict;
  use warnings;
  use English qw< -no_match_vars >;
- our $VERSION = '0.727';
+ our $VERSION = '0.727001';
  
  use Log::Log4perl::Tiny qw< :easy :dead_if_first >;
  
@@ -3446,11 +3482,11 @@ END_OF_FILE
  use warnings;
  use English qw< -no_match_vars >;
  use Data::Dumper;
- our $VERSION = '0.727';
+ our $VERSION = '0.727001';
  
  use Template::Perlish;
  use Log::Log4perl::Tiny qw< :easy :dead_if_first get_logger >;
- use Data::Tubes::Util qw< normalize_args tube >;
+ use Data::Tubes::Util qw< normalize_args read_file tube >;
  
  use Exporter qw< import >;
  our @EXPORT_OK = qw< identify log_helper read_file tubify >;
@@ -3540,27 +3576,6 @@ END_OF_FILE
     };
  } ## end sub log_helper
  
- sub read_file {
-    my %args = normalize_args(
-       @_,
-       [
-          {binmode => ':encoding(UTF-8)'},
-          'filename',    # default key for "straight" unnamed parameter
-       ]
-    );
-    defined $args{filename}
-      or LOGDIE 'read_file(): undefined filename';
-    open my $fh, '<', $args{filename}
-      or LOGDIE "read_file(): open('$args{filename}'): $OS_ERROR";
-    if (defined $args{binmode}) {
-       binmode $fh, $args{binmode}
-         or LOGDIE "read_file(): binmode()"
-         . " for $args{filename} failed: $OS_ERROR";
-    }
-    local $INPUT_RECORD_SEPARATOR;
-    return <$fh>;
- } ## end sub read_file
- 
  sub tubify {
     map {
        my $ref = ref $_;
@@ -3586,12 +3601,13 @@ END_OF_FILE
  use warnings;
  use English qw< -no_match_vars >;
  use POSIX qw< strftime >;
- our $VERSION = '0.727';
+ our $VERSION = '0.727001';
  
  use Log::Log4perl::Tiny qw< :easy :dead_if_first LOGLEVEL >;
  use Template::Perlish;
  
- use Data::Tubes::Util qw< normalize_args shorter_sub_names sprintffy >;
+ use Data::Tubes::Util
+   qw< normalize_args read_file_maybe shorter_sub_names sprintffy >;
  use Data::Tubes::Plugin::Util qw< identify log_helper >;
  use Data::Tubes::Plugin::Plumbing;
  my %global_defaults = (input => 'rendered',);
@@ -3634,14 +3650,30 @@ END_OF_FILE
  sub dispatch_to_files {
     my %args = normalize_args(
        @_,
-       {
-          %global_defaults,
-          name    => 'write dispatcher',
-          binmode => ':encoding(UTF-8)'
-       }
+       [
+          {
+             %global_defaults,
+             name    => 'write dispatcher',
+             binmode => ':encoding(UTF-8)'
+          },
+          'filename'
+       ],
     );
     identify(\%args);
     my $name = delete $args{name};    # so that it can be overridden
+ 
+    if (defined(my $filename = delete $args{filename})) {
+       my $ref = ref $filename;
+       if (! $ref) {
+          $args{filename_template} //= $filename;
+       }
+       elsif ($ref eq 'CODE') {
+          $args{filename_factory} //= $filename;
+       }
+       else {
+          LOGDIE "argument filename has invalid type $ref";
+       }
+    }
  
     my $factory = delete $args{filename_factory};
     if (!defined($factory) && defined($args{filename_template})) {
@@ -3664,11 +3696,15 @@ END_OF_FILE
  sub write_to_files {
     my %args = normalize_args(
        @_,
-       {
-          %global_defaults,
-          name    => 'write to file',
-          binmode => ':encoding(UTF-8)'
-       }
+       [
+          {
+             %global_defaults,
+             name     => 'write to file',
+             binmode  => ':encoding(UTF-8)',
+             filename => \*STDOUT,
+          },
+          'filename'
+       ],
     );
     identify(\%args);
     my $name = $args{name};
@@ -3676,15 +3712,18 @@ END_OF_FILE
     LOGDIE "$name: need an input"   unless defined $args{input};
  
     my $output = $args{filename};
-    $output = _filenames_generator($output)
-      unless ref($output);
+    $output = _filenames_generator($output) unless ref($output);
+ 
+    my %oha =
+      map { ($_ => $args{$_}) }
+      grep { defined $args{$_} } qw< binmode policy >;
+    for my $marker (qw< footer header interlude >) {
+       $oha{$marker} = read_file_maybe($args{$marker})
+         if defined $args{$marker};
+    }
     require Data::Tubes::Util::Output;
-    my $output_handler = Data::Tubes::Util::Output->new(
-       output => $output,
-       map { ($_ => $args{$_}) }
-         grep { exists $args{$_} }
-         qw< binmode footer header interlude policy >
-    );
+    my $output_handler =
+      Data::Tubes::Util::Output->new(%oha, output => $output,);
  
     my $input = $args{input};
     return sub {
@@ -3711,7 +3750,7 @@ END_OF_FILE
  use 5.010;
  use File::Path qw< make_path >;
  use File::Basename qw< dirname >;
- our $VERSION = '0.727';
+ our $VERSION = '0.727001';
  
  use Log::Log4perl::Tiny qw< :easy :dead_if_first >;
  use Mo qw< default >;

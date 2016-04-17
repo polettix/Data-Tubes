@@ -1,4 +1,6 @@
 {{$NEXT}}
+
+0.727001  2016-04-17 23:38:04 CEST
    - moved read_file in D::T::Util, preserved backwards compatibility
    - added read_file_maybe
    - read_file uses normalize_filename
