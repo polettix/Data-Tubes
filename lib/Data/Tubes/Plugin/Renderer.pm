@@ -7,7 +7,7 @@ our $VERSION = '0.727';
 use Log::Log4perl::Tiny qw< :easy :dead_if_first >;
 
 use Data::Tubes::Util qw< normalize_args shorter_sub_names >;
-use Data::Tubes::Plugin::Util qw< read_file >;
+use Data::Tubes::Util qw< read_file_maybe >;
 my %global_defaults = (
    input  => 'structured',
    output => 'rendered',
@@ -15,17 +15,13 @@ my %global_defaults = (
 
 sub _resolve_template {
    my $args = shift;
-
-   my $ref = ref($args->{template});
-   my $template =
-       (!$ref || $ref eq 'HASH') ? $args->{template}
-     : ($ref eq 'CODE')  ? $args->{template}->($args)
-     : ($ref eq 'ARRAY') ? read_file(@{$args->{template}})
-     :                     LOGDIE "invalid template of type $ref";
-   LOGDIE 'invalid input template' unless defined $template;
-
+   my $template = read_file_maybe($args->{template});
+   $template = $template->($args) if ref($template) eq 'CODE';
+   LOGDIE 'undefined template' unless defined $template;
+   $template = $args->{template_perlish}->compile($template)
+     unless ref $template;
    return $template if ref($template) eq 'HASH';
-   return $args->{template_perlish}->compile($template);
+   LOGDIE 'invalid template of type ' . ref($template);
 } ## end sub _resolve_template
 
 sub _create_tp {
