@@ -600,6 +600,37 @@ You can optionally pass the filename standalone as the first argument
 without pre-pending it with the string C<filename>. In this case, it
 MUST appear as the first item in the argument list.
 
+=item B<< read_file_maybe >>
+
+   my $text = read_file_maybe(\@aref);
+   my $x    = read_file_maybe($x); # where ref($x) ne 'ARRAY'
+
+helper function that expands the input argument with L</read_file> if it
+is an array reference, while returning the input argument unchanged
+otherwise.
+
+This can be useful if you want to overload an input parameter with
+either a straight text or something that should be loaded from a file,
+like a template:
+
+   my $template = read_file_maybe($args{template});
+
+In this case, if C<$args{template}> is a text, it will be returned
+unchanged. Otherwise, if it is an array reference, it will be expanded
+in a list passed to L</read_file>, and the contents of the file returned
+back.
+
+Examples:
+
+   $text = read_file_maybe('this goes straight');  # direct text
+   # $text contains 'this goes straight' now
+
+   $text = read_file_maybe(['/path/to/text.txt']);
+   # $text has the contents of file /path/to/text.txt now
+
+   $text = read_file_maybe(['/path/to/text.txt', binmode => ':raw']);
+   # ditto, but read as raw text instead of default utf-8
+
 
 =item B<< resolve_module >>
 
