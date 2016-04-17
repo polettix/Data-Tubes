@@ -10,7 +10,7 @@ our $VERSION = '0.727';
 
 use Template::Perlish;
 use Log::Log4perl::Tiny qw< :easy :dead_if_first get_logger >;
-use Data::Tubes::Util qw< normalize_args tube >;
+use Data::Tubes::Util qw< normalize_args read_file tube >;
 
 use Exporter qw< import >;
 our @EXPORT_OK = qw< identify log_helper read_file tubify >;
@@ -99,27 +99,6 @@ sub log_helper {
       $logger->log($loglevel, $rendered);
    };
 } ## end sub log_helper
-
-sub read_file {
-   my %args = normalize_args(
-      @_,
-      [
-         {binmode => ':encoding(UTF-8)'},
-         'filename',    # default key for "straight" unnamed parameter
-      ]
-   );
-   defined $args{filename}
-     or LOGDIE 'read_file(): undefined filename';
-   open my $fh, '<', $args{filename}
-     or LOGDIE "read_file(): open('$args{filename}'): $OS_ERROR";
-   if (defined $args{binmode}) {
-      binmode $fh, $args{binmode}
-        or LOGDIE "read_file(): binmode()"
-        . " for $args{filename} failed: $OS_ERROR";
-   }
-   local $INPUT_RECORD_SEPARATOR;
-   return <$fh>;
-} ## end sub read_file
 
 sub tubify {
    map {

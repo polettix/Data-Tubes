@@ -575,6 +575,32 @@ otherwise, the provided C<$filename> will be returned as-is.
 
 =back
 
+=item B<< read_file >>
+
+   my $contents = read_file($filename, %args); # OR
+   my $contents = read_file(%args); # OR
+   my $contents = read_file(\%args);
+
+a slurping facility. The following options are available:
+
+=over
+
+=item C<binmode>
+
+parameter for C<CORE::binmode>, defaults to C<:encoding(UTF-8)>;
+
+=item C<filename>
+
+the filename (or reference to a string, if you really need it) to slurp
+data from.
+
+=back
+
+You can optionally pass the filename standalone as the first argument
+without pre-pending it with the string C<filename>. In this case, it
+MUST appear as the first item in the argument list.
+
+
 =item B<< resolve_module >>
 
    my $full_module_name = resolve_module($module_name); # OR

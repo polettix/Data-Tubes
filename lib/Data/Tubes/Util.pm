@@ -4,6 +4,7 @@ package Data::Tubes::Util;
 
 use strict;
 use warnings;
+use English qw< -no_match_vars >;
 use Exporter 'import';
 our $VERSION = '0.727';
 
@@ -18,6 +19,7 @@ our @EXPORT_OK = qw<
   metadata
   normalize_args
   normalize_filename
+  read_file
   resolve_module
   shorter_sub_names
   sprintffy
@@ -262,6 +264,27 @@ sub normalize_filename {
    } ## end if (my ($handlename) =...)
    return $filename;
 } ## end sub normalize_filename
+
+sub read_file {
+   my %args = normalize_args(
+      @_,
+      [
+         {binmode => ':encoding(UTF-8)'},
+         'filename',    # default key for "straight" unnamed parameter
+      ]
+   );
+   defined $args{filename}
+     or LOGDIE 'read_file(): undefined filename';
+   open my $fh, '<', $args{filename}
+     or LOGDIE "read_file(): open('$args{filename}'): $OS_ERROR";
+   if (defined $args{binmode}) {
+      binmode $fh, $args{binmode}
+        or LOGDIE "read_file(): binmode()"
+        . " for $args{filename} failed: $OS_ERROR";
+   }
+   local $INPUT_RECORD_SEPARATOR;
+   return <$fh>;
+} ## end sub read_file
 
 sub resolve_module {
    my ($module, $prefix) = @_;
