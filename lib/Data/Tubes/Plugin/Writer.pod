@@ -39,6 +39,10 @@ ones:
 
 =over
 
+=item C<filename>
+
+handy shortcut for either C<filename_factory> or C<filename_template>;
+
 =item C<filename_factory>
 
 a sub reference that will emit anything valid for C<filename> in
@@ -109,6 +113,7 @@ An example is due at this point:
 
 =item B<< write_to_files >>
 
+   my $tube = to_files($filename, %args); # OR
    my $tube = to_files(%args); # OR
    my $tube = to_files(\%args);
 
@@ -121,7 +126,9 @@ way to derive their filename.
 This factory uses L<Data::Tubes::Util::Output>, so you might want to
 take a look there too.
 
-The central argument is C<filename>. You can set it in different ways:
+The central argument is C<filename>, that can also be set as an initial
+unnamed parameter in the arguments list. You can set it in different
+ways:
 
 =over
 
@@ -259,19 +266,30 @@ The following arguments are accepted:
 =item C<binmode>
 
 value to set via C<CORE::binmode> to opened filehandles (not to provided
-ones though). See L</Data::Tubes::Util::Output>;
+ones though). See L<Data::Tubes::Util::Output>;
 
 =item C<filename>
 
+see above. Defaults to standard output;
+
 =item C<footer>
 
-data to be inserted as footer when closing/releasing a file. See
-L</Data::Tubes::Util::Output>;
+data to be inserted as footer when closing/releasing a file, eventually
+passed to L<Data::Tubes::Util::Output>. This parameter is initially
+passed to L<Data::Tubes::Util/read_file_maybe>, so it can either be a
+string (as required by L<Data::Tubes::Util::Output>, or an array
+reference that is expanded into a list passed to
+L<Data::Tubes::Util/read_file> for reading the text;
+
 
 =item C<header>
 
-data to be inserted as header when opening/starting to use a file. See
-L</Data::Tubes::Util::Output>;
+data to be inserted as header when opening/starting to use a file,
+eventually passed to L<Data::Tubes::Util::Output>. This parameter is
+initially passed to L<Data::Tubes::Util/read_file_maybe>, so it can
+either be a string (as required by L<Data::Tubes::Util::Output>, or an
+array reference that is expanded into a list passed to
+L<Data::Tubes::Util/read_file> for reading the text;
 
 =item C<input>
 
@@ -281,8 +299,12 @@ L<Data::Tubes::Plugin::Renderer>.
 
 =item C<interlude>
 
-data to be inserted between records printed out. See
-L</Data::Tubes::Util::Output>;
+data to be inserted between records printed out, eventually passed to
+L<Data::Tubes::Util::Output>. This parameter is initially passed to
+L<Data::Tubes::Util/read_file_maybe>, so it can either be a string (as
+required by L<Data::Tubes::Util::Output>, or an array reference that is
+expanded into a list passed to L<Data::Tubes::Util/read_file> for
+reading the text;
 
 =item C<name>
 
@@ -291,7 +313,7 @@ name of the tube, useful when debugging;
 =item C<policy>
 
 a policy object where you can set thresholds for limiting the
-content/size of generated files. See L</Data::Tubes::Util::Output>.
+content/size of generated files. See L<Data::Tubes::Util::Output>.
 
 =back
 
