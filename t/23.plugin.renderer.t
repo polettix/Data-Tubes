@@ -106,4 +106,78 @@ END
    $tf->remove();
 }
 
+{
+   my $template = <<'END';
+Have you {{ what }} felt {{ you }} you have to {{ please }} {{ new }}?
+END
+   my $rend = render_with_template_perlish(
+      $template,
+      input     => 'foo',
+      output    => 'bar',
+      start     => '{{',
+      stop      => '}}',
+      variables => {
+         what => 'XXXX',         # overridden by data in record
+         new  => 'something',    # preserved
+      },
+   );
+   my $record = $rend->({foo => $structured});
+   is ref($record), 'HASH', 'implicit custom stuff, record is a hash';
+   is_deeply $record,
+     {foo => $structured, bar => $target_string},
+     'implicit custom stuff, rendering of the string';
+}
+
+{
+   my $template = <<'END';
+Have you {{ what }} felt {{ you }} you have to {{ please }} {{ new }}?
+END
+   my $rend = render_with_template_perlish(
+      [\$template],    # as "filename"
+      input     => 'foo',
+      output    => 'bar',
+      start     => '{{',
+      stop      => '}}',
+      variables => {
+         what => 'XXXX',         # overridden by data in record
+         new  => 'something',    # preserved
+      },
+   );
+   my $record = $rend->({foo => $structured});
+   is ref($record), 'HASH',
+     'implicit custom & in-memory filename, record is a hash';
+   is_deeply $record,
+     {foo => $structured, bar => $target_string},
+     'implicit custom & in-memory filename, rendering of the string';
+}
+
+{
+   my $me = path(__FILE__);
+   my $tf = $me->sibling($me->basename() . '.tmp');
+   $tf->remove() if $tf->exists();
+   $tf->spew_raw(<<'END');
+Have you {{ what }} felt {{ you }} you have to {{ please }} {{ new }}?
+END
+
+   my $rend = render_with_template_perlish(
+      [$tf->stringify()],    # as "filename"
+      input     => 'foo',
+      output    => 'bar',
+      start     => '{{',
+      stop      => '}}',
+      variables => {
+         what => 'XXXX',         # overridden by data in record
+         new  => 'something',    # preserved
+      },
+   );
+   my $record = $rend->({foo => $structured});
+   is ref($record), 'HASH',
+     'implicit custom & real filename, record is a hash';
+   is_deeply $record,
+     {foo => $structured, bar => $target_string},
+     'implicit custom & real filename, rendering of the string';
+
+   $tf->remove();
+}
+
 done_testing();

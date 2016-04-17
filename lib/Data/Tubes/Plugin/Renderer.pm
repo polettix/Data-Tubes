@@ -40,13 +40,16 @@ sub _create_tp {
 sub render_with_template_perlish {
    my %args = normalize_args(
       @_,
-      {
-         %global_defaults,
-         start     => '[%',
-         stop      => '%]',
-         variables => {},
-         name      => 'render with Template::Perlish',
-      }
+      [
+         {
+            %global_defaults,
+            start     => '[%',
+            stop      => '%]',
+            variables => {},
+            name      => 'render with Template::Perlish',
+         },
+         'template'
+      ]
    );
    my $name = $args{name};
 
