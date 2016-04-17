@@ -1,4 +1,9 @@
 {{$NEXT}}
+   - moved read_file in D::T::Util, preserved backwards compatibility
+   - added read_file_maybe
+   - read_file uses normalize_filename
+   - simplified interface for writers
+   - write_to_files defaults to standard output
 
 0.727  2016-04-17 18:41:03 CEST
    - embedded Mo and Mo::default in tubergen
