@@ -25,16 +25,8 @@ my $tube = pipeline(
    },
 
    # automatic loading with arguments
-   [
-      'Renderer::with_template_perlish',
-      template => "[% a %]:\n  id: [% id %]\n  meet: [% b %]\n",
-   ],
-   [
-      'Writer::to_files',
-      filename => \*STDOUT,
-      header   => "---\n",
-      footer   => "...\n"
-   ],
+   ['Renderer::with_template_perlish', ['example04.tp']],
+   ['Writer::to_files', header => "---\n", footer => "...\n"],
 
    # options for tube, in this case just pour into the sink
    {tap => 'sink'}
@@ -47,4 +39,3 @@ a=Flavio b=Silvia
 a=some b=thing
 END
 $tube->([\$input]);
-
