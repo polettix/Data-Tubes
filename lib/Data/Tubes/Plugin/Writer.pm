@@ -101,11 +101,15 @@ sub dispatch_to_files {
 sub write_to_files {
    my %args = normalize_args(
       @_,
-      {
-         %global_defaults,
-         name    => 'write to file',
-         binmode => ':encoding(UTF-8)'
-      }
+      [
+         {
+            %global_defaults,
+            name     => 'write to file',
+            binmode  => ':encoding(UTF-8)',
+            filename => \*STDOUT,
+         },
+         'filename'
+      ],
    );
    identify(\%args);
    my $name = $args{name};
