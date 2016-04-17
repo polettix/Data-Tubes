@@ -11,7 +11,8 @@ our $VERSION = '0.727';
 use Log::Log4perl::Tiny qw< :easy :dead_if_first LOGLEVEL >;
 use Template::Perlish;
 
-use Data::Tubes::Util qw< normalize_args shorter_sub_names sprintffy >;
+use Data::Tubes::Util
+  qw< normalize_args read_file_maybe shorter_sub_names sprintffy >;
 use Data::Tubes::Plugin::Util qw< identify log_helper >;
 use Data::Tubes::Plugin::Plumbing;
 my %global_defaults = (input => 'rendered',);
@@ -96,15 +97,18 @@ sub write_to_files {
    LOGDIE "$name: need an input"   unless defined $args{input};
 
    my $output = $args{filename};
-   $output = _filenames_generator($output)
-     unless ref($output);
+   $output = _filenames_generator($output) unless ref($output);
+
+   my %oha =
+     map { ($_ => $args{$_}) }
+     grep { defined $args{$_} } qw< binmode policy >;
+   for my $marker (qw< footer header interlude >) {
+      $oha{$marker} = read_file_maybe($args{$marker})
+        if defined $args{$marker};
+   }
    require Data::Tubes::Util::Output;
-   my $output_handler = Data::Tubes::Util::Output->new(
-      output => $output,
-      map { ($_ => $args{$_}) }
-        grep { exists $args{$_} }
-        qw< binmode footer header interlude policy >
-   );
+   my $output_handler =
+     Data::Tubes::Util::Output->new(%oha, output => $output,);
 
    my $input = $args{input};
    return sub {
