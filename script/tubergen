@@ -4,7 +4,7 @@
 use strict;
 use warnings;
 use 5.010;
-my $VERSION = "0.726";
+my $VERSION = "0.727";
 RUSE('Log::Log4perl::Tiny', qw< :easy LOGLEVEL >);
 RUSE('Data::Tubes',         qw< pipeline >);
 
@@ -1996,7 +1996,7 @@ END_OF_FILE
  use strict;
  use warnings;
  use English qw< -no_match_vars >;
- our $VERSION = '0.726';
+ our $VERSION = '0.727';
  use Exporter qw< import >;
  
  use Log::Log4perl::Tiny qw< :easy :dead_if_first LOGLEVEL >;
@@ -2109,13 +2109,14 @@ END_OF_FILE
  use strict;
  use warnings;
  use Exporter 'import';
- our $VERSION = '0.726';
+ our $VERSION = '0.727';
  
  use Log::Log4perl::Tiny qw< :easy :dead_if_first >;
  
  our @EXPORT_OK = qw<
    args_array_with_options
    assert_all_different
+   generalized_hashy
    load_module
    load_sub
    metadata
@@ -2152,6 +2153,134 @@ END_OF_FILE
     }
     return 1;
  } ## end sub assert_all_different
+ 
+ sub _compile_capture {
+    my %h = @_;
+    use feature 'state';
+ 
+    state $quoted = qr{(?mxs:
+       (?: "(?: [^\\"]+ | \\. )*") # double quotes
+       | (?: '[^']*')              # single quotes
+    )};
+ 
+    my ($key, $value, $kvs, $cs) =
+      @h{qw< key value key_value_separator chunks_separator>};
+ 
+    if (!defined($key)) {
+       my $admitted = $h{key_admitted};
+       $admitted = qr{[\Q$admitted\E]} unless ref $admitted;
+       $key = qr{(?mxs: $quoted | (?:(?:$admitted | \\.)+?))};
+    }
+ 
+    if (!defined($value)) {
+       my $admitted = $h{value_admitted};
+       $admitted = qr{[\Q$admitted\E]} unless ref $admitted;
+       $value = qr{(?mxs: $quoted | (?:(?:$admitted | \\.)+?))};
+    }
+ 
+    my $close = qr{(?<close>$h{close})};
+    return qr{(?mxs:
+       (?: (?<key> $key) $kvs)?  # optional key with kv-separator
+       (?<value> $value)         # a value, for sure
+       (?: $close | $cs $close?) # close or chunk separator next
+    )};
+ } ## end sub _compile_capture
+ 
+ sub generalized_hashy {
+    use feature 'state';
+    state $admitted_default = qr{[^\\'":=\s,;\|/]};
+    state $kvdecoder        = sub {
+       my $kv = shift;
+       my $first = substr $kv, 0, 1;
+       $kv = substr $kv, 1, length($kv) - 2
+         if ($first eq q{'}) || ($first eq q{"});
+       $kv =~ s{\\(.)}{$1}gmxs unless $first eq q{'};
+       return $kv;
+    };
+    state $default_handler_for = {
+       open                => qr{(?mxs: \s* )},
+       key_value_separator => qr{(?mxs: \s* [:=] \s*)},
+       chunks_separator    => qr{(?mxs: \s* [\s,;\|/] \s*)},
+       close               => qr{(?mxs: \s*\z)},
+       key_admitted        => $admitted_default,
+       value_admitted      => $admitted_default,
+       key_decoder         => $kvdecoder,
+       value_decoder       => $kvdecoder,
+       key_duplicate       => sub {
+          my ($h, $k, $v) = @_;
+          $h->{$k} = [$h->{$k}] unless ref $h->{$k};
+          push @{$h->{$k}}, $v;
+       },
+    };
+    my $args = normalize_args(@_, [$default_handler_for, 'text']);
+    $args->{key_default} = delete $args->{default_key}
+       if exists $args->{default_key};
+    my $text = $args->{text};
+ 
+    my %h = (%$default_handler_for, %$args);
+    my $capture = $h{capture} ||= _compile_capture(%h);
+    my %retval = (capture => $capture);
+    return {%retval, failure => 'undefined input'} unless defined $text;
+ 
+    my $len    = length $text;
+    pos($text) = my $startpos = $args->{pos} || 0;
+    %retval    = (%retval, pos => $startpos, res => ($len - $startpos));
+ 
+    # let's check open first, no need to define anything otherwise
+    $text =~ m{\G$h{open}}gmxs or return {%retval, failure => 'no opening'};
+ 
+    my ($dkey, $dupkey, $kdec, $vdec) =
+      @h{qw< key_default key_duplicate key_decoder value_decoder >};
+    my ($closed, %hash);
+    while (!$closed && pos($text) < length($text)) {
+       my $pos = pos($text);
+       $text =~ m{\G$capture}gcmxs
+         or return {
+          %retval,
+          failure => "failed match at $pos",
+          failpos => $pos
+         };
+ 
+       my $key =
+           exists($+{key}) ? ($kdec      ? $kdec->($+{key}) : $+{key})
+         : defined($dkey)  ? (ref($dkey) ? $dkey->()        : $dkey)
+         :                   undef;
+       return {
+          %retval,
+          failure => 'stand-alone value, no default key set',
+          failpos => $pos
+         }
+         unless defined $key;
+ 
+       my $value = $vdec ? $vdec->($+{value}) : $+{value};
+ 
+       if (!exists $hash{$key}) {
+          $hash{$key} = $value;
+       }
+       elsif ($dupkey) {
+          $dupkey->(\%hash, $key, $value);
+       }
+       else {
+          return {
+             %retval,
+             failure => "duplicate key $key",
+             failpos => $pos
+          };
+       } ## end else [ if (!exists $hash{$key...})]
+ 
+       $closed = exists $+{close};
+    } ## end while (!$closed && pos($text...))
+ 
+    return {%retval, failure => 'no closure found'} unless $closed;
+ 
+    my $pos = pos $text;
+    return {
+       %retval,
+       pos  => $pos,
+       res  => ($len - $pos),
+       hash => \%hash,
+    };
+ } ## end sub ghashy
  
  sub load_module {
     my $module = resolve_module(@_);
@@ -2373,7 +2502,7 @@ END_OF_FILE
  use warnings;
  use English qw< -no_match_vars >;
  use Log::Log4perl::Tiny qw< :easy :dead_if_first LOGLEVEL >;
- our $VERSION = '0.726';
+ our $VERSION = '0.727';
  
  use Data::Tubes::Util
    qw< normalize_args normalize_filename args_array_with_options >;
@@ -2501,12 +2630,13 @@ END_OF_FILE
  use warnings;
  use English qw< -no_match_vars >;
  use Data::Dumper;
- our $VERSION = '0.726';
+ our $VERSION = '0.727';
  
  use Log::Log4perl::Tiny qw< :easy :dead_if_first >;
  
  use Data::Tubes::Util qw<
    assert_all_different
+   generalized_hashy
    metadata
    normalize_args
    shorter_sub_names
@@ -2613,10 +2743,10 @@ END_OF_FILE
  
     # this sub will use the regexp above, do checking and return captured
     # values in a hash with @keys
-    my $n_keys       = scalar @$keys;
-    my $name         = $args{name};
-    my $input        = $args{input};
-    my $output       = $args{output};
+    my $n_keys = scalar @$keys;
+    my $name   = $args{name};
+    my $input  = $args{input};
+    my $output = $args{output};
  
     return sub {
        my $record = shift;
@@ -2650,10 +2780,10 @@ END_OF_FILE
        $separator = qr{$separator};
     }
  
-    my $keys         = $args{keys};
-    my $n_keys       = defined($keys) ? scalar(@$keys) : 0;
-    my $input        = $args{input};
-    my $output       = $args{output};
+    my $keys          = $args{keys};
+    my $n_keys        = defined($keys) ? scalar(@$keys) : 0;
+    my $input         = $args{input};
+    my $output        = $args{output};
     my $allow_missing = $args{allow_missing} || 0;
  
     return sub {
@@ -2684,14 +2814,42 @@ END_OF_FILE
  
  } ## end sub parse_by_split
  
+ sub parse_ghashy {
+    my %args = normalize_args(@_,
+       {%global_defaults, default_key => '', name => 'parse ghashy'});
+    identify(\%args);
+ 
+    my %defaults = %{$args{defaults} || {}};
+    my $input    = $args{input};
+    my $output   = $args{output};
+ 
+    # pre-compile capture thing from generalized_hashy
+    $args{capture} = generalized_hashy(%args, text => undef)->{capture};
+ 
+    return sub {
+       my $record = shift;
+       my $outcome = generalized_hashy(%args, text => $record->{$input});
+       die {
+          input   => $input,
+          message => $outcome->{failure},
+          outcome => $outcome,
+          record  => $record,
+         }
+         unless exists $outcome->{hash};
+       $record->{$output} = {%defaults, %{$outcome->{hash}}};
+       return $record;
+    };
+ } ## end sub parse_ghashy
+ 
  sub parse_hashy {
     my %args = normalize_args(
        @_,
        {
+          %global_defaults,
           chunks_separator    => ' ',
           default_key         => '',
           key_value_separator => '=',
-          %global_defaults,
+          name                => 'parse hashy',
        }
     );
     identify(\%args);
@@ -2741,46 +2899,68 @@ END_OF_FILE
  use strict;
  use warnings;
  use English qw< -no_match_vars >;
- our $VERSION = '0.726';
+ our $VERSION = '0.727';
  
  use Log::Log4perl::Tiny qw< :easy :dead_if_first >;
  
  use Data::Tubes::Util qw< normalize_args shorter_sub_names >;
+ use Data::Tubes::Plugin::Util qw< read_file >;
  my %global_defaults = (
     input  => 'structured',
     output => 'rendered',
  );
  
+ sub _resolve_template {
+    my $args = shift;
+ 
+    my $ref = ref($args->{template});
+    my $template =
+        (!$ref || $ref eq 'HASH') ? $args->{template}
+      : ($ref eq 'CODE')  ? $args->{template}->($args)
+      : ($ref eq 'ARRAY') ? read_file(@{$args->{template}})
+      :                     LOGDIE "invalid template of type $ref";
+    LOGDIE 'invalid input template' unless defined $template;
+ 
+    return $template if ref($template) eq 'HASH';
+    return $args->{template_perlish}->compile($template);
+ } ## end sub _resolve_template
+ 
+ sub _create_tp {
+    my $args = shift;
+    require Template::Perlish;
+    return Template::Perlish->new(
+       map { $_ => $args->{$_} }
+       grep { defined $args->{$_} } qw< start stop variables >
+    );
+ } ## end sub _create_tp
+ 
  sub render_with_template_perlish {
     my %args = normalize_args(
        @_,
-       {
-          %global_defaults,
-          start     => '[%',
-          stop      => '%]',
-          variables => {},
-          name => 'render with Template::Perlish',
-       }
+       [
+          {
+             %global_defaults,
+             start     => '[%',
+             stop      => '%]',
+             variables => {},
+             name      => 'render with Template::Perlish',
+          },
+          'template'
+       ]
     );
     my $name = $args{name};
-    LOGDIE "$name: template is mandatory"
-       unless defined $args{template};
  
-    require Template::Perlish;
-    my $tp = Template::Perlish->new(
-       map { $_ => $args{$_} }
-       grep { defined $args{$_} } qw< start stop variables >
-    );
-    my $template = $tp->compile($args{template});
+    my $tp = $args{template_perlish} ||= _create_tp(\%args);
+    my $template = _resolve_template(\%args);
  
-    my $input      = $args{input};
-    my $output     = $args{output};
+    my $input  = $args{input};
+    my $output = $args{output};
     return sub {
-       my $record    = shift;
+       my $record = shift;
        $record->{$output} = $tp->evaluate($template, $record->{$input});
        return $record;
     };
- } ## end sub render_template_perlish
+ } ## end sub render_with_template_perlish
  
  shorter_sub_names(__PACKAGE__, 'render_');
  
@@ -2796,7 +2976,7 @@ END_OF_FILE
  use strict;
  use warnings;
  use English qw< -no_match_vars >;
- our $VERSION = '0.726';
+ our $VERSION = '0.727';
  
  use Log::Log4perl::Tiny qw< :easy :dead_if_first LOGLEVEL >;
  
@@ -2911,7 +3091,7 @@ END_OF_FILE
  use English qw< -no_match_vars >;
  use Data::Dumper;
  use Scalar::Util qw< blessed >;
- our $VERSION = '0.726';
+ our $VERSION = '0.727';
  
  use Log::Log4perl::Tiny
    qw< :easy :dead_if_first get_logger LOGLEVEL LEVELID_FOR >;
@@ -3124,7 +3304,7 @@ END_OF_FILE
  use strict;
  use warnings;
  use English qw< -no_match_vars >;
- our $VERSION = '0.726';
+ our $VERSION = '0.727';
  
  use Log::Log4perl::Tiny qw< :easy :dead_if_first >;
  
@@ -3266,7 +3446,7 @@ END_OF_FILE
  use warnings;
  use English qw< -no_match_vars >;
  use Data::Dumper;
- our $VERSION = '0.726';
+ our $VERSION = '0.727';
  
  use Template::Perlish;
  use Log::Log4perl::Tiny qw< :easy :dead_if_first get_logger >;
@@ -3406,7 +3586,7 @@ END_OF_FILE
  use warnings;
  use English qw< -no_match_vars >;
  use POSIX qw< strftime >;
- our $VERSION = '0.726';
+ our $VERSION = '0.727';
  
  use Log::Log4perl::Tiny qw< :easy :dead_if_first LOGLEVEL >;
  use Template::Perlish;
@@ -3531,7 +3711,7 @@ END_OF_FILE
  use 5.010;
  use File::Path qw< make_path >;
  use File::Basename qw< dirname >;
- our $VERSION = '0.726';
+ our $VERSION = '0.727';
  
  use Log::Log4perl::Tiny qw< :easy :dead_if_first >;
  use Mo qw< default >;

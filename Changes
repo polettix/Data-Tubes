@@ -1,4 +1,6 @@
 {{$NEXT}}
+
+0.727  2016-04-17 18:41:03 CEST
    - embedded Mo and Mo::default in tubergen
    - generalized_hash and ghashy tube factory
    - simplified usage of render_with_template_perlish
