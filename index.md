@@ -49,7 +49,7 @@ my $pl = pipeline(
    'Reader::by_line',
    ['Parser::hashy', chunks_separator => '|'],
    ['Renderer::with_template_perlish', ['template.tp']],
-   ['Writer::to_files', filename => \*STDOUT],
+   'Writer::to_files',
    {tap => 'sink'}
 );
 
@@ -95,10 +95,10 @@ my $pl = pipeline(
    'Reader::by_line',
 
    # Only the parser changes
-   ['Parser::by_format', format_separator => 'name;age;food'],
+   ['Parser::by_format', 'name;age;food'],
 
-   ['Renderer::with_template_perlish', template => $template],
-   ['Writer::to_files', filename => \*STDOUT],
+   ['Renderer::with_template_perlish', ['template.tp']],
+   'Writer::to_files',
    {tap => 'sink'}
 );
 ```
@@ -131,12 +131,12 @@ my $pl = pipeline(
 
    # Read records by the paragraph, not by the line. Parse as hashes
    # as before, only with different separators
-   'Reader::by_paragraph,
+   'Reader::by_paragraph',
    ['Parser::hashy', chunks_separator => "\n",
     key_value_separator => ":"],
 
-   ['Renderer::with_template_perlish', template => $template],
-   ['Writer::to_files', filename => \*STDOUT],
+   ['Renderer::with_template_perlish', ['template.tp']],
+   'Writer::to_files',
    {tap => 'sink'}
 );
 ```
@@ -171,7 +171,7 @@ my $pl = pipeline(
    'Source::iterate_files',
 
    # Still read records by the paragraph, but parse with own tube
-   'Reader::by_paragraph,
+   'Reader::by_paragraph',
 
    # Custom parser, receive inputs in "raw", return output in
    # "structured" so that previous and following tubes feel at home
@@ -187,8 +187,8 @@ my $pl = pipeline(
       return $record;
    },
 
-   ['Renderer::with_template_perlish', template => $template],
-   ['Writer::to_files', filename => \*STDOUT],
+   ['Renderer::with_template_perlish', ['template.tp']],
+   'Writer::to_files',
    {tap => 'sink'}
 );
 ```
