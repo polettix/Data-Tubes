@@ -22,6 +22,7 @@ prefix.
 
 =item B<< dispatch_to_files >>
 
+   my $tube = dispatch_to_files($filename, %args); # OR
    my $tube = dispatch_to_files(%args); # OR
    my $tube = dispatch_to_files(\%args);
 
@@ -33,15 +34,22 @@ while at the same time taking advantage of automatic handling of output
 segmentation into multiple files (as provided by L</to_files>).
 
 Accepts the same arguments as L</to_files>, although it will always
-override parameter C<filename> (for obvious reasons!), plus options
-from C<dispatch> in L<Data::Tubes::Plugin::Plumbing>, plus the following
-ones:
+override parameter C<filename> (for obvious reasons!). This parameter
+can be set to either a sub reference that is supposed to generate a file
+name or a handle each time it is invoked (as C<filename_factory>) or a
+string holding a template filename (as C<filename_template>), so it is a
+handy shortcut for both. For this reason, it is also the default
+parameter when passed as the first, unnamed option.
+
+The function also accepts all options from C<dispatch> in
+L<Data::Tubes::Plugin::Plumbing>, plus the following ones:
 
 =over
 
 =item C<filename>
 
-handy shortcut for either C<filename_factory> or C<filename_template>;
+handy shortcut for either C<filename_factory> or C<filename_template>,
+so this is I<NOT> passed over directly to L</to_files>;
 
 =item C<filename_factory>
 
