@@ -55,14 +55,30 @@ sub _filenames_generator {
 sub dispatch_to_files {
    my %args = normalize_args(
       @_,
-      {
-         %global_defaults,
-         name    => 'write dispatcher',
-         binmode => ':encoding(UTF-8)'
-      }
+      [
+         {
+            %global_defaults,
+            name    => 'write dispatcher',
+            binmode => ':encoding(UTF-8)'
+         },
+         'filename'
+      ],
    );
    identify(\%args);
    my $name = delete $args{name};    # so that it can be overridden
+
+   if (defined(my $filename = delete $args{filename})) {
+      my $ref = ref $filename;
+      if (! $ref) {
+         $args{filename_template} //= $filename;
+      }
+      elsif ($ref eq 'CODE') {
+         $args{filename_factory} //= $filename;
+      }
+      else {
+         LOGDIE "argument filename has invalid type $ref";
+      }
+   }
 
    my $factory = delete $args{filename_factory};
    if (!defined($factory) && defined($args{filename_template})) {
