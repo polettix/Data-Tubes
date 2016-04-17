@@ -52,14 +52,14 @@ $file->spew_raw($content_octets);
 
 throws_ok { read_file(); } qr{undefined}, 'undefined filename complains';
 
-throws_ok { read_file(''); } qr{open\(''\)}, 'empty filename complains';
+throws_ok { read_file(''); } qr{read_file\(\) for <>},
+  'empty filename complains';
 
 throws_ok {
-   local *STDERR; # silence warning
+   local *STDERR;    # silence warning
    open STDERR, '>', \my $buffer;
    read_file($file->stringify(), binmode => 'whateeevah!');
 }
-qr{binmode\(\)},
-  'bad binmode complains';
+qr{binmode\(\)}, 'bad binmode complains';
 
 done_testing();
