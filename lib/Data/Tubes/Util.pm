@@ -20,6 +20,7 @@ our @EXPORT_OK = qw<
   normalize_args
   normalize_filename
   read_file
+  read_file_maybe
   resolve_module
   shorter_sub_names
   sprintffy
@@ -112,7 +113,7 @@ sub generalized_hashy {
    };
    my $args = normalize_args(@_, [$default_handler_for, 'text']);
    $args->{key_default} = delete $args->{default_key}
-      if exists $args->{default_key};
+     if exists $args->{default_key};
    my $text = $args->{text};
 
    my %h = (%$default_handler_for, %$args);
@@ -120,9 +121,9 @@ sub generalized_hashy {
    my %retval = (capture => $capture);
    return {%retval, failure => 'undefined input'} unless defined $text;
 
-   my $len    = length $text;
+   my $len = length $text;
    pos($text) = my $startpos = $args->{pos} || 0;
-   %retval    = (%retval, pos => $startpos, res => ($len - $startpos));
+   %retval = (%retval, pos => $startpos, res => ($len - $startpos));
 
    # let's check open first, no need to define anything otherwise
    $text =~ m{\G$h{open}}gmxs or return {%retval, failure => 'no opening'};
@@ -178,7 +179,7 @@ sub generalized_hashy {
       res  => ($len - $pos),
       hash => \%hash,
    };
-} ## end sub ghashy
+} ## end sub generalized_hashy
 
 sub load_module {
    my $module = resolve_module(@_);
@@ -250,6 +251,7 @@ sub normalize_args {
 
 sub normalize_filename {
    my ($filename, $default_handle) = @_;
+   return unless defined $filename;
    return $filename       if ref($filename) eq 'GLOB';
    return $filename       if ref($filename) eq 'SCALAR';
    return $default_handle if $filename eq '-';
@@ -269,22 +271,37 @@ sub read_file {
    my %args = normalize_args(
       @_,
       [
-         {binmode => ':encoding(UTF-8)'},
+         {binmode  => ':encoding(UTF-8)'},
          'filename',    # default key for "straight" unnamed parameter
       ]
    );
-   defined $args{filename}
+   defined(my $filename = normalize_filename($args{filename}, \*STDIN))
      or LOGDIE 'read_file(): undefined filename';
-   open my $fh, '<', $args{filename}
-     or LOGDIE "read_file(): open('$args{filename}'): $OS_ERROR";
+
+   my $fh;
+   if (ref($filename) eq 'GLOB') {
+      $fh = $filename;
+   }
+   else {
+      open $fh, '<', $filename
+        or LOGDIE "read_file() for <$args{filename}>: open(): $OS_ERROR";
+   }
+
    if (defined $args{binmode}) {
       binmode $fh, $args{binmode}
         or LOGDIE "read_file(): binmode()"
         . " for $args{filename} failed: $OS_ERROR";
    }
+
    local $INPUT_RECORD_SEPARATOR;
    return <$fh>;
 } ## end sub read_file
+
+sub read_file_maybe {
+   my $x = shift;
+   return read_file(@$x) if ref($x) eq 'ARRAY';
+   return $x;
+}
 
 sub resolve_module {
    my ($module, $prefix) = @_;
