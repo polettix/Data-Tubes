@@ -17,13 +17,14 @@ my %global_defaults = (
 );
 
 sub iterate_array {
-   my %args = normalize_args(@_, [{name => 'array iterator', array => []}, 'array']);
+   my %args = normalize_args(@_,
+      [{name => 'array iterator', array => []}, 'array']);
    identify(\%args);
    my $logger       = log_helper(\%args);
    my $global_array = $args{array};
    LOGDIE 'undefined global array, omit or pass empty one instead'
      unless defined $global_array;
-   my $n_global     = @$global_array;
+   my $n_global = @$global_array;
    return sub {
       my $local_array = shift || [];
       my $n_local     = @$local_array;
@@ -45,11 +46,14 @@ sub iterate_array {
 sub open_file {
    my %args = normalize_args(
       @_,
-      {
-         binmode => ':encoding(UTF-8)',
-         output  => 'source',
-         name    => 'open file',
-      }
+      [
+         {
+            binmode => ':encoding(UTF-8)',
+            output  => 'source',
+            name    => 'open file',
+         },
+         'binmode'
+      ],
    );
    identify(\%args);
 
@@ -96,7 +100,7 @@ sub iterate_files {
    my ($files, $args) = args_array_with_options(
       @_,
       {    # these are the default options
-         name    => 'files',
+         name => 'files',
 
          # options specific for sub-tubes
          iterate_array_args => {},
