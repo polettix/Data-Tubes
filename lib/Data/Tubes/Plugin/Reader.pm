@@ -42,19 +42,28 @@ sub read_by_paragraph {
 sub read_by_record_reader {
    my %args = normalize_args(
       @_,
-      {
-         %global_defaults,
-         emit_eof       => 0,
-         name           => 'read_by_record_reader',
-         identification => {caller => [caller(0)]},
-      },
+      [
+         {
+            %global_defaults,
+            emit_eof       => 0,
+            name           => 'read_by_record_reader',
+            identification => {caller => [caller(0)]},
+         },
+         'record_reader'
+      ],
    );
    identify(\%args);
-   my $emit_eof      = $args{emit_eof};
-   my $input         = $args{input};
-   my $has_input     = defined($input) && length($input);
-   my $output        = $args{output};
+   my $name = $args{name};
+
    my $record_reader = $args{record_reader};
+   LOGDIE "$name undefined record_reader" unless defined $record_reader;
+   LOGDIE "$name record_reader MUST be a sub reference"
+     unless ref($record_reader) eq 'CODE';
+
+   my $emit_eof  = $args{emit_eof};
+   my $input     = $args{input};
+   my $has_input = defined($input) && length($input);
+   my $output    = $args{output};
    return sub {
       my $record = shift;
       my $source = $has_input ? $record->{$input} : $record;

@@ -62,6 +62,7 @@ C<separator> argument is forced to be the empty string.
 
 =item B<< read_by_record_reader >>
 
+   my $tube = by_record_reader($record_reader, %args); # OR
    my $tube = by_record_reader(%args); # OR
    my $tube = by_record_reader(\%args);
 
@@ -102,7 +103,9 @@ Defaults to c<raw>;
 =item C<record_reader>
 
 a sub reference that takes a filehandle as the only input parameter, and
-returns whatever is read.
+returns whatever is read. This is the I<main> parameter, so it can also
+be provided as the first unnamed argument when calling this factory
+function. It has no default and is required.
 
 =back
 
