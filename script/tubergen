@@ -4,7 +4,7 @@
 use strict;
 use warnings;
 use 5.010;
-my $VERSION = "0.727001";
+my $VERSION = "0.728";
 RUSE('Log::Log4perl::Tiny', qw< :easy LOGLEVEL >);
 RUSE('Data::Tubes',         qw< pipeline >);
 
@@ -1996,7 +1996,7 @@ END_OF_FILE
  use strict;
  use warnings;
  use English qw< -no_match_vars >;
- our $VERSION = '0.727001';
+ our $VERSION = '0.728';
  use Exporter qw< import >;
  
  use Log::Log4perl::Tiny qw< :easy :dead_if_first LOGLEVEL >;
@@ -2067,7 +2067,7 @@ END_OF_FILE
        }
     );
     my $prefix = $args->{prefix};
-    my $cpack = $args->{package};
+    my $cpack  = $args->{package};
  
     for my $r (@_) {
        my @parts;
@@ -2110,7 +2110,7 @@ END_OF_FILE
  use warnings;
  use English qw< -no_match_vars >;
  use Exporter 'import';
- our $VERSION = '0.727001';
+ our $VERSION = '0.728';
  
  use Log::Log4perl::Tiny qw< :easy :dead_if_first >;
  
@@ -2375,7 +2375,7 @@ END_OF_FILE
     my %args = normalize_args(
        @_,
        [
-          {binmode  => ':encoding(UTF-8)'},
+          {binmode => ':encoding(UTF-8)'},
           'filename',    # default key for "straight" unnamed parameter
        ]
     );
@@ -2542,7 +2542,7 @@ END_OF_FILE
  use warnings;
  use English qw< -no_match_vars >;
  use Log::Log4perl::Tiny qw< :easy :dead_if_first LOGLEVEL >;
- our $VERSION = '0.727001';
+ our $VERSION = '0.728';
  
  use Data::Tubes::Util
    qw< normalize_args normalize_filename args_array_with_options >;
@@ -2553,11 +2553,14 @@ END_OF_FILE
  );
  
  sub iterate_array {
-    my %args = normalize_args(@_, {name => 'array iterator'});
+    my %args = normalize_args(@_,
+       [{name => 'array iterator', array => []}, 'array']);
     identify(\%args);
     my $logger       = log_helper(\%args);
-    my $global_array = $args{array} || [];
-    my $n_global     = @$global_array;
+    my $global_array = $args{array};
+    LOGDIE 'undefined global array, omit or pass empty one instead'
+      unless defined $global_array;
+    my $n_global = @$global_array;
     return sub {
        my $local_array = shift || [];
        my $n_local     = @$local_array;
@@ -2579,11 +2582,14 @@ END_OF_FILE
  sub open_file {
     my %args = normalize_args(
        @_,
-       {
-          binmode => ':encoding(UTF-8)',
-          output  => 'source',
-          name    => 'open file',
-       }
+       [
+          {
+             binmode => ':encoding(UTF-8)',
+             output  => 'source',
+             name    => 'open file',
+          },
+          'binmode'
+       ],
     );
     identify(\%args);
  
@@ -2630,7 +2636,7 @@ END_OF_FILE
     my ($files, $args) = args_array_with_options(
        @_,
        {    # these are the default options
-          name    => 'files',
+          name => 'files',
  
           # options specific for sub-tubes
           iterate_array_args => {},
@@ -2670,7 +2676,7 @@ END_OF_FILE
  use warnings;
  use English qw< -no_match_vars >;
  use Data::Dumper;
- our $VERSION = '0.727001';
+ our $VERSION = '0.728';
  
  use Log::Log4perl::Tiny qw< :easy :dead_if_first >;
  
@@ -2752,18 +2758,27 @@ END_OF_FILE
  } ## end sub parse_by_regex
  
  sub parse_by_separators {
-    my %args = normalize_args(@_, {%global_defaults,});
+    my %args = normalize_args(@_, [{%global_defaults}, 'separators']);
     identify(\%args);
+    my $name = $args{name};
  
-    my $keys = $args{keys};
-    LOGDIE "parse_by_separators needs keys"
-      unless defined $keys;
     my $separators = $args{separators};
     LOGDIE "parse_by_separators needs separators"
       unless defined $separators;
-    my $delta = scalar(@$keys) - scalar(@$separators);
-    LOGDIE "parse_by_separators 0 <= #keys - #separators <= 1"
-      if ($delta < 0) || ($delta > 1);
+ 
+    my $keys = $args{keys};
+    my ($delta, $n_keys);
+    if (defined $keys) {
+       $n_keys = scalar @$keys;
+       $delta  = $n_keys - scalar(@$separators);
+       LOGDIE "parse_by_separators 0 <= #keys - #separators <= 1"
+         if ($delta < 0) || ($delta > 1);
+    } ## end if (defined $keys)
+    else {
+       $keys   = [0 .. scalar(@$separators)];
+       $n_keys = 0;                             # don't bother
+       $delta  = 1;
+    }
  
     my @items;
     for my $i (0 .. $#$keys) {
@@ -2779,28 +2794,32 @@ END_OF_FILE
     # the last element might be a separator
     my $format = join '', '(?:\\A', @items, '\\z)';
     my $regex = qr{$format};
-    DEBUG "regex will be: $regex";
+    DEBUG "$name: regex will be: $regex";
  
     # this sub will use the regexp above, do checking and return captured
     # values in a hash with @keys
-    my $n_keys = scalar @$keys;
-    my $name   = $args{name};
     my $input  = $args{input};
     my $output = $args{output};
- 
     return sub {
        my $record = shift;
        my @values = $record->{$input} =~ m{$regex}
          or die {message => 'invalid record', record => $record};
-       my $n_values = @values;
-       die {
-          message => "'$name': invalid record, expected $n_keys items, "
-            . "got $n_values",
-          record => $record
-         }
-         if $n_values != $n_keys;
-       $record->{$output} = \my %retval;
-       @retval{@$keys} = @values;
+ 
+       if ($n_keys) {
+          my $n_values = scalar @values;
+          die {
+             message => "'$name': invalid record, expected $n_keys, "
+               . "got $n_values only",
+             record => $record
+            }
+            if $n_values < $n_keys;
+ 
+          $record->{$output} = \my %retval;
+          @retval{@$keys} = @values;
+       } ## end if ($n_keys)
+       else {
+          $record->{$output} = \@values;
+       }
        return $record;
     };
  } ## end sub parse_by_separators
@@ -2811,7 +2830,6 @@ END_OF_FILE
        [{%global_defaults, name => 'parse by split'}, 'separator']);
     identify(\%args);
  
-    my $name      = $args{name};
     my $separator = $args{separator};
     LOGDIE "parse_by_split needs a separator"
       unless defined $separator;
@@ -2820,6 +2838,7 @@ END_OF_FILE
        $separator = qr{$separator};
     }
  
+    my $name          = $args{name};
     my $keys          = $args{keys};
     my $n_keys        = defined($keys) ? scalar(@$keys) : 0;
     my $input         = $args{input};
@@ -2829,7 +2848,10 @@ END_OF_FILE
     return sub {
        my $record = shift;
  
-       my @values = split /$separator/, $record->{$input}, $n_keys;
+       my @values =
+         $n_keys
+         ? split(/$separator/, $record->{$input}, $n_keys)
+         : split(/$separator/, $record->{$input});
        my $n_values = @values;
        die {
           message => "'$name': invalid record, expected $n_keys items, "
@@ -2839,8 +2861,13 @@ END_OF_FILE
          }
          if $n_values + $allow_missing < $n_keys;
  
-       $record->{$output} = \my %retval;
-       @retval{@$keys} = @values;
+       if ($n_keys) {
+          $record->{$output} = \my %retval;
+          @retval{@$keys} = @values;
+       }
+       else {
+          $record->{$output} = \@values;
+       }
        return $record;
       }
       if $n_keys;
@@ -2939,7 +2966,7 @@ END_OF_FILE
  use strict;
  use warnings;
  use English qw< -no_match_vars >;
- our $VERSION = '0.727001';
+ our $VERSION = '0.728';
  
  use Log::Log4perl::Tiny qw< :easy :dead_if_first >;
  
@@ -2951,7 +2978,7 @@ END_OF_FILE
  );
  
  sub _resolve_template {
-    my $args = shift;
+    my $args     = shift;
     my $template = read_file_maybe($args->{template});
     $template = $template->($args) if ref($template) eq 'CODE';
     LOGDIE 'undefined template' unless defined $template;
@@ -3012,7 +3039,7 @@ END_OF_FILE
  use strict;
  use warnings;
  use English qw< -no_match_vars >;
- our $VERSION = '0.727001';
+ our $VERSION = '0.728';
  
  use Log::Log4perl::Tiny qw< :easy :dead_if_first LOGLEVEL >;
  
@@ -3052,19 +3079,28 @@ END_OF_FILE
  sub read_by_record_reader {
     my %args = normalize_args(
        @_,
-       {
-          %global_defaults,
-          emit_eof       => 0,
-          name           => 'read_by_record_reader',
-          identification => {caller => [caller(0)]},
-       },
+       [
+          {
+             %global_defaults,
+             emit_eof       => 0,
+             name           => 'read_by_record_reader',
+             identification => {caller => [caller(0)]},
+          },
+          'record_reader'
+       ],
     );
     identify(\%args);
-    my $emit_eof      = $args{emit_eof};
-    my $input         = $args{input};
-    my $has_input     = defined($input) && length($input);
-    my $output        = $args{output};
+    my $name = $args{name};
+ 
     my $record_reader = $args{record_reader};
+    LOGDIE "$name undefined record_reader" unless defined $record_reader;
+    LOGDIE "$name record_reader MUST be a sub reference"
+      unless ref($record_reader) eq 'CODE';
+ 
+    my $emit_eof  = $args{emit_eof};
+    my $input     = $args{input};
+    my $has_input = defined($input) && length($input);
+    my $output    = $args{output};
     return sub {
        my $record = shift;
        my $source = $has_input ? $record->{$input} : $record;
@@ -3088,11 +3124,14 @@ END_OF_FILE
  sub read_by_separator {
     my %args = normalize_args(
        @_,
-       {
-          name           => 'read_by_separator',
-          chomp          => 1,
-          identification => {caller => [caller(0)]},
-       }
+       [
+          {
+             name           => 'read_by_separator',
+             chomp          => 1,
+             identification => {caller => [caller(0)]},
+          },
+          'separator'
+       ]
     );
     my $separator = $args{separator};
     my $chomp     = $args{chomp};
@@ -3127,7 +3166,7 @@ END_OF_FILE
  use English qw< -no_match_vars >;
  use Data::Dumper;
  use Scalar::Util qw< blessed >;
- our $VERSION = '0.727001';
+ our $VERSION = '0.728';
  
  use Log::Log4perl::Tiny
    qw< :easy :dead_if_first get_logger LOGLEVEL LEVELID_FOR >;
@@ -3266,7 +3305,8 @@ END_OF_FILE
  }
  
  sub sequence {
-    my %args = normalize_args(@_, {name => 'sequence'});
+    my %args =
+      normalize_args(@_, [{name => 'sequence', tubes => []}, 'tubes']);
     identify(\%args);
  
     # cope with an empty list of tubes - equivalent to an "id" function but
@@ -3340,7 +3380,7 @@ END_OF_FILE
  use strict;
  use warnings;
  use English qw< -no_match_vars >;
- our $VERSION = '0.727001';
+ our $VERSION = '0.728';
  
  use Log::Log4perl::Tiny qw< :easy :dead_if_first >;
  
@@ -3482,7 +3522,7 @@ END_OF_FILE
  use warnings;
  use English qw< -no_match_vars >;
  use Data::Dumper;
- our $VERSION = '0.727001';
+ our $VERSION = '0.728';
  
  use Template::Perlish;
  use Log::Log4perl::Tiny qw< :easy :dead_if_first get_logger >;
@@ -3601,7 +3641,7 @@ END_OF_FILE
  use warnings;
  use English qw< -no_match_vars >;
  use POSIX qw< strftime >;
- our $VERSION = '0.727001';
+ our $VERSION = '0.728';
  
  use Log::Log4perl::Tiny qw< :easy :dead_if_first LOGLEVEL >;
  use Template::Perlish;
@@ -3664,7 +3704,7 @@ END_OF_FILE
  
     if (defined(my $filename = delete $args{filename})) {
        my $ref = ref $filename;
-       if (! $ref) {
+       if (!$ref) {
           $args{filename_template} //= $filename;
        }
        elsif ($ref eq 'CODE') {
@@ -3673,7 +3713,7 @@ END_OF_FILE
        else {
           LOGDIE "argument filename has invalid type $ref";
        }
-    }
+    } ## end if (defined(my $filename...))
  
     my $factory = delete $args{filename_factory};
     if (!defined($factory) && defined($args{filename_template})) {
@@ -3750,7 +3790,7 @@ END_OF_FILE
  use 5.010;
  use File::Path qw< make_path >;
  use File::Basename qw< dirname >;
- our $VERSION = '0.727001';
+ our $VERSION = '0.728';
  
  use Log::Log4perl::Tiny qw< :easy :dead_if_first >;
  use Mo qw< default >;
@@ -3758,9 +3798,9 @@ END_OF_FILE
  has footer  => ();
  has header  => ();
  has interlude => ();
- has output  => (default => \*STDOUT);
- has policy  => (default => undef);
- has track   => (
+ has output    => (default => \*STDOUT);
+ has policy    => (default => undef);
+ has track     => (
     default => sub {
        return {
           files       => 0,
@@ -3814,11 +3854,10 @@ END_OF_FILE
  
     # define a default releaser, but not for GLOBs as they have their own
     # life outside of here
-    my $releaser =
-      ref($handle) eq 'GLOB' ? undef : sub {
-         CORE::close $_[0] or LOGCONFESS "close(): $OS_ERROR";
-         return undef;
-      };
+    my $releaser = ref($handle) eq 'GLOB' ? undef : sub {
+       CORE::close $_[0] or LOGCONFESS "close(): $OS_ERROR";
+       return undef;
+    };
  
     # if $handle is a factory, treat it as such
     if (ref($handle) eq 'CODE') {
@@ -3866,10 +3905,10 @@ END_OF_FILE
  sub print {
     my $self = shift;
  
-    my $iterator = ref($_[0]) && $_[0];
-    my $checker  = $self->checker();
-    my $track    = $self->track();
-    my $fh       = $track->{current_fh};
+    my $iterator  = ref($_[0]) && $_[0];
+    my $checker   = $self->checker();
+    my $track     = $self->track();
+    my $fh        = $track->{current_fh};
     my $interlude = $self->interlude();
  
     while ('necessary') {

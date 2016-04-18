@@ -1,5 +1,10 @@
 {{$NEXT}}
 
+0.728  2016-04-18 18:29:10 CEST
+   - by_split and by_separators accept missing $keys now
+   - updated missing functions for default argument, where possible
+   - perltidy
+
 0.727001  2016-04-17 23:38:04 CEST
    - moved read_file in D::T::Util, preserved backwards compatibility
    - added read_file_maybe
