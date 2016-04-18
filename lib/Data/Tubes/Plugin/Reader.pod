@@ -113,6 +113,7 @@ function. It has no default and is required.
 
 =item B<< read_by_separator >>
 
+   my $tube = by_separator($separator, %args); # OR
    my $tube = by_separator(%args); # OR
    my $tube = by_separator(\%args);
 
@@ -158,6 +159,9 @@ Defaults to c<raw>;
 =item C<separator>
 
 a separator string to set as C<INPUT_RECORD_SEPARATOR>, see L<perlvar>.
+This parameter defaults to C<undef>. It is the I<main> parameter, so it
+can also be provided as the first unnamed argument when calling this
+factory function.
 
 =back
 
