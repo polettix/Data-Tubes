@@ -52,6 +52,7 @@ name of the tube, useful when debugging;
 
 =item B<< open_file >>
 
+   my $tube = open_file($binmode, %args); # OR
    my $tube = open_file(%args); # OR
    my $tube = open_file(\%args);
 
@@ -103,7 +104,9 @@ The arguments accepted by the factory function are the following:
 =item B<binmode>
 
 whenever a filehandle is opened, the generated filehandle is set to this
-via C<CORE::binmode>. Defaults to C<:encoding(UTF-8)>;
+via C<CORE::binmode>. Defaults to C<:encoding(UTF-8)>. This parameter
+can also be passed as the first unnamed argument in the call to the
+factory function;
 
 =item C<input>
 
