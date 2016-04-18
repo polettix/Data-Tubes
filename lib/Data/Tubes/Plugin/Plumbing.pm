@@ -146,7 +146,8 @@ sub pipeline {
 }
 
 sub sequence {
-   my %args = normalize_args(@_, {name => 'sequence'});
+   my %args =
+     normalize_args(@_, [{name => 'sequence', tubes => []}, 'tubes']);
    identify(\%args);
 
    # cope with an empty list of tubes - equivalent to an "id" function but

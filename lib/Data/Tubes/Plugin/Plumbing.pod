@@ -227,6 +227,7 @@ signature. It is the same as calling:
 
 =item B<< sequence >>
 
+   my $tube = sequence($tubes, %args); # OR
    my $tube = sequence(%args); # OR
    my $tube = sequence(\%args);
 
@@ -259,7 +260,9 @@ arguments. Use this if you want to do some logging, ignore otherwise;
 
 an array reference containing the list of tubes part of the sequence.
 These can be either direct tubes (i.e. references to subroutines) or
-definitions suitable for calling C<tube> in L<Data::Tubes>;
+definitions suitable for calling C<tube> in L<Data::Tubes>. This
+parameter can also be passed as the first unnamed argument in the call
+to the function.
 
 =back
 
