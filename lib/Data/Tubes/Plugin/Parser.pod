@@ -47,9 +47,9 @@ or C<pipeline> from L<Data::Tubes>.
 
 =item B<< parse_by_format >>
 
+   my $tube = by_format($format, %args); # OR
    my $tube = by_format(%args); # OR
-   my $tube = by_format(\%args); # OR
-   my $tube = by_format($format, %args);
+   my $tube = by_format(\%args);
 
 parse the input text according to a template format string (passed via
 factory argument C<format> or through first unnamed parameter
@@ -130,9 +130,9 @@ name of the output field, defaults to C<structured>;
 
 =item B<< parse_by_regex >>
 
+   my $tube = by_regex($regex, %args); # OR
    my $tube = by_regex(%args); # OR
-   my $tube = by_regex(\%args); # OR
-   my $tube = by_regex($regex, %args);
+   my $tube = by_regex(\%args);
 
 parse the input text based on a regular expression, passed as argument
 C<regex> or C<$regex> as unnamed first parameter. The regular expression
