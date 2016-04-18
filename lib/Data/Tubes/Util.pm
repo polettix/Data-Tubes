@@ -271,7 +271,7 @@ sub read_file {
    my %args = normalize_args(
       @_,
       [
-         {binmode  => ':encoding(UTF-8)'},
+         {binmode => ':encoding(UTF-8)'},
          'filename',    # default key for "straight" unnamed parameter
       ]
    );

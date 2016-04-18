@@ -69,7 +69,7 @@ sub dispatch_to_files {
 
    if (defined(my $filename = delete $args{filename})) {
       my $ref = ref $filename;
-      if (! $ref) {
+      if (!$ref) {
          $args{filename_template} //= $filename;
       }
       elsif ($ref eq 'CODE') {
@@ -78,7 +78,7 @@ sub dispatch_to_files {
       else {
          LOGDIE "argument filename has invalid type $ref";
       }
-   }
+   } ## end if (defined(my $filename...))
 
    my $factory = delete $args{filename_factory};
    if (!defined($factory) && defined($args{filename_template})) {

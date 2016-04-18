@@ -14,7 +14,7 @@ my %global_defaults = (
 );
 
 sub _resolve_template {
-   my $args = shift;
+   my $args     = shift;
    my $template = read_file_maybe($args->{template});
    $template = $template->($args) if ref($template) eq 'CODE';
    LOGDIE 'undefined template' unless defined $template;

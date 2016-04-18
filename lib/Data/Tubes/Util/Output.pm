@@ -13,9 +13,9 @@ has binmode => (default => ':raw');
 has footer  => ();
 has header  => ();
 has interlude => ();
-has output  => (default => \*STDOUT);
-has policy  => (default => undef);
-has track   => (
+has output    => (default => \*STDOUT);
+has policy    => (default => undef);
+has track     => (
    default => sub {
       return {
          files       => 0,
@@ -69,11 +69,10 @@ sub get_fh {
 
    # define a default releaser, but not for GLOBs as they have their own
    # life outside of here
-   my $releaser =
-     ref($handle) eq 'GLOB' ? undef : sub {
-        CORE::close $_[0] or LOGCONFESS "close(): $OS_ERROR";
-        return undef;
-     };
+   my $releaser = ref($handle) eq 'GLOB' ? undef : sub {
+      CORE::close $_[0] or LOGCONFESS "close(): $OS_ERROR";
+      return undef;
+   };
 
    # if $handle is a factory, treat it as such
    if (ref($handle) eq 'CODE') {
@@ -121,10 +120,10 @@ sub just_close {
 sub print {
    my $self = shift;
 
-   my $iterator = ref($_[0]) && $_[0];
-   my $checker  = $self->checker();
-   my $track    = $self->track();
-   my $fh       = $track->{current_fh};
+   my $iterator  = ref($_[0]) && $_[0];
+   my $checker   = $self->checker();
+   my $track     = $self->track();
+   my $fh        = $track->{current_fh};
    my $interlude = $self->interlude();
 
    while ('necessary') {

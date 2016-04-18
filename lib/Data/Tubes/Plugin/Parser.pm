@@ -87,7 +87,7 @@ sub parse_by_regex {
 sub parse_by_separators {
    my %args = normalize_args(@_, [{%global_defaults}, 'separators']);
    identify(\%args);
-   my $name   = $args{name};
+   my $name = $args{name};
 
    my $separators = $args{separators};
    LOGDIE "parse_by_separators needs separators"
@@ -97,14 +97,14 @@ sub parse_by_separators {
    my ($delta, $n_keys);
    if (defined $keys) {
       $n_keys = scalar @$keys;
-      $delta = $n_keys - scalar(@$separators);
+      $delta  = $n_keys - scalar(@$separators);
       LOGDIE "parse_by_separators 0 <= #keys - #separators <= 1"
         if ($delta < 0) || ($delta > 1);
-   }
+   } ## end if (defined $keys)
    else {
-      $keys = [ 0 .. scalar(@$separators) ];
-      $n_keys = 0; # don't bother
-      $delta = 1;
+      $keys   = [0 .. scalar(@$separators)];
+      $n_keys = 0;                             # don't bother
+      $delta  = 1;
    }
 
    my @items;
@@ -136,13 +136,14 @@ sub parse_by_separators {
          my $n_values = scalar @values;
          die {
             message => "'$name': invalid record, expected $n_keys, "
-               . "got $n_values only",
+              . "got $n_values only",
             record => $record
-         } if $n_values < $n_keys;
+           }
+           if $n_values < $n_keys;
 
          $record->{$output} = \my %retval;
          @retval{@$keys} = @values;
-      }
+      } ## end if ($n_keys)
       else {
          $record->{$output} = \@values;
       }
@@ -174,9 +175,10 @@ sub parse_by_split {
    return sub {
       my $record = shift;
 
-      my @values = $n_keys
-         ? split(/$separator/, $record->{$input}, $n_keys)
-         : split(/$separator/, $record->{$input});
+      my @values =
+        $n_keys
+        ? split(/$separator/, $record->{$input}, $n_keys)
+        : split(/$separator/, $record->{$input});
       my $n_values = @values;
       die {
          message => "'$name': invalid record, expected $n_keys items, "

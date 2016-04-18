@@ -76,7 +76,7 @@ sub summon {    # sort-of import
       }
    );
    my $prefix = $args->{prefix};
-   my $cpack = $args->{package};
+   my $cpack  = $args->{package};
 
    for my $r (@_) {
       my @parts;
