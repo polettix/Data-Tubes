@@ -87,11 +87,14 @@ sub read_by_record_reader {
 sub read_by_separator {
    my %args = normalize_args(
       @_,
-      [{
-         name           => 'read_by_separator',
-         chomp          => 1,
-         identification => {caller => [caller(0)]},
-      }, 'separator']
+      [
+         {
+            name           => 'read_by_separator',
+            chomp          => 1,
+            identification => {caller => [caller(0)]},
+         },
+         'separator'
+      ]
    );
    my $separator = $args{separator};
    my $chomp     = $args{chomp};

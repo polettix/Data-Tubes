@@ -20,13 +20,15 @@ handling data sources.
 
 =item B<< iterate_array >>
 
+   my $tube = iterate_array($array, %args); # OR
    my $tube = iterate_array(%args); # OR
    my $tube = iterate_array(\%args);
 
 iterate over an array, that can be provided to the factory as an
-C<array> field, or provided as input record. In case both are provided,
-the array from the factory (the I<global> array) is iterated for each
-call to the tube, before the array provided to the tube call itself.
+C<array> field or unnamed first parameter C<$array>, or provided as
+input record. In case both are provided, the array from the factory (the
+I<global> array) is iterated for each call to the tube, before the array
+provided to the tube call itself.
 
 The input record for the generated tube MUST be either I<false> or a
 reference to an array. The returned tube ALWAYS returns an iterator
@@ -40,7 +42,7 @@ The following arguments are supported:
 =item C<array>
 
 the I<global> array to iterate over. Defaults to an empty array
-reference;
+reference. It can be passed also as the first unnamed argument;
 
 =item C<name>
 

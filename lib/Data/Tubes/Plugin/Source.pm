@@ -17,10 +17,12 @@ my %global_defaults = (
 );
 
 sub iterate_array {
-   my %args = normalize_args(@_, {name => 'array iterator'});
+   my %args = normalize_args(@_, [{name => 'array iterator', array => []}, 'array']);
    identify(\%args);
    my $logger       = log_helper(\%args);
-   my $global_array = $args{array} || [];
+   my $global_array = $args{array};
+   LOGDIE 'undefined global array, omit or pass empty one instead'
+     unless defined $global_array;
    my $n_global     = @$global_array;
    return sub {
       my $local_array = shift || [];
