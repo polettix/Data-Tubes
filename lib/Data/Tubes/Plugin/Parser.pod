@@ -167,8 +167,9 @@ argument list.
 
 =item B<< parse_by_separators >>
 
+   my $tube = by_separators($separators, %args); # OR
    my $tube = by_separators(%args); # OR
-   my $tube = by_separators(\%args); # OR
+   my $tube = by_separators(\%args);
 
 parse the input according to a series of separators, that will be
 applied in sequence. For example, if the list of separators is the
@@ -207,8 +208,9 @@ name of the output field, defaults to C<structured>;
 
 =item C<separators>
 
-a reference to an array containing the list of separators to be
-used for splitting the input.
+a reference to an array containing the list of separators to be used for
+splitting the input. This parameter can also be passed as the first,
+unnamed argument.
 
 =back
 
