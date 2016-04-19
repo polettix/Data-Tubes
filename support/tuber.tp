@@ -1,20 +1,29 @@
 #!/usr/bin/env perl
 # vim: sts=3 ts=3 sw=3 et ai :
 
+### LEAVE THIS INITIAL SECTION AS-IS ##################################
+BEGIN {
+   local ($x, @ARGV, $/) = ('# __MOBUNDLE_INCLUSION__', __FILE__);
+   eval((<> =~ m{(^$x.*^$x)}ms)[0]);
+}
+use strict;
+use warnings;
+use Pod::Usage qw< pod2usage >;
+use Getopt::Long qw< :config gnu_getopt >;
+use Data::Tubes qw< pipeline summon >;
+### YOU CAN START CHANGING THINGS FROM HERE ON #########################
+
 ########################################################################
 # __SECTION__
 #
 # Preamble
 #
 ########################################################################
-use strict;
-use warnings;
+
 my $VERSION = '0.0.1';
-RUSE('Data::Tubes',         qw< pipeline summon >);
-RUSE('Log::Log4perl::Tiny', qw< :easy LOGLEVEL :no_extra_logdie_message >);
-RUSE('Template::Perlish',   qw< render >);
-RUSE('Try::Tiny',           qw< try catch finally >);
-sub try (&;@); sub catch (&;@); sub finally (&;@);
+use Log::Log4perl::Tiny qw< :easy LOGLEVEL :no_extra_logdie_message >;
+use Template::Perlish qw< render >;
+use Try::Tiny;
 
 ########################################################################
 # __SECTION__
@@ -109,8 +118,6 @@ pipeline(
 ########################################################################
 
 # Ancillary scaffolding here
-use Pod::Usage qw< pod2usage >;
-use Getopt::Long qw< :config gnu_getopt >;
 
 sub get_options {
    my %config;
@@ -159,14 +166,6 @@ sub get_options {
    return %config if wantarray();
    return \%config;
 } ## end sub get_options
-
-sub RUSE {
-   my $module = shift;
-   (my $packfile = $module . '.pm') =~ s{::}{/}gmxs;
-   require $packfile;
-   $module->import(@_);
-   return $module;
-} ## end sub RUSE
 
 [% modules_bundle %]
 
