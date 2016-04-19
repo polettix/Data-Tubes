@@ -1,12 +1,16 @@
 #!/usr/bin/env perl
 # vim: sts=3 ts=3 sw=3 et ai :
+BEGIN {
+   local ($x, @ARGV, $/) = ('# __MOBUNDLE_INCLUSION__', __FILE__);
+   eval($mobundle = (<> =~ m{(^$x.*^$x)}ms)[0]);
+}
 
 use strict;
 use warnings;
 use 5.010;
-my $VERSION = "0.728";
-RUSE('Log::Log4perl::Tiny', qw< :easy LOGLEVEL >);
-RUSE('Data::Tubes',         qw< pipeline >);
+my $VERSION = "0.728001";
+use Log::Log4perl::Tiny qw< :easy LOGLEVEL >;
+use Data::Tubes qw< pipeline >;
 
 ########################################################################
 #
@@ -31,7 +35,7 @@ my %config = get_options(
 #
 ########################################################################
 $config{output} //= $config{name};
-$config{modules_bundle} = modules_bundle($config{module});
+$config{modules_bundle} = $main::mobundle;
 pipeline(
    ['Renderer::with_template_perlish', template => template()],
    ['Writer::to_files', filename => $config{output}],
@@ -40,21 +44,6 @@ pipeline(
 
 my $mode = ((stat $config{output})[2] | 0111) & (~umask());
 chmod $mode, $config{output};
-
-sub modules_bundle {
-   open my $fh, '<', __FILE__ or die "open(): $!";
-   local $/;
-   my $ME = <$fh>;
-   my ($text) = $ME =~ m{
-      (
-         ^\#\ __MOBUNDLE_INCLUSION__\s*
-         .*
-         ^\#\ __MOBUNDLE_INCLUSION__
-      )
-   }mxs;
-   return $text;
-}
-
 
 ########################################################################
 #
@@ -113,14 +102,6 @@ sub get_options {
    return %config if wantarray();
    return \%config;
 } ## end sub get_options
-
-sub RUSE {
-   my $module = shift;
-   (my $packfile = $module . '.pm') =~ s{::}{/}gmxs;
-   require $packfile;
-   $module->import(@_);
-   return $module;
-} ## end sub RUSE
 
 # Embedded stuff here
 
@@ -4007,7 +3988,8 @@ END_OF_FILE
       chop($text); # added \n at the end
       open my $fh, '<', \$text or die "open(): $!\n";
       return $fh;
-   };
+   }
+   unless $main::LOADED++;
 } ## end BEGIN
 # __MOBUNDLE_INCLUSION__
 
@@ -4017,20 +3999,29 @@ sub template {
  #!/usr/bin/env perl
  # vim: sts=3 ts=3 sw=3 et ai :
  
+ ### LEAVE THIS INITIAL SECTION AS-IS ##################################
+ BEGIN {
+    local ($x, @ARGV, $/) = ('# __MOBUNDLE_INCLUSION__', __FILE__);
+    eval((<> =~ m{(^$x.*^$x)}ms)[0]);
+ }
+ use strict;
+ use warnings;
+ use Pod::Usage qw< pod2usage >;
+ use Getopt::Long qw< :config gnu_getopt >;
+ use Data::Tubes qw< pipeline summon >;
+ ### YOU CAN START CHANGING THINGS FROM HERE ON #########################
+ 
  ########################################################################
  # __SECTION__
  #
  # Preamble
  #
  ########################################################################
- use strict;
- use warnings;
+ 
  my $VERSION = '0.0.1';
- RUSE('Data::Tubes',         qw< pipeline summon >);
- RUSE('Log::Log4perl::Tiny', qw< :easy LOGLEVEL :no_extra_logdie_message >);
- RUSE('Template::Perlish',   qw< render >);
- RUSE('Try::Tiny',           qw< try catch finally >);
- sub try (&;@); sub catch (&;@); sub finally (&;@);
+ use Log::Log4perl::Tiny qw< :easy LOGLEVEL :no_extra_logdie_message >;
+ use Template::Perlish qw< render >;
+ use Try::Tiny;
  
  ########################################################################
  # __SECTION__
@@ -4125,8 +4116,6 @@ sub template {
  ########################################################################
  
  # Ancillary scaffolding here
- use Pod::Usage qw< pod2usage >;
- use Getopt::Long qw< :config gnu_getopt >;
  
  sub get_options {
     my %config;
@@ -4175,14 +4164,6 @@ sub template {
     return %config if wantarray();
     return \%config;
  } ## end sub get_options
- 
- sub RUSE {
-    my $module = shift;
-    (my $packfile = $module . '.pm') =~ s{::}{/}gmxs;
-    require $packfile;
-    $module->import(@_);
-    return $module;
- } ## end sub RUSE
  
  [% modules_bundle %]
  
@@ -4434,6 +4415,10 @@ file containing the following sections:
 
 =item *
 
+an initial, unnamed section that you're supposed to leave AS-IS;
+
+=item *
+
 a L</Preamble> with housekeeping that will help get the new program
 started with using the included batteries;
 
@@ -4465,36 +4450,12 @@ below.
 =head2 Preamble
 
 The preamble is where the initial setup is done so that you can use
-L<Data::Tubes> and the other embedded modules out of the box. You can
-get rid of components you don't need, of course, although you will at
-least want to keep the call to C<RUSE> for L<Data::Tubes>.
+modules (embedded or local). You can get rid of components you don't
+need, of course.
 
 If you need to C<use> additional modules, this is probably a good point
 to do it. Otherwise, you can just C<use> them in the L</"Business
 Logic"> section, as you see fit.
-
-You will notice that the embedded modules are called through the
-function C<RUSE>. This trick allows pushing the code below in
-L</"Embedded Modules"> so that it does not get in the way of your
-program. You are supposed to keep the C<RUSE> calls untouched to benefit
-from the inclusion of the modules.
-
-You can consider C<RUSE> at the same level of a C<use> line, though, so
-you can add elements in the import list should you need to. For example,
-if you need the L<Data::Tubes/summon> you can modify the relevant
-C<RUSE> line from this:
-
-   RUSE('Data::Tubes', qw< pipeline >);
-
-to this:
-
-   RUSE('Data::Tubes', qw< pipeline summon >);
-
-You will also notice that the preamble includes the forward-declaration
-for all functions in L<Try::Tiny>. This is necessary so that you will be
-able to use the syntactic sugar provided by this module. Leave them in
-place if you plan to use L<Try::Tiny>, get rid of them (or just ignore
-them) otherwise.
 
 =head2 Command Line Handling
 
@@ -4559,26 +4520,7 @@ you set the logging level of the script automatically.
 =head2 Business Logic
 
 This is where your business logic is supposed to be written, which is
-only yours. A couple of considerations are worth mentioning though:
-
-=over
-
-=item *
-
-functions from L<Try::Tiny> have their prototype declared in the
-L</Preamble>, but all other C<RUSE>d functions are available at runtime
-but unknown at compile time. This means that you will need to use
-parentheses to call them (which is somehow different from all examples
-in L<Log::Log4perl::Tiny>, for example);
-
-=item *
-
-apart from the modules C<use>d/C<RUSE>d in the L</Preamble>, other
-modules are directly C<use>d by the program, e.g. L<Pod::Usage> and
-L<Getopt::Long> in the L</"Embedded Modules"> section or in the embedded
-modules themselves.
-
-=back
+only yours.
 
 =head2 Embedded Modules
 
@@ -4586,12 +4528,11 @@ Your business logic is supposed to live in section L</"Business Logic">,
 so you should generally not need to put anything here.
 
 This section contains most of the I<batteries included>. It has the
-options parsing function C<get_options>, the I<require-as-use> function
-C<RUSE>, the logic for embedding all modules.
+options parsing function C<get_options> and the logic for embedding all
+modules.
 
-If you want to embed additional pure-Perl modules, and C<RUSE> them, you
-are welcome to do this. Just follow the example of the other modules,
-namely:
+If you want to embed additional pure-Perl modules you are welcome to do
+this. Just follow the example of the other modules, namely:
 
 =over
 
@@ -4646,7 +4587,7 @@ Example:
     # module is the line below.
    END_OF_FILE
 
-   # __MOBUNDLE_FILE
+   # __MOBUNDLE_FILE__
    #
    # ... REST OF %file_for hash...
 
