@@ -129,6 +129,14 @@ from a file (or whatever can be C<open>ed, like a scalar reference).
 This is the I<main> parameter, so it can be provided I<un-named> as the
 first stand-alone argument.
 
+=item C<template_input>
+
+optional identifier of a field in the input record that has the template
+to be expanded. When this argument is defined, and the corresponding
+field in the input record is defined too, this field in the input record
+will be used as template instead of argument C<template>. Defaults to
+C<undef>, i.e. use whatever set as C<template>;
+
 =item C<template_perlish>
 
 an instance of L<Template::Perlish> that has to be used for all
@@ -136,6 +144,16 @@ compilations and evaluation of templates. If this is present, options
 C<start>, C<stop> and C<variables> will be ignored; otherwise, a
 L<Template::Perlish> instance will be created with these three
 parameters;
+
+=item C<template_perlish_input>
+
+optional identifier of a field in the input record that has the
+L<Template::Perlish> instance to use for expansions. If this argument is
+missing/undefined, or if the corresponding field in the input record is
+missing/undefined, the default L<Template::Perlish> instance will be
+used (i.e. either the one passed with C<template_perlish>, or the
+auto-generated one). Defauts to C<undef>, i.e. use whatever set as
+C<template_perlish> or the auto-generated instance;
 
 =item C<variables>
 
