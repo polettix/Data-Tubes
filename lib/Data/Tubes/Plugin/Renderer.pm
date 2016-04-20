@@ -41,7 +41,8 @@ sub _rwtp_ntp_nt {
    my $template = _resolve_template($args) // LOGDIE 'undefined template';
    return sub {
       my $record = shift;
-      $record->{$output} = $tp->evaluate($template, $record->{$input});
+      $record->{$output} =
+        $tp->evaluate($template, $record->{$input} // {});
       return $record;
    };
 } ## end sub _rwtp_ntp_nt
@@ -66,7 +67,8 @@ sub _rwtp_ntp_t {
         )
         : ($ctmpl
            // die {message => 'undefined template', record => $record});
-      $record->{$output} = $tp->evaluate($template, $record->{$input});
+      $record->{$output} =
+        $tp->evaluate($template, $record->{$input} // {});
       return $record;
    };
 } ## end sub _rwtp_ntp_t
@@ -86,7 +88,8 @@ sub _rwtp_tp_nt {
         defined($record->{$itpf})
         ? _resolve_template({template_perlish => $tp, template => $ctmpl})
         : $pctmpl;
-      $record->{$output} = $tp->evaluate($template, $record->{$input});
+      $record->{$output} =
+        $tp->evaluate($template, $record->{$input} // {});
       return $record;
    };
 } ## end sub _rwtp_tp_nt
@@ -115,7 +118,8 @@ sub _rwtp_tp_t {
         : defined($record->{$itpf})
         ? _resolve_template({template_perlish => $tp, template => $ctmpl})
         : $pctmpl;
-      $record->{$output} = $tp->evaluate($template, $record->{$input});
+      $record->{$output} =
+        $tp->evaluate($template, $record->{$input} // {});
       return $record;
    };
 } ## end sub _rwtp_tp_t
