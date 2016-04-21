@@ -16,6 +16,11 @@ of L<CHI> for methods used by L<Data::Tubes::Plugin::Plumbing/cache>, so
 it is provided as a simple replacement in case you don't have, or don't
 want to use, L<CHI>.
 
+The class implements both an in-memory and a on-filesystem caches,
+depending on what you set as parameter C<repository>. A hash reference
+means caching in memory; a directory name means caching on file (the
+directory will be created if not existent).
+
 The class is realized via L<Mo>. You can extend it, to a certain degree.
 
 =head1 METHODS
@@ -103,6 +108,8 @@ C<@args> is ignored. Returns C<$value>.
 =head1 SEE ALSO
 
 L<Data::Tubes> is a valid entry point of all of this.
+
+L<CHI> for a comprehensive caching library.
 
 =head1 AUTHOR
 
