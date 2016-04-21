@@ -152,9 +152,61 @@ on the cache. Ignored by L<Data::Tubes::Util::Cache/get>, but not by
 L<CHI>. Defaults to an empty array reference;
 
 =item C<key>
+
+mechanism for deriving a key from the input record, to use as index in
+the cache. It can be:
+
+=over
+
+=item *
+
+a sub reference, that is run with the input record as the only
+parameter, and MUST return the key to use;
+
+=item *
+
+a single string or an array reference containing a sequence of strings,
+passed to L<Data::Tubes::Util/traverse> for arriving to something
+meaningful;
+
+=back
+
 =item C<merger>
+
+optional subroutine reference for generating an output record from an
+input record and a value retrieved from the cache. When defined, the sub
+is run with three positional parameers:
+
+=over
+
+=item *
+
+the input record;
+
+=item *
+
+the name of the output field (factory argument C<output>);
+
+=item *
+
+the value to associate to C<output>.
+
+=back
+
+The default operation when returning a single record is I<equivalent> to
+the following:
+
+   {%$input_record, $output => $value}
+
 =item C<name>
+
+name of the tube, useful when debugging. Defaults to 'cache';
+
 =item C<output>
+
+name of the output field in the returned record. If it is not defined,
+the whole record is considered the output.
+
 =item C<set_options>
 
 an optional array reference of values passed when invoking method C<set>

@@ -86,7 +86,7 @@ my $wrapped = sub { $_[0]->{OUTPUT} = $_[0]->{INPUT} + 1; return $_[0]; };
       key     => 'INPUT',
       output  => 'OUTPUT',
       merger  => sub {
-         my ($record, $data, $output) = @_;
+         my ($record, $output, $data) = @_;
          return {%$record, $output => $data, foo => 'bar'};
       },
    );

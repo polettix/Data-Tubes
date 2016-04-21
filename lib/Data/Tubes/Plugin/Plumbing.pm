@@ -115,7 +115,7 @@ sub cache {
       return unless scalar @$data;
 
       if (scalar(@$data) == 1) {    # single record
-         return $merger->($record, $data->[0], $output) if $merger;
+         return $merger->($record, $output, $data->[0]) if $merger;
          return $data->[0] unless $output;
          $record->{$output} = $data->[0];
          return $record;
@@ -125,7 +125,7 @@ sub cache {
       my $aref = $data->[1];
       my $records =
         $merger
-        ? [map { $merger->($record, $_, $output) } @$aref]
+        ? [map { $merger->($record, $output, $_) } @$aref]
         : $output ? [
          map {
             { %$record, $output => $_ }
