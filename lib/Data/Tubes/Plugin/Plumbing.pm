@@ -11,9 +11,15 @@ our $VERSION = '0.728';
 
 use Log::Log4perl::Tiny
   qw< :easy :dead_if_first get_logger LOGLEVEL LEVELID_FOR >;
-use Data::Tubes::Util
-  qw< args_array_with_options load_module load_sub normalize_args traverse >;
-use Data::Tubes::Plugin::Util qw< identify log_helper pull tubify >;
+use Data::Tubes::Util qw<
+  args_array_with_options
+  load_module
+  load_sub
+  pump
+  normalize_args
+  traverse
+>;
+use Data::Tubes::Plugin::Util qw< identify log_helper tubify >;
 
 sub alternatives {
    my ($tubes, $args) =
@@ -89,7 +95,7 @@ sub cache {
       if (!$data) {    # MUST be an array reference at this point
          my @oc = $tube->($record);
          if (scalar(@oc) == 2) {
-            my $rcs = ($oc[0] eq 'records') ? $oc[1] : pull($oc[1]);
+            my $rcs = ($oc[0] eq 'records') ? $oc[1] : pump($oc[1]);
             $rcs = [map { $_->{$output} } @$rcs] if defined($output);
             $data = [records => $rcs];
          }

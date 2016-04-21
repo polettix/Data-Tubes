@@ -17,11 +17,6 @@ sub get {
    return $cache->{$key};
 } ## end sub get
 
-sub set {
-   my ($self, $key, $data) = @_;
-   return $self->cache()->{$key} = $data;
-}
-
 sub purge {
    my $self  = shift;
    my $max   = $self->max_items() or return;
@@ -30,3 +25,8 @@ sub purge {
    delete $cache->{(keys %$cache)[0]} while $n-- > $max;
    return;
 } ## end sub purge
+
+sub set {
+   my ($self, $key, $data) = @_;
+   return $self->cache()->{$key} = $data;
+}

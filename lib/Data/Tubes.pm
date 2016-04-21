@@ -13,6 +13,7 @@ use Data::Tubes::Util qw<
   args_array_with_options
   load_sub
   normalize_args
+  pump
   resolve_module
   tube
 >;
@@ -29,9 +30,13 @@ our %EXPORT_TAGS = (all => \@EXPORT_OK,);
 
 sub drain {
    my $tube = shift;
-   my ($type, $iterator) = $tube->(@_) or return;
-   return unless defined($iterator) && ($type eq 'iterator');
-   while (my @items = $iterator->()) { }
+   my @outcome = $tube->(@_);
+   return @outcome if scalar(@outcome) < 2;
+   return pump($outcome[1]) if $outcome[0] eq 'iterator';
+   my $wa = wantarray();
+   return if ! defined($wa);
+   return $outcome[1] unless $wa;
+   return @{$outcome[1]};
 } ## end sub drain
 
 sub pipeline {

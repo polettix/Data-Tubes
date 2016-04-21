@@ -19,6 +19,7 @@ our @EXPORT_OK = qw<
   metadata
   normalize_args
   normalize_filename
+  pump
   read_file
   read_file_maybe
   resolve_module
@@ -263,6 +264,26 @@ sub normalize_filename {
    } ## end if (my ($handlename) =...)
    return $filename;
 } ## end sub normalize_filename
+
+sub pump {
+   my ($iterator, $sink) = @_;
+   if ($sink) {
+      while (my @items = $iterator->()) {
+         $sink->(@items);
+      }
+      return;
+   }
+   my $wa = wantarray();
+   if (! defined $wa) {
+      while (my @items = $iterator->()) {}
+      return;
+   }
+   my @records;
+   while (my @items = $iterator->()) {
+      push @records, @items;
+   }
+   return $wa ? @records : \@records;
+}
 
 sub read_file {
    my %args = normalize_args(

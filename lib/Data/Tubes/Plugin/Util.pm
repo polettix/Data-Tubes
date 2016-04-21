@@ -13,21 +13,7 @@ use Log::Log4perl::Tiny qw< :easy :dead_if_first get_logger >;
 use Data::Tubes::Util qw< normalize_args read_file tube >;
 
 use Exporter qw< import >;
-our @EXPORT_OK = qw< identify log_helper pull read_file tubify >;
-
-sub pull {
-   my $iterator = shift;
-   my $wa = wantarray();
-   if (! defined $wa) {
-      while (my @items = $iterator->()) {}
-      return;
-   }
-   my @records;
-   while (my @items = $iterator->()) {
-      push @records, @items;
-   }
-   return $wa ? @records : \@records;
-}
+our @EXPORT_OK = qw< identify log_helper read_file tubify >;
 
 sub identify {
    my ($args, $opts) = @_;
