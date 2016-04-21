@@ -16,7 +16,8 @@ my %global_defaults = (
 sub _resolve_template {
    my $args     = shift;
    my $template = read_file_maybe($args->{template});
-   $template = $template->($args) if ref($template) eq 'CODE';
+   $template = read_file_maybe($template->($args))
+     if ref($template) eq 'CODE';
    LOGDIE 'undefined template' unless defined $template;
    $template = $args->{template_perlish}->compile($template)
      unless ref $template;

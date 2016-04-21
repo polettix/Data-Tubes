@@ -111,18 +111,19 @@ instance that compiled this template via argument C<template_perlish>;
 
 =item *
 
+an array reference. This will be expanded into an argument list for
+L<Data::Tubes::Plugin::Util/read_file>, that allows reading the template
+from a file (or whatever can be C<open>ed, like a scalar reference).
+
+=item *
+
 a code reference. This is provided for maximum flexibility. It will be
 invoked to get the template, getting the full arguments hash as input
 (the arguments has will always have C<template_perlish> populated,
 either with the provided value or with a newly created one). It can
-return either a plain string or a hash reference, see above for the
-rules;
-
-=item *
-
-an array reference. This will be expanded into an argument list for
-L<Data::Tubes::Plugin::Util/read_file>, that allows reading the template
-from a file (or whatever can be C<open>ed, like a scalar reference).
+return either of the above, and the return value will be treated
+accordingly (it I<cannot> return another code reference though, please
+do all the indirections in the sub yourself!).
 
 =back
 
