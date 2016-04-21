@@ -49,8 +49,8 @@ my $wrapped = sub { $_[0]->{OUTPUT} = $_[0]->{INPUT} + 1; return $_[0]; };
    my $tube  = cache(
       cache => [
          '!Data::Tubes::Util::Cache',
-         cache     => $cache,
-         max_items => 1,
+         repository => $cache,
+         max_items  => 1,
       ],
       cleaner => 'purge',
       tube    => $wrapped,
@@ -78,8 +78,8 @@ my $wrapped = sub { $_[0]->{OUTPUT} = $_[0]->{INPUT} + 1; return $_[0]; };
    my $tube  = cache(
       cache => [
          '!Data::Tubes::Util::Cache',
-         cache     => $cache,
-         max_items => 1,
+         repository => $cache,
+         max_items  => 1,
       ],
       cleaner => 'purge',
       tube    => $wrapped,
@@ -123,7 +123,7 @@ my $wrapped = sub { $_[0]->{OUTPUT} = $_[0]->{INPUT} + 1; return $_[0]; };
    my $outrec = $tube->($inrec);
    is_deeply $outrec, $inrec, 'tube wrapping worked fine';
 
-   my $cache = $cache_obj->cache();
+   my $cache = $cache_obj->repository();
    is scalar(keys %$cache), 1, 'cache is populated now';
    is_deeply $cache, {10 => [11]}, 'cache populated as expected';
 
