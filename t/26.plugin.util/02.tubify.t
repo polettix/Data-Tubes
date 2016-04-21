@@ -37,4 +37,12 @@ my $sub = sub { return };
    is_deeply $orecord, $benchmark, 'parser tube worked as expected';
 }
 
+{
+   my $flag = 0;
+   my @tubes =
+     tubify('Parser::hashy', $sub, $flag && 'Parser::ghashy', $sub);
+   is scalar(@tubes), 3, 'one element ignored';
+   isa_ok $_, 'CODE' for @tubes;
+}
+
 done_testing();

@@ -206,13 +206,23 @@ with L<Data::Tubes/summon> and backwards compatibility.
 automatically transform input specifications into tubes. Each item in
 C<@specification> can be either a tube (i.e. a code reference), or
 something that can be transformed into a tube (see C<tube> in
-L<Data::Tubes> for a definition).
+L<Data::Tubes> for a definition). Additionally, whatever in
+C<@specification> is found to be I<false> (in the Perl sense) will just
+be ignored.
 
 Hence, this does returns the two tubes you think:
 
    @tubes = tubify(
       'Reader::by_line',
       ['Parser::by_format', format => 'foo,bar,baz'],
+   );
+
+Additionally, this actually does what you think:
+
+   @tubes = tubify(
+      'Reader::by_line',
+      ['Parser::by_format', format => 'foo,bar,baz'],
+      ($foobar && sub { die unless $_[0]->{structured}}),
    );
 
 =back

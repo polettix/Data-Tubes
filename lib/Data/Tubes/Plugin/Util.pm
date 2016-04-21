@@ -106,7 +106,7 @@ sub tubify {
       ($ref eq 'CODE')
         ? $_
         : tube(($ref eq 'ARRAY') ? @$_ : $_)
-   } @_;
+   } grep { $_ } @_;
 } ## end sub tubify
 
 1;
