@@ -36,12 +36,26 @@ constructor for the class. See L</Accessors> for the accepted arguments.
 
 =over
 
-=item B<< cache >>
+=item B<< repository >>
 
-   $cache->cache($href);
-   $href = $cache->cache();
+   $cache->repository($href);
+   $href = $cache->repository();
 
-set/retrieve the hash reference where the cached items are stored.
+set/retrieve the repository for the cache. It can be either of:
+
+=over
+
+=item *
+
+an hash reference, in which case the cache is kept in memory;
+
+=item *
+
+a directory name, in which case the cache is kept in the filesystem.
+
+=back
+
+Defaults to an empty hash.
 
 =item B<< max_items >>
 
