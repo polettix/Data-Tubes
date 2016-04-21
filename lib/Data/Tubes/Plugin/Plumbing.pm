@@ -52,21 +52,22 @@ sub _get_selector {
         : sub { return traverse($_[0], $ref ? @$key : $key); };
    } ## end if (!defined($selector...))
    LOGDIE "$args->{name}: required dispatch key or selector"
-     unless defined $selector;
+     if (! defined $selector) && (! $args->{missing_ok});
    return $selector;
 } ## end sub _get_selector
 
 sub cache {
-   my %args = normalize_args(@_, {name => 'cache'});
+   my %args = normalize_args(@_, [{name => 'cache'}, 'tube']);
    identify(\%args);
    my $name = $args{name};
 
    # the cached tube
-   my $tube = $args{tube} // LOGCROAK "$name: no tube to cache";
+   my ($tube) = tubify($args{tube});
+   LOGCROAK "$name: no tube to cache" unless defined $tube;
 
    # the cache! We will use something compatible with CHI
    my $cache = $args{cache} // {};
-   $cache = ['!Data::Tubes::Util::Cache', cache => $cache]
+   $cache = ['!Data::Tubes::Util::Cache', repository => $cache]
      if ref($cache) eq 'HASH';
    if (!blessed($cache)) {
       my ($x, @args) = ref($cache) ? @$cache : $cache;
@@ -76,7 +77,9 @@ sub cache {
    my @set_options = $args{set_options} ? @{$args{set_options}} : ();
 
    # what allows me to look in the cache?
-   my $selector = _get_selector(\%args);    # manage 'key'
+   my $selector = _get_selector({%args, missing_ok => 1});
+   LOGCROAK "missing key or selector, but output is set"
+     if (! defined $selector) && defined($args{output});
 
    # cleaning trigger, if any
    my $cleaner = $args{cleaner};
@@ -87,10 +90,9 @@ sub cache {
    $merger = load_sub($merger) if defined($merger) && !ref($merger);
 
    my $output = $args{output};
-   my $max    = $args{max_items};
    return sub {
       my $record = shift;
-      my $key    = $selector->($record);
+      my $key    = $selector ? $selector->($record) : $record;
       my $data   = $cache->get($key, @get_options);
       if (!$data) {    # MUST be an array reference at this point
          my @oc = $tube->($record);

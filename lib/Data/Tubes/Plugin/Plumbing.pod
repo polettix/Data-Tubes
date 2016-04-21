@@ -45,10 +45,135 @@ plan to use more than one dispatcher.
 
 =back
 
+=item B<< cache >>
+
+   $ctube = cache($tube, %args); # OR
+   $ctube = cache(%args); # OR
+   $ctube = cache(\%args);
+
+create a cache layer around another tube.
+
+The wrapped tube can be provided either as the first unnamed parameter
+or via argument C<tube>. You can set it using any of the alternatives
+supported by L<Data::Tubes::Plugin::Util/tubify>.
+
+The main algorithm for caching is the following:
+
+=over
+
+=item *
+
+a I<key> is derived from the record. Option C<key> can be used to this
+regard, but the whole record is considered the key otherwise. In this
+last case, it is forbidden to set option C<output> as the input record
+is supposed to I<not> be a hash reference;
+
+=item *
+
+the I<cache> is queried with the I<key> and a I<value> is retrieved;
+
+=item *
+
+if the I<cache> did not return anything, the wrapped C<tube> is invoked
+and its contents are cached. If the C<tube> returns an iterator, it is
+exhausted and transformed into an array reference of C<records>.
+Whatever is cached is also set as I<value> for the following processing;
+
+=item *
+
+depending on the I<value>, the output record(s) is(are) generated and
+returned.
+
+=back
+
+The output of this tube can be everything except an iterator. The input
+record might be overridden depending on C<output> and C<merger>, see
+below.
+
+Any time an item is set in the cache, a I<clearer> function might be
+called if set in option C<cleaner>.
+
+Accepted arguments are:
+
+=over
+
+=item C<cache>
+
+something that can be used as a cache, namely:
+
+=over
+
+=item *
+
+a hash reference, that will be used via
+L<Data::Tubes::Util::Cache/cache>;
+
+=item *
+
+anything supporting the interface of L<Data::Tubes::Util::Cache>, which
+is also valid for any cache valid for L<CHI>;
+
+=item *
+
+an array reference that will be transformed in a cache object. The first
+element of the array can be either a sub reference or a string; if a
+string, it is considered the name of a module (according to the rules
+set for L<Data::Tubes::Util/resolve_module>) and its C<new> method is
+considered. The rest of the array is passed as arguments to the sub ref
+or the C<new> method.
+
+=back
+
+If you want to use L<CHI>, you can do like this:
+
+   cache => ['!CHI', driver => 'File', root_dir => '/path/to/root']
+
+Note that the exclamation point is necessary in this case to avoid the
+automatic prefixing performed by C<resolve_module>.
+
+If this parameter is missing, an empty hash is assumed and
+L<Data::Tubes::Util::Cache> is used.
+
+=item C<cleaner>
+
+an optional cleaning function for avoiding cache explosion. If you set
+it to a string, it is supposed to be a method supported by whatever
+comes from C<cache>. Otherwise, you can set it to a sub reference.
+
+For example, if you use L<Data::Tubes::Util::Cache> and set
+C<max_items>, you might want to set C<cleaner> to C<purge> so that the
+L<Data::Tubes::Util::Cache/purge> will be called (otherwise,
+C<max_items> will be ignored as a matter of fact).
+
+=item C<get_options>
+
+an optional array reference of values passed when invoking method C<get>
+on the cache. Ignored by L<Data::Tubes::Util::Cache/get>, but not by
+L<CHI>. Defaults to an empty array reference;
+
+=item C<key>
+=item C<merger>
+=item C<name>
+=item C<output>
+=item C<set_options>
+
+an optional array reference of values passed when invoking method C<set>
+on the cache. Ignored by L<Data::Tubes::Util::Cache/set>, but not by
+L<CHI>. Defaults to an empty array reference;
+
+=item C<tube>
+
+the I<wrapped tube>, i.e. the tube whose output we want to cache for
+later reuse.
+
+=back
+
+
+
 =item B<< dispatch >>
 
-   my $tube = dispatch(%args); # OR
-   my $tube = dispatch(\%args);
+   $tube = dispatch(%args); # OR
+   $tube = dispatch(\%args);
 
 this function decides a sub-tube to use for dispatching a specific
 record. The selection of the sub-tube is performed through two different
