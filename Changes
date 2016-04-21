@@ -3,6 +3,7 @@
    - with_template_perlish: templates in records
    - with_template_perlish: code ref can return array ref for read_file
    - tubify: "false" tube specifications are now ignored
+   - added caching facilities
 
 0.728  2016-04-18 18:29:10 CEST
    - by_split and by_separators accept missing $keys now
