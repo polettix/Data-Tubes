@@ -182,10 +182,7 @@ sub generalized_hashy {
 } ## end sub generalized_hashy
 
 sub load_module {
-   my $module = resolve_module(@_);
-   (my $packfile = $module . '.pm') =~ s{::}{/}gmxs;
-   require $packfile;
-   return $module;
+   return _load_module(resolve_module(@_));
 } ## end sub load_module
 
 sub load_sub {

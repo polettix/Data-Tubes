@@ -12,8 +12,8 @@ our $VERSION = '0.728';
 use Log::Log4perl::Tiny
   qw< :easy :dead_if_first get_logger LOGLEVEL LEVELID_FOR >;
 use Data::Tubes::Util
-  qw< args_array_with_options normalize_args traverse >;
-use Data::Tubes::Plugin::Util qw< identify log_helper tubify >;
+  qw< args_array_with_options load_module load_sub normalize_args traverse >;
+use Data::Tubes::Plugin::Util qw< identify log_helper pull tubify >;
 
 sub alternatives {
    my ($tubes, $args) =
@@ -34,19 +34,107 @@ sub alternatives {
    };
 } ## end sub alternatives
 
+sub _get_selector {
+   my $args     = shift;
+   my $selector = $args->{selector};
+   if (!defined($selector) && defined($args->{key})) {
+      my $key = $args->{key};
+      my $ref = ref $key;
+      $selector =
+        ($ref eq 'CODE')
+        ? $key
+        : sub { return traverse($_[0], $ref ? @$key : $key); };
+   } ## end if (!defined($selector...))
+   LOGDIE "$args->{name}: required dispatch key or selector"
+     unless defined $selector;
+   return $selector;
+} ## end sub _get_selector
+
+sub cache {
+   my %args = normalize_args(@_, {name => 'cache'});
+   identify(\%args);
+   my $name = $args{name};
+
+   # the cached tube
+   my $tube = $args{tube} // LOGCROAK "$name: no tube to cache";
+
+   # the cache! We will use something compatible with CHI
+   my $cache = $args{cache} // {};
+   $cache = ['!Data::Tubes::Util::Cache', cache => $cache]
+     if ref($cache) eq 'HASH';
+   if (!blessed($cache)) {
+      my ($module, @args) = ref($cache) ? @$cache : $cache;
+      $cache = load_module($module)->(@args);
+   }
+   my @get_options = $args{get_options} ? @{$args{get_options}} : ();
+   my @set_options = $args{set_options} ? @{$args{set_options}} : ();
+
+   # what allows me to look in the cache?
+   my $selector = _get_selector(\%args);    # manage 'key'
+
+   # cleaning trigger, if any
+   my $cleaner = $args{cleaner};
+   $cleaner = $cache->can($cleaner) if defined($cleaner) && !ref($cleaner);
+
+   # cloning facility, if needed
+   my $merger = $args{merger};
+   $merger = load_sub($merger) if defined($merger) && !ref($merger);
+
+   my $output = $args{output};
+   my $max    = $args{max_items};
+   return sub {
+      my $record = shift;
+      my $key    = $selector->($record);
+      my $data   = $cache->get($key, @get_options);
+      if (!$data) {    # MUST be an array reference at this point
+         my @oc = $tube->($record);
+         if (scalar(@oc) == 2) {
+            my $rcs = ($oc[0] eq 'records') ? $oc[1] : pull($oc[1]);
+            $rcs = [map { $_->{$output} } @$rcs] if defined($output);
+            $data = [records => $rcs];
+         }
+         elsif (scalar @oc) {
+            $data = defined($output) ? [$oc[0]{$output}] : \@oc;
+         }
+         else {
+            $data = \@oc;
+         }
+
+         $cache->set($key, $data, @set_options);
+         $cleaner->($cache) if $cleaner;
+      } ## end if (!$data)
+
+      return unless scalar @$data;
+
+      if (scalar(@$data) == 1) {    # single record
+         return $merger->($record, $data->[0], $output) if $merger;
+         return $data->[0] unless $output;
+         $record->{$output} = $data->[0];
+         return $record;
+      } ## end if (scalar(@$data) == ...)
+
+      # array of records here
+      my $aref = $data->[1];
+      my $records =
+        $merger
+        ? [map { $merger->($record, $_, $output) } @$aref]
+        : $output ? [
+         map {
+            { %$record, $output => $_ }
+         } @$aref
+        ]
+        : $aref;
+      return (records => $records);
+   };
+} ## end sub cache
+
 sub dispatch {
    my %args = normalize_args(@_,
       {default => undef, name => 'dispatch', loglevel => $INFO});
    identify(\%args);
    my $name = $args{name};
 
-   my $selector = $args{selector};
-   if (!defined($selector) && defined($args{key})) {
-      my @key = ref($args{key}) ? @{$args{key}} : ($args{key});
-      $selector = sub { return traverse($_[0], @key); };
-   }
-   LOGDIE "$name: required dispatch key or selector"
-     unless defined $selector;
+   my $selector = _get_selector(\%args);
 
    my $handler_for = {%{$args{handlers} || {}}};    # our cache
    my $factory = $args{factory};
