@@ -63,8 +63,8 @@ sub cache {
    $cache = ['!Data::Tubes::Util::Cache', cache => $cache]
      if ref($cache) eq 'HASH';
    if (!blessed($cache)) {
-      my ($module, @args) = ref($cache) ? @$cache : $cache;
-      $cache = load_module($module)->(@args);
+      my ($x, @args) = ref($cache) ? @$cache : $cache;
+      $cache = ref($x) ? $x->(@args) : load_module($x)->new(@args);
    }
    my @get_options = $args{get_options} ? @{$args{get_options}} : ();
    my @set_options = $args{set_options} ? @{$args{set_options}} : ();
