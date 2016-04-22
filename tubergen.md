@@ -72,55 +72,29 @@ accepts its inputs;
 - a ["POD"](#pod) section where you can write the documentation for your new
 program.
 
-You will normally need to mind about ["Command Line Handling"](#command-line-handling),
-["Business Logic"](#business-logic) and ["POD"](#pod), although it's good for you to know
-about all of them. Each part is explained in depth in the sub-sections
-below.
+You will normally need to mind about ["Command Line
+Handling"](#command-line-handling), ["Business Logic"](#business-logic)
+and ["POD"](#pod), although it's good for you to know about all of them.
+Each part is explained in depth in the sub-sections below.
+
+You will note that there is some code before the [Preamble](#preamble),
+where some code is defined and some `use`s are present: you are not
+supposed to fiddle with this section, unless you really know what you're
+doing.
 
 ### Preamble
 
-The preamble is where the initial setup is done so that you can use
-[Data::Tubes](https://metacpan.org/pod/Data::Tubes) and the other embedded modules out of the box. You can
-get rid of components you don't need, of course, although you will at
-least want to keep the call to `RUSE` for [Data::Tubes](https://metacpan.org/pod/Data::Tubes).
-
-If you need to `use` additional modules, this is probably a good point
-to do it. Otherwise, you can just `use` them in the ["Business
-Logic"](#business-logic) section, as you see fit.
-
-You will notice that the embedded modules are called through the
-function `RUSE`. This trick allows pushing the code below in
-["Embedded Modules"](#embedded-modules) so that it does not get in the way of your
-program. You are supposed to keep the `RUSE` calls untouched to benefit
-from the inclusion of the modules.
-
-You can consider `RUSE` at the same level of a `use` line, though, so
-you can add elements in the import list should you need to. For example,
-if you need the
-["drain" in Data::Tubes](https://metacpan.org/pod/Data::Tubes#drain) you
-can modify the relevant `RUSE` line from this:
-
-```
-RUSE('Data::Tubes', qw< pipeline summon >);
-```
-
-to this:
-
-```
-RUSE('Data::Tubes', qw< pipeline summon drain >);
-```
-
-You will also notice that the preamble includes the forward-declaration
-for all functions in [Try::Tiny](https://metacpan.org/pod/Try::Tiny). This is necessary so that you will be
-able to use the syntactic sugar provided by this module. Leave them in
-place if you plan to use [Try::Tiny](https://metacpan.org/pod/Try::Tiny), get rid of them (or just ignore
-them) otherwise.
+This is where you can put your own modules inclusions or other
+initializations. If you need to `use` additional modules, this is
+probably a good point to do it. Otherwise, you can just `use` them in
+the ["Business Logic"](#business-logic) section, as you see fit.
 
 ### Command Line Handling
 
-Command line handling is performed via [Getopt::Long](https://metacpan.org/pod/Getopt::Long) behind the
-scenes. Here you have a simplified interface that should (hopefully) be
-what you need most of the times.
+Command line handling is performed via
+[Getopt::Long](https://metacpan.org/pod/Getopt::Long) behind the scenes.
+Here you have a simplified interface that should (hopefully) be what you
+need most of the times.
 
 Handling of command line is performed by subroutine `get_options`, that
 returns a hash (key-value pairs) or hash reference depending on calling
@@ -128,12 +102,15 @@ context. In the default section, you get hash `%config` back.
 
 Options are defined as a sequence of elements, each of which can be
 either a string or an array reference. The string alternative is exactly
-the same as what is accepted by [Getopt::Long](https://metacpan.org/pod/Getopt::Long). The array reference
-alternative has the following structure:
+the same as what is accepted by
+[Getopt::Long](https://metacpan.org/pod/Getopt::Long). The array
+reference alternative has the following structure:
 
-- the first element is the [Getopt::Long](https://metacpan.org/pod/Getopt::Long) specification string;
+- the first element is the
+  [Getopt::Long](https://metacpan.org/pod/Getopt::Long) specification
+  string;
 - the following elements are key-value pairs that are put in a hash of
-options. Recognised keys are:
+  options. Recognised keys are:
 
     `default`
     :   a default value for the option. This is used to initialize the returned
@@ -148,13 +125,16 @@ options. Recognised keys are:
         that Perl considers _true_ or _false_ depending on your needs. Default
         is _false_.
 
-    The difference between ["default"](#default) and ["fallback"](#fallback) is negligible for
-    most options, but you might e.g. set initial values for a
-    multiple-valued option (in which case you will want to set it as
-    ["default"](#default)) or pass a value that would not be considered good for
-    [Getopt::Long](https://metacpan.org/pod/Getopt::Long) (e.g. you cannot pre-initialize options with GLOBs, in
-    which case you would choose ["fallback"](#fallback)). In general, use ["default"](#default)
-    unless you really need ["fallback"](#fallback).
+    The difference between ["default"](#default) and
+    ["fallback"](#fallback) is negligible for most options, but you
+    might e.g. set initial values for a multiple-valued option (in which
+    case you will want to set it as ["default"](#default)) or pass a
+    value that would not be considered good for
+    [Getopt::Long](https://metacpan.org/pod/Getopt::Long) (e.g. you
+    cannot pre-initialize options with GLOBs, in which case you would
+    choose ["fallback"](#fallback)). In general, use
+    ["default"](#default) unless you really need
+    ["fallback"](#fallback).
 
 The newly minted program contains a few examples to get you started. You
 might want to keep the first one on `loglevel` though, as it will help
@@ -165,45 +145,49 @@ you set the logging level of the script automatically.
 This is where your business logic is supposed to be written, which is
 only yours. A couple of considerations are worth mentioning though:
 
-- functions from [Try::Tiny](https://metacpan.org/pod/Try::Tiny) have their prototype declared in the
-["Preamble"](#preamble), but all other `RUSE`d functions are available at runtime
-but unknown at compile time. This means that you will need to use
-parentheses to call them (which is somehow different from all examples
-in [Log::Log4perl::Tiny](https://metacpan.org/pod/Log::Log4perl::Tiny), for example);
-- apart from the modules `use`d/`RUSE`d in the ["Preamble"](#preamble), other
-modules are directly `use`d by the program, e.g. [Pod::Usage](https://metacpan.org/pod/Pod::Usage) and
-[Getopt::Long](https://metacpan.org/pod/Getopt::Long) in the ["Embedded Modules"](#embedded-modules) section or in the embedded
-modules themselves.
+- functions from [Try::Tiny](https://metacpan.org/pod/Try::Tiny) have
+  their prototype declared in the ["Preamble"](#preamble), but all other
+  `RUSE`d functions are available at runtime but unknown at compile
+  time. This means that you will need to use parentheses to call them
+  (which is somehow different from all examples in
+  [Log::Log4perl::Tiny](https://metacpan.org/pod/Log::Log4perl::Tiny),
+  for example);
+- apart from the modules `use`d/`RUSE`d in the ["Preamble"](#preamble),
+  other modules are directly `use`d by the program, e.g.
+  [Pod::Usage](https://metacpan.org/pod/Pod::Usage) and
+  [Getopt::Long](https://metacpan.org/pod/Getopt::Long) in the
+  ["Embedded Modules"](#embedded-modules) section or in the embedded
+  modules themselves.
 
 ### Embedded Modules
 
-Your business logic is supposed to live in section ["Business Logic"](#business-logic),
-so you should generally not need to put anything here.
+Your business logic is supposed to live in section ["Business
+Logic"](#business-logic), so you should generally not need to put
+anything here.
 
 This section contains most of the _batteries included_. It has the
-options parsing function `get_options`, the _require-as-use_ function
-`RUSE`, the logic for embedding all modules.
+options parsing function `get_options` and the logic for embedding all
+modules.
 
-If you want to embed additional pure-Perl modules, and `RUSE` them, you
-are welcome to do this. Just follow the example of the other modules,
-namely:
+If you want to embed additional pure-Perl modules, you are welcome to do
+this. Just follow the example of the other modules, namely:
 
 - add items inside the hash `%file_for` defined at the top of the
-`BEGIN` section;
+  `BEGIN` section;
 - each item's key is a relative file name of the module, as if it was in
-some `lib` directory (see shipped modules for an example);
+  some `lib` directory (see shipped modules for an example);
 - each item's value is a string with the whole contents of your module,
-where each line is pre-pended with a single space character (ASCII
-0x20). This character will be automatically removed and allows you to
-safely use here-documents, again see the included modules for an
-effective example;
-- although not strictly necessary, for your convenience you might want to
-keep the relative position of different comment markers starting with
-string `__MOBUNDLE__`.
+  where each line is pre-pended with a single space character (ASCII
+  0x20). This character will be automatically removed and allows you to
+  safely use here-documents, again see the included modules for an
+  effective example;
+- although not strictly necessary, for your convenience you might want
+  to keep the relative position of different comment markers starting
+  with string `__MOBUNDLE__`.
 
 Example:
 
-```
+```perl
 BEGIN {
    my %file_for = (
 
