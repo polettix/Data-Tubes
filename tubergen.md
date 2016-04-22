@@ -185,7 +185,8 @@ this. Just follow the example of the other modules, namely:
   to keep the relative position of different comment markers starting
   with string `__MOBUNDLE__`.
 
-Example (note that spaces in the *here-doc* are explicitly shown as ␠):
+Example (note that spaces in the *here-doc* are explicitly shown as
+'␠'):
 
 ```perl
 BEGIN {
