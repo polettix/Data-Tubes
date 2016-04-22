@@ -8,9 +8,10 @@ comments: true
 
 # The Missing Manual
 
-[Data::Tubes](https://metacpan.org/pod/Data::Tubes) helps you manage transformations steps on a stream of
-data that can be though as a sequence of _records_. It does it by
-passing _records_ through _tubes_, usually a sequence of them.
+[Data::Tubes](https://metacpan.org/pod/Data::Tubes) helps you manage
+transformations steps on a stream of data that can be though as a
+sequence of _records_. It does it by passing _records_ through _tubes_,
+usually a sequence of them.
 
 This manual is a bit long... here's a table of contents for guiding you:
 
@@ -30,9 +31,9 @@ an input record of some nature, and emit output record(s) of a
 completely different one. Again, it's up to the tube to decide this,
 which means that, eventually, it's up to you.
 
-So, a _tube_ is a transformation function, that turns one single
-_input record_ into zero, one or more _output records_, according to
-the model drawn below:
+So, a _tube_ is a transformation function, that turns one single _input
+record_ into zero, one or more _output records_, according to the model
+drawn below:
 
                \________/
                            --| nothing
@@ -61,11 +62,11 @@ call is a story apart, of course):
 The iterator has some additional constraints:
 
 - when called in _list context_, returns the empty list or exactly one
-scalar value;
+  scalar value;
 - if it returns the empty list, it means that the iterator is exhausted
-and it cannot emit any more _output records_;
-- otherwise, it returns exactly one scalar, representing the _next output
-record_.
+  and it cannot emit any more _output records_;
+- otherwise, it returns exactly one scalar, representing the _next
+  output record_.
 
 So far so good with definitions, but let's recap: a _record_ is a
 scalar, a _tube_ is a sub reference.
@@ -118,23 +119,27 @@ into tubes, with minimal hassle.
 To show you how to use it, we will replicate the behaviour of the
 following simple program:
 
-    my @names = qw< Foo Bar Baz >;
-    for my $name (@names) {
-       print "Hey, $name!\n";
-    }
+```perl
+my @names = qw< Foo Bar Baz >;
+for my $name (@names) {
+   print "Hey, $name!\n";
+}
+```
 
 We can re-implement it with
 [Data::Tubes](https://metacpan.org/pod/Data::Tubes) using much, much more
 code! Here's some way to do it:
 
-    use Data::Tubes qw< pipeline >;
-    my @names = qw< Foo Bar Baz >;
-    pipeline(
-       sub { return records => $_[0] }, # will iterate over items
-       sub { return "Hey, $_[0]!\n"  }, # returns the string
-       sub { print $_[0]; return },     # prints it, returns nothing
-       { tap => 'sink' },               # makes sure the input is drained
-    )->(\@names);
+```perl
+use Data::Tubes qw< pipeline >;
+my @names = qw< Foo Bar Baz >;
+pipeline(
+   sub { return records => $_[0] }, # will iterate over items
+   sub { return "Hey, $_[0]!\n"  }, # returns the string
+   sub { print $_[0]; return },     # prints it, returns nothing
+   { tap => 'sink' },               # makes sure the input is drained
+)->(\@names);
+```
 
 Does not seem to be very exciting, huh? Whatever, it allows us to get
 our feet wet with `pipeline`:
@@ -156,13 +161,15 @@ inputs and possible intermediate records that are generated.
 Of course, we might have decided that the rendering step was not needed
 in our case, so we might have done something like this:
 
-    use Data::Tubes qw< pipeline >;
-    my @names = qw< Foo Bar Baz >;
-    pipeline(
-       sub { return records => $_[0] }, # will iterate over items
-       sub { print "Hey, $_[0]!\n"   },
-       { tap => 'sink' },               # makes sure the input is drained
-    )->(\@names);
+```perl
+use Data::Tubes qw< pipeline >;
+my @names = qw< Foo Bar Baz >;
+pipeline(
+   sub { return records => $_[0] }, # will iterate over items
+   sub { print "Hey, $_[0]!\n"   },
+   { tap => 'sink' },               # makes sure the input is drained
+)->(\@names);
+```
 
 It really depends on what you want to do. In general terms, it's still
 useful to think the pipeline in terms of the ["Typical Use
@@ -192,26 +199,30 @@ those files.
 
 Suppose you have your names in two files instead of an array:
 
-    $ cat mydata-01.txt
-    Foo
-    Bar
-    $ cat mydata-02.txt
-    Baz
+```
+$ cat mydata-01.txt
+Foo
+Bar
+$ cat mydata-02.txt
+Baz
+```
 
 you can do like this:
 
-    use Data::Tubes qw< pipeline >;
-    pipeline(
-       'Source::iterate_files',
-       sub {
-          my $fh = $_[0]->{source}{fh};
-          chomp(my @names = <$fh>);
-          return records => \@names;
-       }                                # read records from one source
-       sub { return "Hey, $_[0]!\n"  }, # returns the string
-       sub { print $_[0]; return },     # prints it, returns nothing
-       { tap => 'sink' },               # makes sure the input is drained
-    )->([qw< mydata-01.txt mydata-02.txt >]);
+```perl
+use Data::Tubes qw< pipeline >;
+pipeline(
+   'Source::iterate_files',
+   sub {
+      my $fh = $_[0]->{source}{fh};
+      chomp(my @names = <$fh>);
+      return records => \@names;
+   }                                # read records from one source
+   sub { return "Hey, $_[0]!\n"  }, # returns the string
+   sub { print $_[0]; return },     # prints it, returns nothing
+   { tap => 'sink' },               # makes sure the input is drained
+)->([qw< mydata-01.txt mydata-02.txt >]);
+```
 
 In other terms, you have substituted the input gathering process with
 different tubes, while keeping the rest of the pipeline as it was
@@ -301,32 +312,36 @@ some behaviour in between. We will see some examples later.
 Remember the last example from ["Managing Sources"](#managing-sources)?
 Here's a refresher:
 
-    use Data::Tubes qw< pipeline >;
-    pipeline(
-       '+Source::iterate_files',
-       sub {
-          my $fh = $_[0]->{source}{fh};
-          chomp(my @names = <$fh>);
-          return records => \@names;
-       }                                # read records from one source
-       sub { return "Hey, $_[0]!\n"  }, # returns the string
-       sub { print $_[0]; return },     # prints it, returns nothing
-       { tap => 'sink' },               # makes sure the input is drained
-    )->([qw< mydata-01.txt mydata-02.txt >]);
+```perl
+use Data::Tubes qw< pipeline >;
+pipeline(
+   '+Source::iterate_files',
+   sub {
+      my $fh = $_[0]->{source}{fh};
+      chomp(my @names = <$fh>);
+      return records => \@names;
+   }                                # read records from one source
+   sub { return "Hey, $_[0]!\n"  }, # returns the string
+   sub { print $_[0]; return },     # prints it, returns nothing
+   { tap => 'sink' },               # makes sure the input is drained
+)->([qw< mydata-01.txt mydata-02.txt >]);
+```
 
 It turns out that you actually don't need to do the reading of the file
 line by line yourself, because there's a plugin to do that. The only
 thing that we have to consider is that the read line will be put in the
 `raw` field of a hash-based record:
 
-    use Data::Tubes qw< pipeline >;
-    pipeline(
-       'Source::iterate_files',
-       'Reader::by_line',
-       sub { return "Hey, $_[0]->{raw}!\n"  }, # returns the string
-       sub { print $_[0]; return },     # prints it, returns nothing
-       { tap => 'sink' },               # makes sure the input is drained
-    )->([qw< mydata-01.txt mydata-02.txt >]);
+```perl
+use Data::Tubes qw< pipeline >;
+pipeline(
+   'Source::iterate_files',
+   'Reader::by_line',
+   sub { return "Hey, $_[0]->{raw}!\n"  }, # returns the string
+   sub { print $_[0]; return },     # prints it, returns nothing
+   { tap => 'sink' },               # makes sure the input is drained
+)->([qw< mydata-01.txt mydata-02.txt >]);
+```
 
 Your eagle eye will surely have noticed that we got rid of the initial
 plus sign before the name of the plugin. If your plugin lives directly
@@ -354,15 +369,17 @@ same encoding on STDOUT.
 Don't despair! You have a few arrows available. The first one is to just
 turn the input filehandle back to `:raw`, like this:
 
-    use Data::Tubes qw< pipeline >;
-    pipeline(
-       'Source::iterate_files',
-       sub { binmode $_[0]->{source}{fh}, ':raw'; return $_[0]; },
-       'Reader::by_line',
-       sub { return "Hey, $_[0]->{raw}!\n"  }, # returns the string
-       sub { print $_[0]; return },     # prints it, returns nothing
-       { tap => 'sink' },               # makes sure the input is drained
-    )->([qw< mydata-01.txt mydata-02.txt >]);
+```perl
+use Data::Tubes qw< pipeline >;
+pipeline(
+   'Source::iterate_files',
+   sub { binmode $_[0]->{source}{fh}, ':raw'; return $_[0]; },
+   'Reader::by_line',
+   sub { return "Hey, $_[0]->{raw}!\n"  }, # returns the string
+   sub { print $_[0]; return },     # prints it, returns nothing
+   { tap => 'sink' },               # makes sure the input is drained
+)->([qw< mydata-01.txt mydata-02.txt >]);
+```
 
 The second one is to avoid setting the encoding in `iterate_files` in
 the first place, which can be obtained by passing options to the
@@ -371,14 +388,16 @@ array reference, where the first item is the same as the string (i.e. a
 _locator_ for the factory function), and the following ones are
 arguments for the factory itself:
 
-    use Data::Tubes qw< pipeline >;
-    pipeline(
-       ['Source::iterate_files', open_file_args => {binmode => ':raw'}],
-       'Reader::by_line',
-       sub { return "Hey, $_[0]->{raw}!\n"  }, # returns the string
-       sub { print $_[0]; return },     # prints it, returns nothing
-       { tap => 'sink' },               # makes sure the input is drained
-    )->([qw< mydata-01.txt mydata-02.txt >]);
+```perl
+use Data::Tubes qw< pipeline >;
+pipeline(
+   ['Source::iterate_files', open_file_args => {binmode => ':raw'}],
+   'Reader::by_line',
+   sub { return "Hey, $_[0]->{raw}!\n"  }, # returns the string
+   sub { print $_[0]; return },     # prints it, returns nothing
+   { tap => 'sink' },               # makes sure the input is drained
+)->([qw< mydata-01.txt mydata-02.txt >]);
+```
 
 Most functions (i.e. tube factories) in the distribution accept as input a
 hash (i.e. a list of key/value pairs) or a hash reference. In many cases,
@@ -397,24 +416,26 @@ If you have some complicated format, your best option is to just code a
 tube to deal with it. For example, the following code would turn a
 paragraph with HTTP headers into a hash of arrays:
 
-    sub parse_HTTP_headers {
-       my $headers = shift;
-       $headers =~ s{\n\s+}{ }gmxs; # remove multi-lines
-       my %retval;
-       for my $line (split /\n/mxs, $headers) {
-          my ($name, $value) = split /\s*:\s*/, $line, 2;
-          s{\A\s+|\s+\z}mxs for $name, $value; # lead/trail spaces
-          if (! exists $retval{$name}) {
-             $retval{$name} = $value;
-          }
-          else {
-             $retval{$name} = [$retval{$name}] # turn into array ref
-                unless ref $retval{$name};     # if necessary
-             push @{$retval{$name}}, $value;
-          }
-       }
-       return \%retval;
-    }
+```perl
+sub parse_HTTP_headers {
+   my $headers = shift;
+   $headers =~ s{\n\s+}{ }gmxs; # remove multi-lines
+   my %retval;
+   for my $line (split /\n/mxs, $headers) {
+      my ($name, $value) = split /\s*:\s*/, $line, 2;
+      s{\A\s+|\s+\z}mxs for $name, $value; # lead/trail spaces
+      if (! exists $retval{$name}) {
+         $retval{$name} = $value;
+      }
+      else {
+         $retval{$name} = [$retval{$name}] # turn into array ref
+            unless ref $retval{$name};     # if necessary
+         push @{$retval{$name}}, $value;
+      }
+   }
+   return \%retval;
+}
+```
 
 Now, suppose your input changes to a sequence of header groups, divided
 into paragraphs, where you look for header `X-Name`:
@@ -429,17 +450,19 @@ into paragraphs, where you look for header `X-Name`:
 
 Adapting to this input is quite easy now:
 
-    use Data::Tubes qw< pipeline >;
-    pipeline(
-       ['Source::iterate_files', open_file_args => {binmode => ':raw'}],
+```perl
+use Data::Tubes qw< pipeline >;
+pipeline(
+   ['Source::iterate_files', open_file_args => {binmode => ':raw'}],
 
-       'Reader::by_paragraph',                  # change how we read!
-       sub { parse_HTTP_Headers($_[0]->{raw}) } # wrap parse_HTTP_headers
-       sub { return "Hey, $_[0]->{'X-Name'}!\n"  }, # use new field
+   'Reader::by_paragraph',                  # change how we read!
+   sub { parse_HTTP_Headers($_[0]->{raw}) } # wrap parse_HTTP_headers
+   sub { return "Hey, $_[0]->{'X-Name'}!\n"  }, # use new field
 
-       sub { print $_[0]; return },     # prints it, returns nothing
-       { tap => 'sink' },               # makes sure the input is drained
-    )->([qw< mydata-03.txt >]);
+   sub { print $_[0]; return },     # prints it, returns nothing
+   { tap => 'sink' },               # makes sure the input is drained
+)->([qw< mydata-03.txt >]);
+```
 
 From now on, anyway, we will stick to the convention described in
 _What Is A Record, Toolkit Style_ about what's available at the
@@ -447,35 +470,37 @@ different stages, which allows us have stable inputs for tubes without
 having to worry too much about what we have before (within certain
 limits). Hence, here's how our example transforms:
 
-    use Data::Tubes qw< pipeline >;
-    pipeline(
-       # Source management
-       ['Source::iterate_files', open_file_args => {binmode => ':raw'}],
+```perl
+use Data::Tubes qw< pipeline >;
+pipeline(
+   # Source management
+   ['Source::iterate_files', open_file_args => {binmode => ':raw'}],
 
-       # Reading, gets `source`, puts `raw`
-       'Reader::by_paragraph',
+   # Reading, gets `source`, puts `raw`
+   'Reader::by_paragraph',
 
-       # Parsing, gets `raw`, puts `structured`
-       sub {
-          my $record = shift;
-          $record->{structured} = parse_HTTP_Headers($record->{raw});
-          return $record;
-       }
+   # Parsing, gets `raw`, puts `structured`
+   sub {
+      my $record = shift;
+      $record->{structured} = parse_HTTP_Headers($record->{raw});
+      return $record;
+   }
 
-       # Rendering, gets `structured`, puts `rendered`
-       sub {
-          my $record = shift;
-          $record->{rendered} = 
-             "Hey, $record->{structured}{'X-Name'}!\n";
-          return $record;
-       },
+   # Rendering, gets `structured`, puts `rendered`
+   sub {
+      my $record = shift;
+      $record->{rendered} = 
+         "Hey, $record->{structured}{'X-Name'}!\n";
+      return $record;
+   },
 
-       # Printing, gets `rendered`, returns input unchanged
-       sub { print $_[0]{rendered}; return $_[0]; },
+   # Printing, gets `rendered`, returns input unchanged
+   sub { print $_[0]{rendered}; return $_[0]; },
 
-       # Options, just flush the output to the sink
-       { tap => 'sink' },
-    )->([qw< mydata-03.txt >]);
+   # Options, just flush the output to the sink
+   { tap => 'sink' },
+)->([qw< mydata-03.txt >]);
+```
 
 As anticipated,
 [Data::Tubes::Plugin::Parser](https://metacpan.org/pod/Data::Tubes::Plugin::Parser)
@@ -495,32 +520,34 @@ _format_. For example, suppose you have the following data, with a name
 You might describe each line as being `name;nick;age`, and this is exactly
 what's needed to use `by_format`:
 
-    use Data::Tubes qw< pipeline >;
-    pipeline(
-       # Source management
-       ['Source::iterate_files', open_file_args => {binmode => ':raw'}],
+```perl
+use Data::Tubes qw< pipeline >;
+pipeline(
+   # Source management
+   ['Source::iterate_files', open_file_args => {binmode => ':raw'}],
 
-       # Reading, gets `source`, puts `raw`
-       'Reader::by_line',
+   # Reading, gets `source`, puts `raw`
+   'Reader::by_line',
 
-       # Parsing, gets `raw`, puts `structured`
-       ['Parser::by_format', format => 'name;nick;age'],
+   # Parsing, gets `raw`, puts `structured`
+   ['Parser::by_format', format => 'name;nick;age'],
 
-       # Rendering, gets `structured`, puts `rendered`
-       sub {
-          my $record = shift;
-          my $v = $record->{structured};
-          $record->{rendered} = 
-             "Hey, $v->{name} (alias $v->{nick}), it's $v->{age}!\n";
-          return $record;
-       },
+   # Rendering, gets `structured`, puts `rendered`
+   sub {
+      my $record = shift;
+      my $v = $record->{structured};
+      $record->{rendered} = 
+         "Hey, $v->{name} (alias $v->{nick}), it's $v->{age}!\n";
+      return $record;
+   },
 
-       # Printing, gets `rendered`, returns input unchanged
-       sub { print $_[0]{rendered}; return $_[0]; },
+   # Printing, gets `rendered`, returns input unchanged
+   sub { print $_[0]{rendered}; return $_[0]; },
 
-       # Options, just flush the output to the sink
-       { tap => 'sink' },
-    )->([qw< mydata-04.txt >]);
+   # Options, just flush the output to the sink
+   { tap => 'sink' },
+)->([qw< mydata-04.txt >]);
+```
 
 Actually, any sequence of non-word characters (Perl-wise) is considered
 a separator in the format, and any sequence of word characters is
@@ -531,10 +558,12 @@ one of the allowed arguments *outstands* with respect to the others, and
 you can guess what it is: `format`. For this reason, you can be more
 concise:
 
-       ...
-       # Parsing, gets `raw`, puts `structured`
-       ['Parser::by_format', 'name;nick;age'], # no "format =>"!
-       ...
+```perl
+  ...
+  # Parsing, gets `raw`, puts `structured`
+  ['Parser::by_format', 'name;nick;age'], # no "format =>"!
+  ...
+```
 
 
 Another useful pre-canned parser in the toolkit is `hashy`, that allows
@@ -552,30 +581,32 @@ pairs, and the equal sign separates the key from the value:
 As you see, explicit naming of fields allows you to put them in any
 order inside the input:
 
-    use Data::Tubes qw< pipeline >;
-    pipeline(
-       ['Source::iterate_files', open_file_args => {binmode => ':raw'}],
-       'Reader::by_line',
+```perl
+use Data::Tubes qw< pipeline >;
+pipeline(
+   ['Source::iterate_files', open_file_args => {binmode => ':raw'}],
+   'Reader::by_line',
 
-       # Parsing, gets `raw`, puts `structured`
-       ['Parser::hashy', chunks_separator => '|',
-          key_value_separator = '='],
+   # Parsing, gets `raw`, puts `structured`
+   ['Parser::hashy', chunks_separator => '|',
+      key_value_separator = '='],
 
-       # Rendering, gets `structured`, puts `rendered`
-       sub {
-          my $record = shift;
-          my $v = $record->{structured};
-          $record->{rendered} = 
-             "Hey, $v->{name} (alias $v->{nick}), it's $v->{age}!\n";
-          return $record;
-       },
+   # Rendering, gets `structured`, puts `rendered`
+   sub {
+      my $record = shift;
+      my $v = $record->{structured};
+      $record->{rendered} = 
+         "Hey, $v->{name} (alias $v->{nick}), it's $v->{age}!\n";
+      return $record;
+   },
 
-       # Printing, gets `rendered`, returns input unchanged
-       sub { print $_[0]{rendered}; return $_[0]; },
+   # Printing, gets `rendered`, returns input unchanged
+   sub { print $_[0]{rendered}; return $_[0]; },
 
-       # Options, just flush the output to the sink
-       { tap => 'sink' },
-    )->([qw< mydata-05.txt >]);
+   # Options, just flush the output to the sink
+   { tap => 'sink' },
+)->([qw< mydata-05.txt >]);
+```
 
 `hashy` also allows setting a _default key_, in case none is found for
 a pair, so that you can have something like this if your lines are
@@ -589,30 +620,32 @@ _indexed_ by nick:
 Ordering in this case is purely incidental, again the un-keyed element
 can occur anywhere. The transformation is easy:
 
-    use Data::Tubes qw< pipeline >;
-    pipeline(
-       ['Source::iterate_files', open_file_args => {binmode => ':raw'}],
-       'Reader::by_paragraph',
+```perl
+use Data::Tubes qw< pipeline >;
+pipeline(
+   ['Source::iterate_files', open_file_args => {binmode => ':raw'}],
+   'Reader::by_paragraph',
 
-       # Parsing, gets `raw`, puts `structured`
-       ['Parser::hashy', default_key => 'nick',
-          chunks_separator => '|', key_value_separator = '='],
+   # Parsing, gets `raw`, puts `structured`
+   ['Parser::hashy', default_key => 'nick',
+      chunks_separator => '|', key_value_separator = '='],
 
-       # Rendering, gets `structured`, puts `rendered`
-       sub {
-          my $record = shift;
-          my $v = $record->{structured};
-          $record->{rendered} = 
-             "Hey, $v->{name} (alias $v->{nick}), it's $v->{age}!\n";
-          return $record;
-       },
+   # Rendering, gets `structured`, puts `rendered`
+   sub {
+      my $record = shift;
+      my $v = $record->{structured};
+      $record->{rendered} = 
+         "Hey, $v->{name} (alias $v->{nick}), it's $v->{age}!\n";
+      return $record;
+   },
 
-       # Printing, gets `rendered`, returns input unchanged
-       sub { print $_[0]{rendered}; return $_[0]; },
+   # Printing, gets `rendered`, returns input unchanged
+   sub { print $_[0]{rendered}; return $_[0]; },
 
-       # Options, just flush the output to the sink
-       { tap => 'sink' },
-    )->([qw< mydata-06.txt >]);
+   # Options, just flush the output to the sink
+   { tap => 'sink' },
+)->([qw< mydata-06.txt >]);
+```
 
 If you're in real hurry and you find hashy a bit too strict (single
 character to separate chunks, single character to separate keys and
@@ -632,27 +665,29 @@ gets any more complicated, chances are you can benefit from using a
 template. The plugin [Data::Tubes::Plugin::Renderer](https://metacpan.org/pod/Data::Tubes::Plugin::Renderer) provides you a
 factory to use templates built for [Template::Perlish](https://metacpan.org/pod/Template::Perlish), let's see how.
 
-    use Data::Tubes qw< pipeline >;
-    pipeline(
-       ['Source::iterate_files', open_file_args => {binmode => ':raw'}],
-       'Reader::by_line',
-       ['Parser::by_format', 'name;nick;age'],
+```perl
+use Data::Tubes qw< pipeline >;
+pipeline(
+   ['Source::iterate_files', open_file_args => {binmode => ':raw'}],
+   'Reader::by_line',
+   ['Parser::by_format', 'name;nick;age'],
 
-       # Rendering, gets `structured`, puts `rendered`
-       ['Renderer::with_template_perlish', template => <<'END' ],
-    Hey [% name %]!
+   # Rendering, gets `structured`, puts `rendered`
+   ['Renderer::with_template_perlish', template => <<'END' ],
+Hey [% name %]!
 
-    ... or should I call you [% nick %]?
+... or should I call you [% nick %]?
 
-    It's your birthday, you're [% age %] now!
-    END
+It's your birthday, you're [% age %] now!
+END
 
-       # Printing, gets `rendered`, returns input unchanged
-       sub { print $_[0]{rendered}; return $_[0]; },
+   # Printing, gets `rendered`, returns input unchanged
+   sub { print $_[0]{rendered}; return $_[0]; },
 
-       # Options, just flush the output to the sink
-       { tap => 'sink' },
-    )->([qw< mydata-04.txt >]);
+   # Options, just flush the output to the sink
+   { tap => 'sink' },
+)->([qw< mydata-04.txt >]);
+```
 
 As long as you only have _simple_ variables,
 [Template::Perlish](https://metacpan.org/pod/Template::Perlish) behaves
@@ -663,26 +698,28 @@ The same sequence can of course be used to render the input data in some
 other format, e.g. as YAML as in the following example (we're ignoring
 the need to do any escaping, of course):
 
-    use Data::Tubes qw< pipeline >;
-    pipeline(
-       ['Source::iterate_files', open_file_args => {binmode => ':raw'}],
-       'Reader::by_line',
-       ['Parser::by_format', 'name;nick;age'],
+```perl
+use Data::Tubes qw< pipeline >;
+pipeline(
+   ['Source::iterate_files', open_file_args => {binmode => ':raw'}],
+   'Reader::by_line',
+   ['Parser::by_format', 'name;nick;age'],
 
-       # Rendering, gets `structured`, puts `rendered`
-       ['Renderer::with_template_perlish', template => <<'END' ],
-    -
-       name: [% name %]
-       nick: [% nick %]
-       age: [% age %]
-    END
+   # Rendering, gets `structured`, puts `rendered`
+   ['Renderer::with_template_perlish', template => <<'END' ],
+-
+   name: [% name %]
+   nick: [% nick %]
+   age: [% age %]
+END
 
-       # Printing, gets `rendered`, returns input unchanged
-       sub { print $_[0]{rendered}; return $_[0]; },
+   # Printing, gets `rendered`, returns input unchanged
+   sub { print $_[0]{rendered}; return $_[0]; },
 
-       # Options, just flush the output to the sink
-       { tap => 'sink' },
-    )->([qw< mydata-04.txt >]);
+   # Options, just flush the output to the sink
+   { tap => 'sink' },
+)->([qw< mydata-04.txt >]);
+```
 
 We're putting the object element inside an array, so that the sequence
 will print out smoothly as an overall YAML file.
@@ -704,25 +741,27 @@ Let's take a look at
 The first tool that can help us is `write_to_files`, that allows us to
 transform our pipeline like this (without changing the behaviour):
 
-    use Data::Tubes qw< pipeline >;
-    pipeline(
-       ['Source::iterate_files', open_file_args => {binmode => ':raw'}],
-       'Reader::by_line',
-       ['Parser::by_format', 'name;nick;age'],
-       ['Renderer::with_template_perlish', <<'END' ],
-    -
-       name: [% name %]
-       nick: [% nick %]
-       age: [% age %]
-    END
+```perl
+use Data::Tubes qw< pipeline >;
+pipeline(
+   ['Source::iterate_files', open_file_args => {binmode => ':raw'}],
+   'Reader::by_line',
+   ['Parser::by_format', 'name;nick;age'],
+   ['Renderer::with_template_perlish', <<'END' ],
+-
+   name: [% name %]
+   nick: [% nick %]
+   age: [% age %]
+END
 
-       # Printing, gets `rendered`, returns input unchanged. Goes
-       # to standard output by default
-       'Writer::to_files',
+   # Printing, gets `rendered`, returns input unchanged. Goes
+   # to standard output by default
+   'Writer::to_files',
 
-       # Options, just flush the output to the sink
-       { tap => 'sink' },
-    )->([qw< mydata-04.txt >]);
+   # Options, just flush the output to the sink
+   { tap => 'sink' },
+)->([qw< mydata-04.txt >]);
+```
 
 From here, it's easy to deduce that you can pass other things as
 `filename`, for example... a filename!
@@ -739,21 +778,23 @@ that is a smart wrapper that allows you to handle multiple cases. For
 example, suppose that instead of YAML you want to output JSON; you might
 start with this:
 
-    use Data::Tubes qw< pipeline >;
-    pipeline(
-       ['Source::iterate_files', open_file_args => {binmode => ':raw'}],
-       'Reader::by_line',
-       ['Parser::by_format', 'name;nick;age'],
-       ['Renderer::with_template_perlish', <<'END' ],
-    {"name":"[% name %];"nick":"[% nick %]";"age":[% age %]}
-    END
+```perl
+use Data::Tubes qw< pipeline >;
+pipeline(
+   ['Source::iterate_files', open_file_args => {binmode => ':raw'}],
+   'Reader::by_line',
+   ['Parser::by_format', 'name;nick;age'],
+   ['Renderer::with_template_perlish', <<'END' ],
+{"name":"[% name %];"nick":"[% nick %]";"age":[% age %]}
+END
 
-       # Printing, gets `rendered`, returns input unchanged
-       'Writer::to_files',
+   # Printing, gets `rendered`, returns input unchanged
+   'Writer::to_files',
 
-       # Options, just flush the output to the sink
-       { tap => 'sink' },
-    )->([qw< mydata-04.txt >]);
+   # Options, just flush the output to the sink
+   { tap => 'sink' },
+)->([qw< mydata-04.txt >]);
+```
 
 There's a problem though: for more than one input record, the output is
 not valid JSON:
@@ -765,28 +806,30 @@ not valid JSON:
 We should put this in an array, and we should separate the objects with
 a comma. The first thing might be naively solved like this:
 
-    use Data::Tubes qw< pipeline >;
+```perl
+use Data::Tubes qw< pipeline >;
 
-    # DO NOT USE THIS SOLUTION!
-    print "[\n";
+# DO NOT USE THIS SOLUTION!
+print "[\n";
 
-    pipeline(
-       ['Source::iterate_files', open_file_args => {binmode => ':raw'}],
-       'Reader::by_line',
-       ['Parser::by_format', format => 'name;nick;age'],
-       ['Renderer::with_template_perlish', format => <<'END' ],
-    {"name":"[% name %];"nick":"[% nick %]";"age":[% age %]}
-    END
+pipeline(
+   ['Source::iterate_files', open_file_args => {binmode => ':raw'}],
+   'Reader::by_line',
+   ['Parser::by_format', format => 'name;nick;age'],
+   ['Renderer::with_template_perlish', format => <<'END' ],
+{"name":"[% name %];"nick":"[% nick %]";"age":[% age %]}
+END
 
-       # Printing, gets `rendered`, returns input unchanged
-       ['Writer::to_files', filename => \*STDOUT],
+   # Printing, gets `rendered`, returns input unchanged
+   ['Writer::to_files', filename => \*STDOUT],
 
-       # Options, just flush the output to the sink
-       { tap => 'sink' },
-    )->([qw< mydata-04.txt >]);
+   # Options, just flush the output to the sink
+   { tap => 'sink' },
+)->([qw< mydata-04.txt >]);
 
-    # DO NOT USE THIS SOLUTION!
-    print "]\n"
+# DO NOT USE THIS SOLUTION!
+print "]\n"
+```
 
 This has two problems:
 
@@ -809,23 +852,25 @@ because the last comma would be out of place.
 Fortunately, `to_files` can help you with `header`, `interlude` and
 `footer`:
 
-    use Data::Tubes qw< pipeline >;
-    pipeline(
-       ['Source::iterate_files', open_file_args => {binmode => ':raw'}],
-       'Reader::by_line',
-       ['Parser::by_format', format => 'name;nick;age'],
-       ['Renderer::with_template_perlish', format => <<'END' ],
-    {"name":"[% name %];"nick":"[% nick %]";"age":[% age %]}
-    END
+```perl
+use Data::Tubes qw< pipeline >;
+pipeline(
+   ['Source::iterate_files', open_file_args => {binmode => ':raw'}],
+   'Reader::by_line',
+   ['Parser::by_format', format => 'name;nick;age'],
+   ['Renderer::with_template_perlish', format => <<'END' ],
+{"name":"[% name %];"nick":"[% nick %]";"age":[% age %]}
+END
 
-       # Printing, gets `rendered`, returns input unchanged
-       ['Writer::to_files', filename => \*STDOUT,
-          header => "[\n", footer => "]\n", interlude => ','
-       ],
+   # Printing, gets `rendered`, returns input unchanged
+   ['Writer::to_files', filename => \*STDOUT,
+      header => "[\n", footer => "]\n", interlude => ','
+   ],
 
-       # Options, just flush the output to the sink
-       { tap => 'sink' },
-    )->([qw< mydata-04.txt >]);
+   # Options, just flush the output to the sink
+   { tap => 'sink' },
+)->([qw< mydata-04.txt >]);
+```
 
 The above code produces:
 
@@ -840,22 +885,24 @@ working correctly whatever the output filename you set. You can change
 things to make it better looking, though; just get rid of the newline in
 the template, add it after the comma and put some indentation:
 
-    use Data::Tubes qw< pipeline >;
-    pipeline(
-       ['Source::iterate_files', open_file_args => {binmode => ':raw'}],
-       'Reader::by_line',
-       ['Parser::by_format', 'name;nick;age'],
-       ['Renderer::with_template_perlish',
-          '  {"name":"[% name %];"nick":"[% nick %]";"age":[% age %]}'],
+```perl
+use Data::Tubes qw< pipeline >;
+pipeline(
+   ['Source::iterate_files', open_file_args => {binmode => ':raw'}],
+   'Reader::by_line',
+   ['Parser::by_format', 'name;nick;age'],
+   ['Renderer::with_template_perlish',
+      '  {"name":"[% name %];"nick":"[% nick %]";"age":[% age %]}'],
 
-       # Printing, gets `rendered`, returns input unchanged
-       ['Writer::to_files',
-          header => "[\n", footer => "\n]\n", interlude => ",\n"
-       ],
+   # Printing, gets `rendered`, returns input unchanged
+   ['Writer::to_files',
+      header => "[\n", footer => "\n]\n", interlude => ",\n"
+   ],
 
-       # Options, just flush the output to the sink
-       { tap => 'sink' },
-    )->([qw< mydata-04.txt >]);
+   # Options, just flush the output to the sink
+   { tap => 'sink' },
+)->([qw< mydata-04.txt >]);
+```
 
 This now prints:
 
@@ -884,23 +931,25 @@ can set two keys: `records_threshold` and `characters_threshold`. They
 set a threshold that will close the output channel when overcome, and
 open a new one. We will assume that we're writing to files here:
 
-    use Data::Tubes qw< pipeline >;
-    pipeline(
-       ['Source::iterate_files', open_file_args => {binmode => ':raw'}],
-       'Reader::by_line',
-       ['Parser::by_format', 'name;nick;age'],
-       ['Renderer::with_template_perlish',
-          '  {"name":"[% name %];"nick":"[% nick %]";"age":[% age %]}'],
+```perl
+use Data::Tubes qw< pipeline >;
+pipeline(
+   ['Source::iterate_files', open_file_args => {binmode => ':raw'}],
+   'Reader::by_line',
+   ['Parser::by_format', 'name;nick;age'],
+   ['Renderer::with_template_perlish',
+      '  {"name":"[% name %];"nick":"[% nick %]";"age":[% age %]}'],
 
-       # Printing, gets `rendered`, returns input unchanged
-       ['Writer::to_files', filename => 'output-01.json',
-          header => "[\n", footer => "\n]\n", interlude => ",\n",
-          policy => {records_threshold => 2},
-       ],
+   # Printing, gets `rendered`, returns input unchanged
+   ['Writer::to_files', filename => 'output-01.json',
+      header => "[\n", footer => "\n]\n", interlude => ",\n",
+      policy => {records_threshold => 2},
+   ],
 
-       # Options, just flush the output to the sink
-       { tap => 'sink' },
-    )->([qw< mydata-04.txt >]);
+   # Options, just flush the output to the sink
+   { tap => 'sink' },
+)->([qw< mydata-04.txt >]);
+```
 
 The example above produces two output files:
 
@@ -921,23 +970,25 @@ you rely on the file extension to do... anything.
 `to_files` allows you to set a filename template, using `sprintf`-like
 sequences using `%n`, like this:
 
-    use Data::Tubes qw< pipeline >;
-    pipeline(
-       ['Source::iterate_files', open_file_args => {binmode => ':raw'}],
-       'Reader::by_line',
-       ['Parser::by_format', format => 'name;nick;age'],
-       ['Renderer::with_template_perlish', format =>
-          '  {"name":"[% name %];"nick":"[% nick %]";"age":[% age %]}'],
+```perl
+use Data::Tubes qw< pipeline >;
+pipeline(
+   ['Source::iterate_files', open_file_args => {binmode => ':raw'}],
+   'Reader::by_line',
+   ['Parser::by_format', format => 'name;nick;age'],
+   ['Renderer::with_template_perlish', format =>
+      '  {"name":"[% name %];"nick":"[% nick %]";"age":[% age %]}'],
 
-       # Printing, gets `rendered`, returns input unchanged
-       ['Writer::to_files', filename => 'output-02-%03n.json',
-          header => "[\n", footer => "\n]\n", interlude => ",\n",
-          policy => {records_threshold => 2},
-       ],
+   # Printing, gets `rendered`, returns input unchanged
+   ['Writer::to_files', filename => 'output-02-%03n.json',
+      header => "[\n", footer => "\n]\n", interlude => ",\n",
+      policy => {records_threshold => 2},
+   ],
 
-       # Options, just flush the output to the sink
-       { tap => 'sink' },
-    )->([qw< mydata-04.txt >]);
+   # Options, just flush the output to the sink
+   { tap => 'sink' },
+)->([qw< mydata-04.txt >]);
+```
 
 The example above produces two output files:
 
@@ -959,24 +1010,26 @@ Last thing you need to know about `to_files` is that you can set the
 encoding too, just set a `CORE::binmode` compatible string using the
 `binmode` argument, that is set to `:encoding(UTF-8)` by default.
 
-    use Data::Tubes qw< pipeline >;
-    pipeline(
-       ['Source::iterate_files', open_file_args => {binmode => ':raw'}],
-       'Reader::by_line',
-       ['Parser::by_format', format => 'name;nick;age'],
-       ['Renderer::with_template_perlish', format =>
-          '  {"name":"[% name %];"nick":"[% nick %]";"age":[% age %]}'],
+```perl
+use Data::Tubes qw< pipeline >;
+pipeline(
+   ['Source::iterate_files', open_file_args => {binmode => ':raw'}],
+   'Reader::by_line',
+   ['Parser::by_format', format => 'name;nick;age'],
+   ['Renderer::with_template_perlish', format =>
+      '  {"name":"[% name %];"nick":"[% nick %]";"age":[% age %]}'],
 
-       # Printing, gets `rendered`, returns input unchanged
-       ['Writer::to_files', filename => 'output-02-%03n.json',
-          header => "[\n", footer => "\n]\n", interlude => ",\n",
-          policy => {records_threshold => 2},
-          binmode => ':raw',
-       ],
+   # Printing, gets `rendered`, returns input unchanged
+   ['Writer::to_files', filename => 'output-02-%03n.json',
+      header => "[\n", footer => "\n]\n", interlude => ",\n",
+      policy => {records_threshold => 2},
+      binmode => ':raw',
+   ],
 
-       # Options, just flush the output to the sink
-       { tap => 'sink' },
-    )->([qw< mydata-04.txt >]);
+   # Options, just flush the output to the sink
+   { tap => 'sink' },
+)->([qw< mydata-04.txt >]);
+```
 
 Now, you have full control over your input. Or have you?
 
@@ -996,46 +1049,50 @@ One interesting thing about the toolkit is that you can use its function
 outside of `pipeline`, if you need to. The `summon` function helps you
 import the right function with minimal hassle:
 
-    use Data::Tubes qw< pipeline summon >;
-    my $writer_factory = summon('Writer::to_files');
+```perl
+use Data::Tubes qw< pipeline summon >;
+my $writer_factory = summon('Writer::to_files');
+```
 
 Now, for example, you can do like this:
 
-    use Data::Tubes qw< pipeline summon >;
+```perl
+use Data::Tubes qw< pipeline summon >;
 
-    # pre-define two output channels, for lower and other initial chars
-    summon('Writer::to_files');
-    my $lower = to_files(
-       'output-lower-%02d.json',
-       header => "[\n", footer => "\n]\n", interlude => ",\n",
-       policy => {records_threshold => 2},
-       binmode => ':raw',
-    );
-    my $other = to_files(
-       'output-other-%02d.json',
-       header => "[\n", footer => "\n]\n", interlude => ",\n",
-       policy => {records_threshold => 2},
-       binmode => ':raw',
-    );
+# pre-define two output channels, for lower and other initial chars
+summon('Writer::to_files');
+my $lower = to_files(
+   'output-lower-%02d.json',
+   header => "[\n", footer => "\n]\n", interlude => ",\n",
+   policy => {records_threshold => 2},
+   binmode => ':raw',
+);
+my $other = to_files(
+   'output-other-%02d.json',
+   header => "[\n", footer => "\n]\n", interlude => ",\n",
+   policy => {records_threshold => 2},
+   binmode => ':raw',
+);
 
-    pipeline(
-       ['Source::iterate_files', open_file_args => {binmode => ':raw'}],
-       'Reader::by_line',
-       ['Parser::by_format', 'name;nick;age'],
-       ['Renderer::with_template_perlish',
-          '  {"name":"[% name %];"nick":"[% nick %]";"age":[% age %]}'],
+pipeline(
+   ['Source::iterate_files', open_file_args => {binmode => ':raw'}],
+   'Reader::by_line',
+   ['Parser::by_format', 'name;nick;age'],
+   ['Renderer::with_template_perlish',
+      '  {"name":"[% name %];"nick":"[% nick %]";"age":[% age %]}'],
 
-       # Printing, gets `rendered`, returns input unchanged
-       sub { # wrapper!
-          my $record = shift;
-          my $first_char = substr $record->{structured}{nick}, 0, 1;
-          return $lower->($record) if $first_char =~ m{[a-m]}mxs;
-          return $other->($record);
-       },
+   # Printing, gets `rendered`, returns input unchanged
+   sub { # wrapper!
+      my $record = shift;
+      my $first_char = substr $record->{structured}{nick}, 0, 1;
+      return $lower->($record) if $first_char =~ m{[a-m]}mxs;
+      return $other->($record);
+   },
 
-       # Options, just flush the output to the sink
-       { tap => 'sink' },
-    )->([qw< mydata-04.txt >]);
+   # Options, just flush the output to the sink
+   { tap => 'sink' },
+)->([qw< mydata-04.txt >]);
+```
 
 If you have some complicated business logic... you can always use this
 technique! But there's more... read on.
@@ -1049,30 +1106,32 @@ there's something in the toolkit to get you covered. You guessed right!
 provides you `dispatch_to_files`, that helps you streamline what we saw in
 the previous section. Here's how:
 
-    use Data::Tubes qw< pipeline >;
-    pipeline(
-       ['Source::iterate_files', open_file_args => {binmode => ':raw'}],
-       'Reader::by_line',
-       ['Parser::by_format', 'name;nick;age'],
-       ['Renderer::with_template_perlish',
-          '  {"name":"[% name %];"nick":"[% nick %]";"age":[% age %]}'],
+```perl
+use Data::Tubes qw< pipeline >;
+pipeline(
+   ['Source::iterate_files', open_file_args => {binmode => ':raw'}],
+   'Reader::by_line',
+   ['Parser::by_format', 'name;nick;age'],
+   ['Renderer::with_template_perlish',
+      '  {"name":"[% name %];"nick":"[% nick %]";"age":[% age %]}'],
 
-       # Printing, gets `rendered`, returns input unchanged
-       ['Writer::dispatch_to_files',
-          'output-[% key %]-%03n.json',
-          header => "[\n", footer => "\n]\n", interlude => ",\n",
-          policy => {records_threshold => 2},
-          selector => sub {
-             my $record = shift;
-             my $first_char = substr $record->{structured}{nick}, 0, 1;
-             return 'lower' if $first_char =~ m{[a-m]}mxs;
-             return 'other';
-          },
-       ],
+   # Printing, gets `rendered`, returns input unchanged
+   ['Writer::dispatch_to_files',
+      'output-[% key %]-%03n.json',
+      header => "[\n", footer => "\n]\n", interlude => ",\n",
+      policy => {records_threshold => 2},
+      selector => sub {
+         my $record = shift;
+         my $first_char = substr $record->{structured}{nick}, 0, 1;
+         return 'lower' if $first_char =~ m{[a-m]}mxs;
+         return 'other';
+      },
+   ],
 
-       # Options, just flush the output to the sink
-       { tap => 'sink' },
-    )->([qw< mydata-04.txt >]);
+   # Options, just flush the output to the sink
+   { tap => 'sink' },
+)->([qw< mydata-04.txt >]);
+```
 
 Most parameters are the same as `to_files`, so we already know about them.
 We have two new ones, though: the *un-named* first parameter, that turns
@@ -1117,50 +1176,52 @@ In the example below, we will assume that nicknames starting with any
 letter are good, and bad otherwise. We still want to do some rendering
 for the bad ones, though, because we want to write out an error file.
 
-    use Data::Tubes qw< pipeline summon >;
+```perl
+use Data::Tubes qw< pipeline summon >;
 
-    summon('Renderer::with_template_perlish');
-    my $render_good = with_template_perlish(
-       '  {"name":"[% name %];"nick":"[% nick %]";"age":[% age %]}'],);
-    # the "bad" renderer just complains about the nickname
-    my $render_bad = with_template_perlish(
-       '  {"nick":"[% nick %]";"error":"invalid"}'],);
+summon('Renderer::with_template_perlish');
+my $render_good = with_template_perlish(
+   '  {"name":"[% name %];"nick":"[% nick %]";"age":[% age %]}'],);
+# the "bad" renderer just complains about the nickname
+my $render_bad = with_template_perlish(
+   '  {"nick":"[% nick %]";"error":"invalid"}'],);
 
-    pipeline(
-       ['Source::iterate_files', open_file_args => {binmode => ':raw'}],
-       'Reader::by_line',
-       ['Parser::by_format', 'name;nick;age'],
+pipeline(
+   ['Source::iterate_files', open_file_args => {binmode => ':raw'}],
+   'Reader::by_line',
+   ['Parser::by_format', 'name;nick;age'],
 
-       # let's put an intermediate step to "classify" the record
-       sub {
-          my $record;
-          my $first_char = substr $record->{structured}{nick}, 0, 1;
-          $record->{class} = ($first_char =~ m{[a-m]}mxs) ? 'lower'
-                            :($first_char =~ m{[a-z]}imxs) ? 'other'
-                            :                                'error';
-          return $record;
-       }
+   # let's put an intermediate step to "classify" the record
+   sub {
+      my $record;
+      my $first_char = substr $record->{structured}{nick}, 0, 1;
+      $record->{class} = ($first_char =~ m{[a-m]}mxs) ? 'lower'
+                        :($first_char =~ m{[a-z]}imxs) ? 'other'
+                        :                                'error';
+      return $record;
+   }
 
-       # Rendering is wrapped by dispatch here
-       ['Plumbing::dispatch', key => 'class',
-          factory => sub {
-             my $key = shift;
-             return $render_bad if $key eq 'error';
-             return $render_good;
-          }
-       ]
+   # Rendering is wrapped by dispatch here
+   ['Plumbing::dispatch', key => 'class',
+      factory => sub {
+         my $key = shift;
+         return $render_bad if $key eq 'error';
+         return $render_good;
+      }
+   ]
 
-       # Printing, gets `rendered`, returns input unchanged
-       ['Writer::dispatch_to_files',
-          'output-[% key %]-%03n.json',
-          header => "[\n", footer => "\n]\n", interlude => ",\n",
-          policy => {records_threshold => 2},
-          key => 'class',
-       ],
+   # Printing, gets `rendered`, returns input unchanged
+   ['Writer::dispatch_to_files',
+      'output-[% key %]-%03n.json',
+      header => "[\n", footer => "\n]\n", interlude => ",\n",
+      policy => {records_threshold => 2},
+      key => 'class',
+   ],
 
-       # Options, just flush the output to the sink
-       { tap => 'sink' },
-    )->([qw< mydata-04.txt >]);
+   # Options, just flush the output to the sink
+   { tap => 'sink' },
+)->([qw< mydata-04.txt >]);
+```
 
 The `dispatcher` is based on two steps: one is the _selection_, the
 other one is the _generation_.
@@ -1191,50 +1252,52 @@ from now on!
 If you already have your downstream tubes available (as in our case),
 you can pre-load the cache and avoid coding the factory completely:
 
-    use Data::Tubes qw< pipeline summon >;
+```perl
+use Data::Tubes qw< pipeline summon >;
 
-    summon('Renderer::with_template_perlish');
-    my $render_good = with_template_perlish(
-       '  {"name":"[% name %];"nick":"[% nick %]";"age":[% age %]}'],);
-    # the "bad" renderer just complains about the nickname
-    my $render_bad = with_template_perlish(
-       '  {"nick":"[% nick %]";"error":"invalid"}'],);
+summon('Renderer::with_template_perlish');
+my $render_good = with_template_perlish(
+   '  {"name":"[% name %];"nick":"[% nick %]";"age":[% age %]}'],);
+# the "bad" renderer just complains about the nickname
+my $render_bad = with_template_perlish(
+   '  {"nick":"[% nick %]";"error":"invalid"}'],);
 
-    pipeline(
-       ['Source::iterate_files', open_file_args => {binmode => ':raw'}],
-       'Reader::by_line',
-       ['Parser::by_format', 'name;nick;age'],
+pipeline(
+   ['Source::iterate_files', open_file_args => {binmode => ':raw'}],
+   'Reader::by_line',
+   ['Parser::by_format', 'name;nick;age'],
 
-       # let's put an intermediate step to "classify" the record
-       sub {
-          my $record;
-          my $first_char = substr $record->{structured}{nick}, 0, 1;
-          $record->{class} = ($first_char =~ m{[a-m]}mxs) ? 'lower'
-                            :($first_char =~ m{[a-z]}imxs) ? 'other'
-                            :                                'error';
-          return $record;
-       }
+   # let's put an intermediate step to "classify" the record
+   sub {
+      my $record;
+      my $first_char = substr $record->{structured}{nick}, 0, 1;
+      $record->{class} = ($first_char =~ m{[a-m]}mxs) ? 'lower'
+                        :($first_char =~ m{[a-z]}imxs) ? 'other'
+                        :                                'error';
+      return $record;
+   }
 
-       # Rendering is wrapped by dispatch here
-       ['Plumbing::dispatch', key => 'class',
-          handlers => {
-             lower => $render_good,
-             other => $render_good,
-             error => $render_bad,
-          },
-       ]
+   # Rendering is wrapped by dispatch here
+   ['Plumbing::dispatch', key => 'class',
+      handlers => {
+         lower => $render_good,
+         other => $render_good,
+         error => $render_bad,
+      },
+   ]
 
-       # Printing, gets `rendered`, returns input unchanged
-       ['Writer::dispatch_to_files',
-          'output-[% key %]-%03n.json',
-          header => "[\n", footer => "\n]\n", interlude => ",\n",
-          policy => {records_threshold => 2},
-          key => 'class',
-       ],
+   # Printing, gets `rendered`, returns input unchanged
+   ['Writer::dispatch_to_files',
+      'output-[% key %]-%03n.json',
+      header => "[\n", footer => "\n]\n", interlude => ",\n",
+      policy => {records_threshold => 2},
+      key => 'class',
+   ],
 
-       # Options, just flush the output to the sink
-       { tap => 'sink' },
-    )->([qw< mydata-04.txt >]);
+   # Options, just flush the output to the sink
+   { tap => 'sink' },
+)->([qw< mydata-04.txt >]);
+```
 
 ### Dispatching, TIMTOWTDI
 
@@ -1250,52 +1313,54 @@ One alternative is to realize that the dispatcher's factory, and the
 record in addition to the key. Hence, we might modify the pipeline as
 follows:
 
-    use Data::Tubes qw< pipeline summon >;
+```perl
+use Data::Tubes qw< pipeline summon >;
 
-    summon('Renderer::with_template_perlish');
-    my $render_good = with_template_perlish(
-       '  {"name":"[% name %];"nick":"[% nick %]";"age":[% age %]}');
-    # the "bad" renderer just complains about the nickname
-    my $render_bad = with_template_perlish(
-       '  {"nick":"[% nick %]";"error":"invalid"}');
+summon('Renderer::with_template_perlish');
+my $render_good = with_template_perlish(
+   '  {"name":"[% name %];"nick":"[% nick %]";"age":[% age %]}');
+# the "bad" renderer just complains about the nickname
+my $render_bad = with_template_perlish(
+   '  {"nick":"[% nick %]";"error":"invalid"}');
 
-    pipeline(
-       ['Source::iterate_files', open_file_args => {binmode => ':raw'}],
-       'Reader::by_line',
-       ['Parser::by_format', 'name;nick;age'],
+pipeline(
+   ['Source::iterate_files', open_file_args => {binmode => ':raw'}],
+   'Reader::by_line',
+   ['Parser::by_format', 'name;nick;age'],
 
-       # let's put an intermediate step to "classify" the record
-       sub {
-          my $record;
-          my $first_char = substr $record->{structured}{nick}, 0, 1;
-          $record->{class} = ($first_char =~ m{[a-m]}mxs) ? 'lower'
-                            :($first_char =~ m{[a-z]}imxs) ? 'other'
-                            :                                'error';
-          $record->{format} =
-             ($record->{class} eq 'error') ? 'txt' : 'json';
-          return $record;
-       }
+   # let's put an intermediate step to "classify" the record
+   sub {
+      my $record;
+      my $first_char = substr $record->{structured}{nick}, 0, 1;
+      $record->{class} = ($first_char =~ m{[a-m]}mxs) ? 'lower'
+                        :($first_char =~ m{[a-z]}imxs) ? 'other'
+                        :                                'error';
+      $record->{format} =
+         ($record->{class} eq 'error') ? 'txt' : 'json';
+      return $record;
+   }
 
-       # Rendering is wrapped by dispatch here
-       ['Plumbing::dispatch', key => 'class',
-          handlers => {
-             lower => $render_good,
-             other => $render_good,
-             error => $render_bad,
-          },
-       ]
+   # Rendering is wrapped by dispatch here
+   ['Plumbing::dispatch', key => 'class',
+      handlers => {
+         lower => $render_good,
+         other => $render_good,
+         error => $render_bad,
+      },
+   ]
 
-       # Printing, gets `rendered`, returns input unchanged
-       ['Writer::dispatch_to_files',
-          'output-[% key %]-%03n.[% record.format %]',
-          header => "[\n", footer => "\n]\n", interlude => ",\n",
-          policy => {records_threshold => 2},
-          key => 'class',
-       ],
+   # Printing, gets `rendered`, returns input unchanged
+   ['Writer::dispatch_to_files',
+      'output-[% key %]-%03n.[% record.format %]',
+      header => "[\n", footer => "\n]\n", interlude => ",\n",
+      policy => {records_threshold => 2},
+      key => 'class',
+   ],
 
-       # Options, just flush the output to the sink
-       { tap => 'sink' },
-    )->([qw< mydata-04.txt >]);
+   # Options, just flush the output to the sink
+   { tap => 'sink' },
+)->([qw< mydata-04.txt >]);
+```
 
 ### Sequence
 
@@ -1312,52 +1377,54 @@ behind the scenes, and returns it if you don't provide any `tap`.
 Hence, you can use dispatch to divide your flow across different
 sequences, each with its own processing. Let's see how.
 
-    use Data::Tubes qw< pipeline >;
+```perl
+use Data::Tubes qw< pipeline >;
 
-    my $good = pipeline(
-       ['Renderer::with_template_perlish',
-          '  {"name":"[% name %];"nick":"[% nick %]";"age":[% age %]}'],
-       ['Writer::dispatch_to_files',
-          'output-[% key %]-%03n.json',
-          header => "[\n", footer => "\n]\n", interlude => ",\n",
-          policy => {records_threshold => 2},
-          key => 'class',
-       ],
-    ); # note... no tap here!
+my $good = pipeline(
+   ['Renderer::with_template_perlish',
+      '  {"name":"[% name %];"nick":"[% nick %]";"age":[% age %]}'],
+   ['Writer::dispatch_to_files',
+      'output-[% key %]-%03n.json',
+      header => "[\n", footer => "\n]\n", interlude => ",\n",
+      policy => {records_threshold => 2},
+      key => 'class',
+   ],
+); # note... no tap here!
 
-    my $bad = pipeline(
-       sub { $_[0]{error}{message} = $_[0]{raw} },
-       ['Renderer::with_template_perlish', "[% message %]\n",
-          input => 'error',
-       ],
-       ['Writer:to_files', 'ouput-exception-%t.txt']
-    ); # note.. no tap here!
+my $bad = pipeline(
+   sub { $_[0]{error}{message} = $_[0]{raw} },
+   ['Renderer::with_template_perlish', "[% message %]\n",
+      input => 'error',
+   ],
+   ['Writer:to_files', 'ouput-exception-%t.txt']
+); # note.. no tap here!
 
-    pipeline(
-       ['Source::iterate_files', open_file_args => {binmode => ':raw'}],
-       'Reader::by_line',
-       ['Parser::by_format', 'name;nick;age'],
-       sub { # classification of input record
-          my $record;
-          my $first_char = substr $record->{structured}{nick}, 0, 1;
-          $record->{class} = ($first_char =~ m{[a-m]}mxs) ? 'lower'
-                            :($first_char =~ m{[a-z]}imxs) ? 'other'
-                            :                                'error';
-          return $record;
-       }
+pipeline(
+   ['Source::iterate_files', open_file_args => {binmode => ':raw'}],
+   'Reader::by_line',
+   ['Parser::by_format', 'name;nick;age'],
+   sub { # classification of input record
+      my $record;
+      my $first_char = substr $record->{structured}{nick}, 0, 1;
+      $record->{class} = ($first_char =~ m{[a-m]}mxs) ? 'lower'
+                        :($first_char =~ m{[a-z]}imxs) ? 'other'
+                        :                                'error';
+      return $record;
+   }
 
-       # Further processing depends on class
-       ['Plumbing::dispatch', key => 'class',
-          handlers => {
-             lower => $good,
-             other => $good,
-             error => $bad,
-          },
-       ]
+   # Further processing depends on class
+   ['Plumbing::dispatch', key => 'class',
+      handlers => {
+         lower => $good,
+         other => $good,
+         error => $bad,
+      },
+   ]
 
-       # Options, just flush the output to the sink
-       { tap => 'sink' },
-    )->([qw< mydata-04.txt >]);
+   # Options, just flush the output to the sink
+   { tap => 'sink' },
+)->([qw< mydata-04.txt >]);
+```
 
 There are a few things going on here, let's take a look.
 
