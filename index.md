@@ -149,18 +149,18 @@ leading/trailing whitespaces and continuation lines. In simple terms, it
 is not capable of properly handling the following input:
 
 ```
-Name:    Flavio  ␤
-Age:     44  ␤
-Food:    salad  ␤
-␤
-AGE  : 29␤
-name : FooBar␤
-FOOD : banana   ␤
-␤
-food: kiwi␤
-name: What␤
- Ever␤
-Age: 52   ␤
+Name:    Flavio  ↵
+Age:     44  ↵
+Food:    salad  ↵
+↵
+AGE  : 29↵
+name : FooBar↵
+FOOD : banana   ↵
+↵
+food: kiwi↵
+name: What↵
+ Ever↵
+Age: 52   ↵
 ```
 
 So... why don't you roll your own parsing step then? It's easy, and you
