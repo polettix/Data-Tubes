@@ -146,7 +146,9 @@ my $pl = pipeline(
 OK, we're almost fine but you fall in love with the HTTP specification,
 and what we have here does not do automatic handling of case, removal of
 leading/trailing whitespaces and continuation lines. In simple terms, it
-is not capable of properly handling the following input:
+is not capable of properly handling the following input (newline
+characters are rendered as little arrows for showing you trailing
+spaces):
 
 ```
 Name:    Flavio  ↵
