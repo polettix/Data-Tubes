@@ -1,5 +1,5 @@
+disqus_domain: data-tubes.disqus.com
 kramdown:
     toc_levels: '2,3'
     syntax_highlighter: rouge
-disqus_domain: data-tubes.disqus.com
 url: http://github.polettix.it/Data-Tubes

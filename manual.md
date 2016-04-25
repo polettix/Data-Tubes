@@ -8,10 +8,11 @@ comments: true
 
 # The Missing Manual
 
-[Data::Tubes](https://metacpan.org/pod/Data::Tubes) helps you manage
-transformations steps on a stream of data that can be though as a
-sequence of _records_. It does it by passing _records_ through _tubes_,
-usually a sequence of them.
+[Data::Tubes][] helps you manage transformations steps on a stream of
+data that can be though as a sequence of _records_. It does it by
+passing _records_ through _tubes_, usually a sequence of them.
+
+[Data::Tubes]: https://metacpan.org/pod/Data::Tubes
 
 This manual is a bit long... here's a table of contents for guiding you:
 
@@ -70,25 +71,28 @@ scalar, a _tube_ is a sub reference.
 
 ## Typical Use Case
 
-The typical use case for transforming data (e.g. in some ETL) can be
+The typical use case for transforming data (e.g. in some [ETL][]) can be
 summarized as follows, at least for me:
 
-- _manage sources_
+[ETL]: https://en.wikipedia.org/wiki/Extract,_transform,_load
+
+- _manage sources_, e.g. is your data coming from a file, a DB query,
+  the web...
 - _read_ input data, chunking them into raw textual/binary
-representations of a single record;
+  representations of a single record;
 - _parse_ read data, hoping it adheres to some structure, and generating
-a structured version of it (typically a Perl hash or array reference,
-holding the parsed data);
-- _render_ the output based on the input record, most of the time filling
-a template with values read from the input;
+  a structured version of it (typically a Perl hash or array reference,
+  holding the parsed data);
+- _render_ the output based on the input record, most of the time
+  filling a template with values read from the input;
 - _write_ the rendered text/binary data to some output channel.
 
 All the above operations have to be performed in sequence, and repeated
 until the sources cannot emit any more data to be read.
 
-[Data::Tubes](https://metacpan.org/pod/Data::Tubes) helps you with
-managing the sequencing, make sure that you exhaust your sources, and also
-provides tools for addressing each step.
+[Data::Tubes][] helps you with managing the sequencing, make sure that
+you exhaust your sources, and also provides tools for addressing each
+step.
 
 Note that your steps might be different. For example, you might want to
 introduce an intermediate step between the parsing and the rendering, to
@@ -97,14 +101,12 @@ rendering based on what has been parsed, or validated. You might want to
 select a different output channel based on what was parsed. So, although
 it's a sequence, you might actually think your pipeline as possibly
 dividing into multiple alternatives at some steps, using data that come
-from any of the previous steps.
-[Data::Tubes](https://metacpan.org/pod/Data::Tubes) tools help you with
-this too!
+from any of the previous steps. [Data::Tubes][] tools help you with this
+too!
 
-In the following sections, we will gradually introduce the different tools
-available from [Data::Tubes](https://metacpan.org/pod/Data::Tubes) and
-show you how they can help you address the use case above, or the variant
-you might have.
+In the following sections, we will gradually introduce the different
+tools available from [Data::Tubes][] and show you how they can help you
+address the use case above, or the variant you might have.
 
 ## What You Need 99% Of The Times
 
