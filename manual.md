@@ -826,7 +826,6 @@ example, suppose that instead of YAML you want to output JSON; you might
 start with this:
 
 ```perl
-use Data::Tubes qw< pipeline >;
 pipeline(
    ['Source::iterate_files', open_file_args => {binmode => ':raw'}],
    'Reader::by_line',
@@ -843,20 +842,20 @@ END
 )->([qw< mydata-04.txt >]);
 ```
 
-There's a problem though: for more than one input record, the output is
-not valid JSON:
+There's a problem though: for more than one input record, the overall
+output is not valid JSON:
 
     {"name":"Foo","nick":"foorious","age":32}
     {"name":"Bar","nick":"barious","age":19}
     {"name":"Baz","nick":"bazzecolas","age":44}
 
 We should put this in an array, and we should separate the objects with
-a comma. The first thing might be naively solved like this:
+a comma.
+
+The first thing might be naively solved like this:
 
 ```perl
-use Data::Tubes qw< pipeline >;
-
-# DO NOT USE THIS SOLUTION!
+# DO NOT USE THIS SOLUTION! THIS IS WRONG!
 print "[\n";
 
 pipeline(
@@ -874,19 +873,21 @@ END
    { tap => 'sink' },
 )->([qw< mydata-04.txt >]);
 
-# DO NOT USE THIS SOLUTION!
+# DO NOT USE THIS SOLUTION! THIS IS WRONG!
 print "]\n"
 ```
 
 This has two problems:
 
 - first of all, it does not allow you to change the output channel. What
-  if you are writing to a file instead?
+  if you are writing to a file instead? You need something that is able
+  to write the array-opener and the array-closer from within the
+  pipeline;
 - you still have to figure out how to print out the separator comma!
 
-Unfortunately, JSON is quite picky in the presence of separator commas,
-in that it does not allow you to have a trailing one, so the following
-would be incorrect:
+An additional pitfall to consider is that JSON is quite picky in the
+presence of separator commas, in that it does not allow you to have
+a trailing one, so the following would be incorrect:
 
     [
     {"name":"Foo","nick":"foorious","age":32},
@@ -900,7 +901,6 @@ Fortunately, `to_files` can help you with `header`, `interlude` and
 `footer`:
 
 ```perl
-use Data::Tubes qw< pipeline >;
 pipeline(
    ['Source::iterate_files', open_file_args => {binmode => ':raw'}],
    'Reader::by_line',
@@ -910,8 +910,11 @@ pipeline(
 END
 
    # Printing, gets `rendered`, returns input unchanged
-   ['Writer::to_files', filename => \*STDOUT,
-      header => "[\n", footer => "]\n", interlude => ','
+   [
+      'Writer::to_files',
+      header    => "[\n",
+      footer    => "]\n",
+      interlude => ','
    ],
 
    # Options, just flush the output to the sink
@@ -933,7 +936,6 @@ things to make it better looking, though; just get rid of the newline in
 the template, add it after the comma and put some indentation:
 
 ```perl
-use Data::Tubes qw< pipeline >;
 pipeline(
    ['Source::iterate_files', open_file_args => {binmode => ':raw'}],
    'Reader::by_line',
@@ -942,8 +944,11 @@ pipeline(
       '  {"name":"[% name %];"nick":"[% nick %]";"age":[% age %]}'],
 
    # Printing, gets `rendered`, returns input unchanged
-   ['Writer::to_files',
-      header => "[\n", footer => "\n]\n", interlude => ",\n"
+   [
+      'Writer::to_files',
+      header    => "[\n",
+      footer    => "\n]\n",
+      interlude => ",\n"
    ],
 
    # Options, just flush the output to the sink
@@ -969,17 +974,18 @@ array references that will be turned into the argument list for
 ### Segmenting the output
 
 If you're handling _a lot_ of input records, you might want to segment
-the output in order to distribute the output records into multiple
-files, instead of having only one single file. It turns out that
-`to_files` gets you covered also in this case!
+the output in order to distribute the records into multiple files,
+instead of having only one single file. It turns out that `to_files`
+gets you covered also in this case!
 
 The basic thing that you can do is to set a _policy_ object, where you
-can set two keys: `records_threshold` and `characters_threshold`. They
-set a threshold that will close the output channel when overcome, and
-open a new one. We will assume that we're writing to files here:
+have two knobs: `records_threshold` and `characters_threshold`. They set
+a threshold that will close the output channel when overcome, and open
+a new one when needed.
+
+We will assume that we're writing to files here:
 
 ```perl
-use Data::Tubes qw< pipeline >;
 pipeline(
    ['Source::iterate_files', open_file_args => {binmode => ':raw'}],
    'Reader::by_line',
@@ -988,9 +994,15 @@ pipeline(
       '  {"name":"[% name %];"nick":"[% nick %]";"age":[% age %]}'],
 
    # Printing, gets `rendered`, returns input unchanged
-   ['Writer::to_files', filename => 'output-01.json',
-      header => "[\n", footer => "\n]\n", interlude => ",\n",
-      policy => {records_threshold => 2},
+   [
+      'Writer::to_files',
+      header    => "[\n",
+      footer => "\n]\n",
+      interlude => ",\n",
+
+      # writing to files instead of STDOUT, setting a threshold
+      filename  => 'output-01.json',
+      policy    => {records_threshold => 2},
    ],
 
    # Options, just flush the output to the sink
@@ -1018,7 +1030,6 @@ you rely on the file extension to do... anything.
 sequences using `%n`, like this:
 
 ```perl
-use Data::Tubes qw< pipeline >;
 pipeline(
    ['Source::iterate_files', open_file_args => {binmode => ':raw'}],
    'Reader::by_line',
@@ -1027,9 +1038,15 @@ pipeline(
       '  {"name":"[% name %];"nick":"[% nick %]";"age":[% age %]}'],
 
    # Printing, gets `rendered`, returns input unchanged
-   ['Writer::to_files', filename => 'output-02-%03n.json',
-      header => "[\n", footer => "\n]\n", interlude => ",\n",
-      policy => {records_threshold => 2},
+   [
+      'Writer::to_files',
+      header    => "[\n",
+      footer => "\n]\n",
+      interlude => ",\n",
+
+      # writing to files instead of STDOUT, setting a threshold
+      filename  => 'output-01-%03n.json',
+      policy    => {records_threshold => 2},
    ],
 
    # Options, just flush the output to the sink
@@ -1078,7 +1095,7 @@ pipeline(
 )->([qw< mydata-04.txt >]);
 ```
 
-Now, you have full control over your input. Or have you?
+Now, you have full control over your output. Or have you?
 
 ## Writing, Reloaded
 
