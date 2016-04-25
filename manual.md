@@ -312,8 +312,9 @@ following assumptions:
   `rendered`, and do not populate anything more (although they pass the
   record along as output).
 
-[Data::Tubes::Plugin::Reader]: https://metacpan.org/pod/Data::Tubes::Plugin::Reader
 [Data::Tubes::Plugin::Parser]: https://metacpan.org/pod/Data::Tubes::Plugin::Parser
+[Data::Tubes::Plugin::Plumbing]: https://metacpan.org/pod/Data::Tubes::Plugin::Plumbing
+[Data::Tubes::Plugin::Reader]: https://metacpan.org/pod/Data::Tubes::Plugin::Reader
 [Data::Tubes::Plugin::Renderer]: https://metacpan.org/pod/Data::Tubes::Plugin::Renderer
 [Data::Tubes::Plugin::Writer]: https://metacpan.org/pod/Data::Tubes::Plugin::Writer
 
@@ -1109,22 +1110,17 @@ the rest. How do you do this?
 
 ### Dispatching manually
 
-One interesting thing about the toolkit is that you can use its function
-outside of `pipeline`, if you need to. The `summon` function helps you
-import the right function with minimal hassle:
+One interesting thing about the toolkit is that you can use its
+functions outside of `pipeline`, if you need to. The `summon` function
+helps you import the right function with minimal hassle.
+
+For example, you can do like this:
 
 ```perl
-use Data::Tubes qw< pipeline summon >;
-my $writer_factory = summon('Writer::to_files');
-```
-
-Now, for example, you can do like this:
-
-```perl
-use Data::Tubes qw< pipeline summon >;
+use Data::Tubes qw< pipeline summon >; # importing 'summon' too
 
 # pre-define two output channels, for lower and other initial chars
-summon('Writer::to_files');
+summon('Writer::to_files'); # just like DWIM require + import
 my $lower = to_files(
    'output-lower-%02d.json',
    header => "[\n", footer => "\n]\n", interlude => ",\n",
@@ -1166,12 +1162,10 @@ technique! But there's more... read on.
 Considering that dispatching can be quite common, you can guess that
 there's something in the toolkit to get you covered. You guessed right!
 
-[Data::Tubes::Plugin::Writer](https://metacpan.org/pod/Data::Tubes::Plugin::Writer)
-provides you `dispatch_to_files`, that helps you streamline what we saw in
-the previous section. Here's how:
+[Data::Tubes::Plugin::Writer][] provides you `dispatch_to_files`, that
+helps you streamline what we saw in the previous section. Here's how:
 
 ```perl
-use Data::Tubes qw< pipeline >;
 pipeline(
    ['Source::iterate_files', open_file_args => {binmode => ':raw'}],
    'Reader::by_line',
@@ -1180,10 +1174,14 @@ pipeline(
       '  {"name":"[% name %];"nick":"[% nick %]";"age":[% age %]}'],
 
    # Printing, gets `rendered`, returns input unchanged
-   ['Writer::dispatch_to_files',
-      'output-[% key %]-%03n.json',
-      header => "[\n", footer => "\n]\n", interlude => ",\n",
-      policy => {records_threshold => 2},
+   [
+      'Writer::dispatch_to_files',
+      header    => "[\n",
+      footer    => "\n]\n",
+      interlude => ",\n",
+      policy    => {records_threshold => 2},
+
+      filename => 'output-[% key %]-%03n.json',
       selector => sub {
          my $record = shift;
          my $first_char = substr $record->{structured}{nick}, 0, 1;
@@ -1197,9 +1195,9 @@ pipeline(
 )->([qw< mydata-04.txt >]);
 ```
 
-Most parameters are the same as `to_files`, so we already know about them.
-We have two new ones, though: the *un-named* first parameter, that turns
-out to be called `filename`, and `selector`.
+Most parameters are the same as `to_files`, so we already know about
+them. The `filename` seems familiar but somewhat different. The
+`selector` is definitely a new entry.
 
 The latter (`selector`) is a sub reference that receives the record as
 input, and is supposed to provide a _key_ back. Whenever this key is
@@ -1209,9 +1207,9 @@ In this case, we are outputting two strings, namely `lower` and
 
 The `filename` is an extension on parameter `filename` in `to_files`, that
 allows you to put additional things in the `filename` that is eventually
-passed to `to_files`. As you might have guessed already, it's a
-[Template::Perlish](https://metacpan.org/pod/Template::Perlish)-compatible
-template, where you can expand the variable `key`. So:
+passed to `to_files`. As you might have guessed already, it's
+a [Template::Perlish][]-compatible template string, where you can expand
+the variable `key`. So:
 
 - if the `selector` returns `lower`, the `filename_template` is expanded
   into `output-lower-%03n.json`;
@@ -1227,7 +1225,7 @@ In ["Dispatching, the movie"](#dispatching-the-movie) we saw that you can
 dispatch to the right output channel depending on what's inside each
 single record. The dispatching technique can be applied to other stages,
 though, if you are brave enough to look at `dispatch` in
-[Data::Tubes::Plugin::Plumbing](https://metacpan.org/pod/Data::Tubes::Plugin::Plumbing).
+[Data::Tubes::Plugin::Plumbing][Plumbing].
 
 ### General dispatching
 
@@ -1241,8 +1239,6 @@ letter are good, and bad otherwise. We still want to do some rendering
 for the bad ones, though, because we want to write out an error file.
 
 ```perl
-use Data::Tubes qw< pipeline summon >;
-
 summon('Renderer::with_template_perlish');
 my $render_good = with_template_perlish(
    '  {"name":"[% name %];"nick":"[% nick %]";"age":[% age %]}'],);
@@ -1259,14 +1255,16 @@ pipeline(
    sub {
       my $record;
       my $first_char = substr $record->{structured}{nick}, 0, 1;
-      $record->{class} = ($first_char =~ m{[a-m]}mxs) ? 'lower'
+      $record->{class} = ($first_char =~ m{[a-m]}mxs)  ? 'lower'
                         :($first_char =~ m{[a-z]}imxs) ? 'other'
                         :                                'error';
       return $record;
    }
 
    # Rendering is wrapped by dispatch here
-   ['Plumbing::dispatch', key => 'class',
+   [
+      'Plumbing::dispatch',
+      key => 'class',
       factory => sub {
          my $key = shift;
          return $render_bad if $key eq 'error';
@@ -1275,11 +1273,14 @@ pipeline(
    ]
 
    # Printing, gets `rendered`, returns input unchanged
-   ['Writer::dispatch_to_files',
+   [
+      'Writer::dispatch_to_files',
       'output-[% key %]-%03n.json',
-      header => "[\n", footer => "\n]\n", interlude => ",\n",
-      policy => {records_threshold => 2},
       key => 'class',
+      header    => "[\n",
+      footer    => "\n]\n",
+      interlude => ",\n",
+      policy    => {records_threshold => 2},
    ],
 
    # Options, just flush the output to the sink
@@ -1296,8 +1297,10 @@ the movie"](#dispatching-the-movie) we saw that we can put a `selector`
 key in the arguments, but if you already have your key in the record you
 can just set a `key` argument. In this example, we're doing this
 classification immediately after the parse phase, so from that point on we
-have a `class` key inside the record, that we can use (and we do, both in
-`dispatch` and in `dispatch_to_files`).
+have a `class` key inside the record, that we can use (and we do, both
+in `dispatch` and in `dispatch_to_files`. This is the advantage of
+having all the details about a record along the pipeline, although you
+might argue that this might introduce some *action at a distance*).
 
 In case the dispatcher does not (yet) know which tube is associated to a
 given string returned by the _selector_, it's time for some
@@ -1317,8 +1320,6 @@ If you already have your downstream tubes available (as in our case),
 you can pre-load the cache and avoid coding the factory completely:
 
 ```perl
-use Data::Tubes qw< pipeline summon >;
-
 summon('Renderer::with_template_perlish');
 my $render_good = with_template_perlish(
    '  {"name":"[% name %];"nick":"[% nick %]";"age":[% age %]}'],);
@@ -1335,14 +1336,16 @@ pipeline(
    sub {
       my $record;
       my $first_char = substr $record->{structured}{nick}, 0, 1;
-      $record->{class} = ($first_char =~ m{[a-m]}mxs) ? 'lower'
+      $record->{class} = ($first_char =~ m{[a-m]}mxs)  ? 'lower'
                         :($first_char =~ m{[a-z]}imxs) ? 'other'
                         :                                'error';
       return $record;
    }
 
    # Rendering is wrapped by dispatch here
-   ['Plumbing::dispatch', key => 'class',
+   [
+      'Plumbing::dispatch',
+      key => 'class',
       handlers => {
          lower => $render_good,
          other => $render_good,
@@ -1351,11 +1354,14 @@ pipeline(
    ]
 
    # Printing, gets `rendered`, returns input unchanged
-   ['Writer::dispatch_to_files',
+   [
+      'Writer::dispatch_to_files',
       'output-[% key %]-%03n.json',
-      header => "[\n", footer => "\n]\n", interlude => ",\n",
-      policy => {records_threshold => 2},
       key => 'class',
+      header    => "[\n",
+      footer    => "\n]\n",
+      interlude => ",\n",
+      policy    => {records_threshold => 2},
    ],
 
    # Options, just flush the output to the sink
@@ -1378,8 +1384,6 @@ record in addition to the key. Hence, we might modify the pipeline as
 follows:
 
 ```perl
-use Data::Tubes qw< pipeline summon >;
-
 summon('Renderer::with_template_perlish');
 my $render_good = with_template_perlish(
    '  {"name":"[% name %];"nick":"[% nick %]";"age":[% age %]}');
@@ -1396,7 +1400,7 @@ pipeline(
    sub {
       my $record;
       my $first_char = substr $record->{structured}{nick}, 0, 1;
-      $record->{class} = ($first_char =~ m{[a-m]}mxs) ? 'lower'
+      $record->{class} = ($first_char =~ m{[a-m]}mxs)  ? 'lower'
                         :($first_char =~ m{[a-z]}imxs) ? 'other'
                         :                                'error';
       $record->{format} =
@@ -1405,7 +1409,9 @@ pipeline(
    }
 
    # Rendering is wrapped by dispatch here
-   ['Plumbing::dispatch', key => 'class',
+   [
+      'Plumbing::dispatch',
+      key => 'class',
       handlers => {
          lower => $render_good,
          other => $render_good,
@@ -1414,11 +1420,13 @@ pipeline(
    ]
 
    # Printing, gets `rendered`, returns input unchanged
-   ['Writer::dispatch_to_files',
-      'output-[% key %]-%03n.[% record.format %]',
-      header => "[\n", footer => "\n]\n", interlude => ",\n",
-      policy => {records_threshold => 2},
-      key => 'class',
+   [
+      'Writer::dispatch_to_files',
+      'output-[% key %]-%03n.[% record.format %]', # Look!
+      header    => "[\n", footer => "\n]\n",
+      interlude => ",\n",
+      policy    => {records_threshold => 2},
+      key       => 'class',
    ],
 
    # Options, just flush the output to the sink
@@ -1434,16 +1442,14 @@ intermediate processing steps, depending on the specific record? For
 example, we might want to avoid processing wrong records too much, but
 do some additional mangling on good ones.
 
-Enter `sequence` from `Data::Tubes::Plugin::Plumbing`. This function
-is similar to `pipeline` --as a matter of fact, `pipeline` uses it
-behind the scenes, and returns it if you don't provide any `tap`.
+Enter `sequence` from [Data::Tubes::Plugin::Plumbing]. This function is
+similar to `pipeline` --as a matter of fact, `pipeline` uses it behind
+the scenes, and returns it if you don't provide any `tap`.
 
 Hence, you can use dispatch to divide your flow across different
 sequences, each with its own processing. Let's see how.
 
 ```perl
-use Data::Tubes qw< pipeline >;
-
 my $good = pipeline(
    ['Renderer::with_template_perlish',
       '  {"name":"[% name %];"nick":"[% nick %]";"age":[% age %]}'],
@@ -1463,6 +1469,7 @@ my $bad = pipeline(
    ['Writer:to_files', 'ouput-exception-%t.txt']
 ); # note.. no tap here!
 
+# The pipeline that feeds them all
 pipeline(
    ['Source::iterate_files', open_file_args => {binmode => ':raw'}],
    'Reader::by_line',
@@ -1470,14 +1477,16 @@ pipeline(
    sub { # classification of input record
       my $record;
       my $first_char = substr $record->{structured}{nick}, 0, 1;
-      $record->{class} = ($first_char =~ m{[a-m]}mxs) ? 'lower'
+      $record->{class} = ($first_char =~ m{[a-m]}mxs)  ? 'lower'
                         :($first_char =~ m{[a-z]}imxs) ? 'other'
                         :                                'error';
       return $record;
    }
 
    # Further processing depends on class
-   ['Plumbing::dispatch', key => 'class',
+   [
+      'Plumbing::dispatch',
+      key => 'class',
       handlers => {
          lower => $good,
          other => $good,
@@ -1515,7 +1524,10 @@ the sub-tube to be independent of each other (there are two here, they
 might be many more of course). Note that `$good` and `$bad` are
 created using `pipeline` (so that we avoid `summon`ing
 `Plumbing::sequence` and shave off a few characters), taking care to
-_avoid_ setting a `tap`, otherwise we wouldn't get a tube back!
+_avoid_ setting a `tap`. This is not strictly necessary, because the
+`sink` tap actually generates a valid tube, but we want to be sure that
+we get a record from either tube in case we need to add some
+post-processing at some later time in the future.
 
 ## Process In Peace
 
@@ -1524,19 +1536,18 @@ Alas, we have come to the end of our journey through
 discover in the manual pages for each individual module: 
 
 - [Data::Tubes][]
-- [Data::Tubes::Plugin::Parser](https://metacpan.org/pod/Data::Tubes::Plugin::Parser)
-- [Data::Tubes::Plugin::Plumbing](https://metacpan.org/pod/Data::Tubes::Plugin::Plumbing)
-- [Data::Tubes::Plugin::Reader](https://metacpan.org/pod/Data::Tubes::Plugin::Reader)
-- [Data::Tubes::Plugin::Renderer](https://metacpan.org/pod/Data::Tubes::Plugin::Renderer)
-- [Data::Tubes::Plugin::Source](https://metacpan.org/pod/Data::Tubes::Plugin::Source)
+- [Data::Tubes::Plugin::Parser][]
+- [Data::Tubes::Plugin::Plumbing][]
+- [Data::Tubes::Plugin::Reader][]
+- [Data::Tubes::Plugin::Renderer][]
+- [Data::Tubes::Plugin::Source][]
 - [Data::Tubes::Plugin::Util](https://metacpan.org/pod/Data::Tubes::Plugin::Util)
-- [Data::Tubes::Plugin::Writer](https://metacpan.org/pod/Data::Tubes::Plugin::Writer)
+- [Data::Tubes::Plugin::Writer][]
 - [Data::Tubes::Util](https://metacpan.org/pod/Data::Tubes::Util)
 - [Data::Tubes::Util::Output](https://metacpan.org/pod/Data::Tubes::Util::Output)
 
-If you want to contribute,
-[Data::Tubes][] is on GitHub at
+If you want to contribute, [Data::Tubes][] is on GitHub at
 [https://github.com/polettix/Data-Tubes](https://github.com/polettix/Data-Tubes).
 One way to contribute might be releasing your own plugins... e.g. if you
-prefer to use [Template](https://metacpan.org/pod/Template) instead of
-[Template::Perlish](https://metacpan.org/pod/Template::Perlish)!
+prefer to use [Template Toolkit][Template] instead of
+[Template::Perlish][]!
