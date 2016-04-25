@@ -209,10 +209,10 @@ section), or as a self-contained tube that is able to conjure things out
 of nothing. You decide.
 
 If you happen to take your inputs from files, the toolbox provides you
-with a few tools inside
-[Data::Tubes::Plugin::Source](https://metacpan.org/pod/Data::Tubes::Plugin::Source).
-One, in particular, will be your friend most of the times:
-`iterate_files`.
+with a few tools inside [Data::Tubes::Plugin::Source][] One, in
+particular, will be your friend most of the times: `iterate_files`.
+
+[Data::Tubes::Plugin::Source]: https://metacpan.org/pod/Data::Tubes::Plugin::Source
 
 This function is a _factory_, in the sense that you give it some
 arguments and it returns you a tube-compliant sub reference. All it does
@@ -230,7 +230,7 @@ $ cat mydata-02.txt
 Baz
 ```
 
-you can do like this:
+You can do like this:
 
 ```perl
 use Data::Tubes qw< pipeline >;
@@ -277,18 +277,17 @@ It is worth mentioning how the automatic expansion of a string like
 So, it tries to DWIM while still leaving space for being very precise.
 
 There are also a few things that are interesting about `iterate_files`
-(you're encouraged to read the docs in
-[Data::Tubes::Plugin::Source](https://metacpan.org/pod/Data::Tubes::Plugin::Source),
+(you're encouraged to read the docs in [Data::Tubes::Plugin::Source][],
 of course):
 
 - it gets as input array references, containing lists of file names. The
-list might be empty or contain any number of files, of course
+  list might be empty or contain any number of files, of course
 - it takes care to open them for you, returning a series of records with
-details about the file;
-- each output record is a hash reference, containing a sub-hash associated
-to the key `source`, that holds data about the file (like the filename,
-a conventional name for the channel, and of course the filehandle in key
-`fh`).
+  details about the file;
+- each output record is a hash reference, containing a sub-hash
+  associated to the key `source`, that holds data about the file (like
+  the filename, a conventional name for the channel, and of course the
+  filehandle in key `fh`).
 
 
 ## What Is A Record, Toolkit Style
