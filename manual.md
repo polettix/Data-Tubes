@@ -299,20 +299,24 @@ record, in each step, is a hash reference where each tube takes and adds
 data. In particular, The different components in the toolkit make the
 following assumptions:
 
-- [Data::Tubes::Plugin::Source](https://metacpan.org/pod/Data::Tubes::Plugin::Source)
-  takes input from an array reference, and emits hash references with a
-  sub-hash pointed by key `source`;
-- [Data::Tubes::Plugin::Reader](https://metacpan.org/pod/Data::Tubes::Plugin::Reader)
-  expect to receive a hash reference with key `source`, from where they
-  take the `fh` field, and populate field `raw` with whatever they read;
-- [Data::Tubes::Plugin::Parser](https://metacpan.org/pod/Data::Tubes::Plugin::Parser)
-  receive a hash reference with key `raw`, and populate key `structured`;
-- [Data::Tubes::Plugin::Renderer](https://metacpan.org/pod/Data::Tubes::Plugin::Renderer)
-  receive a hash reference with key `structured`, and populate key
-  `rendered`;
-- [Data::Tubes::Plugin::Writer](https://metacpan.org/pod/Data::Tubes::Plugin::Writer)
-  receive a hash reference with key `rendered`, and do not populate
-  anything more (although they pass the record along as output).
+- [Data::Tubes::Plugin::Source][] takes input from an array reference,
+  and emits hash references with a sub-hash pointed by key `source`;
+- [Data::Tubes::Plugin::Reader][] expect to receive a hash reference
+  with key `source`, from where they take the `fh` field, and populate
+  field `raw` with whatever they read (this is where, most often, you
+  get multiple records out of a single input one);
+- [Data::Tubes::Plugin::Parser][] receive a hash reference with key
+  `raw`, and populate key `structured`;
+- [Data::Tubes::Plugin::Renderer][] receive a hash reference with key
+  `structured`, and populate key `rendered`;
+- [Data::Tubes::Plugin::Writer][] receive a hash reference with key
+  `rendered`, and do not populate anything more (although they pass the
+  record along as output).
+
+[Data::Tubes::Plugin::Reader]: https://metacpan.org/pod/Data::Tubes::Plugin::Reader
+[Data::Tubes::Plugin::Parser]: https://metacpan.org/pod/Data::Tubes::Plugin::Parser
+[Data::Tubes::Plugin::Renderer]: https://metacpan.org/pod/Data::Tubes::Plugin::Renderer
+[Data::Tubes::Plugin::Writer]: https://metacpan.org/pod/Data::Tubes::Plugin::Writer
 
 So, basically, whatever is emitted by one plugin type is good as input
 for the _following_ plugin type:
