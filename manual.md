@@ -399,16 +399,16 @@ We're already at a comparable number of lines...
 
 All of a sudden, your greetings applications starts to choke and you
 eventually figure that it depends on the encoding of the input file. In
-particular, you discover that `iterate_files` defaults on opening files
-as `UTF-8`, which is fine per-se, but when you print things out you get
-strange messages and unfortunately your boss stops you from setting the
-same encoding on STDOUT.
+particular, we saw at the end of the previous section that
+`iterate_files` defaults on opening files as `UTF-8` (look at the
+`binmode` in the equivalent code at the end), which is fine per-se, but
+when you print things out you get strange messages and unfortunately
+your boss stops you from setting the same encoding on STDOUT.
 
 Don't despair! You have a few arrows available. The first one is to just
 turn the input filehandle back to `:raw`, like this:
 
 ```perl
-use Data::Tubes qw< pipeline >;
 pipeline(
    'Source::iterate_files',
    sub { binmode $_[0]->{source}{fh}, ':raw'; return $_[0]; },
@@ -421,13 +421,12 @@ pipeline(
 
 The second one is to avoid setting the encoding in `iterate_files` in
 the first place, which can be obtained by passing options to the
-factory. This is obtained by substituting the simple string with an
-array reference, where the first item is the same as the string (i.e. a
-_locator_ for the factory function), and the following ones are
-arguments for the factory itself:
+factory. Just substitute the simple string with an array reference,
+where the first item is the same as the string (i.e. a _locator_ for the
+factory function), and the following ones are arguments for the factory
+itself:
 
 ```perl
-use Data::Tubes qw< pipeline >;
 pipeline(
    ['Source::iterate_files', open_file_args => {binmode => ':raw'}],
    'Reader::by_line',
@@ -452,7 +451,7 @@ is not the case most of the times.
 
 If you have some complicated format, your best option is to just code a
 tube to deal with it. For example, the following code would turn a
-paragraph with HTTP headers into a hash of arrays:
+paragraph with HTTP headers into a hash:
 
 ```perl
 sub parse_HTTP_headers {
@@ -461,15 +460,11 @@ sub parse_HTTP_headers {
    my %retval;
    for my $line (split /\n/mxs, $headers) {
       my ($name, $value) = split /\s*:\s*/, $line, 2;
-      s{\A\s+|\s+\z}mxs for $name, $value; # lead/trail spaces
-      if (! exists $retval{$name}) {
-         $retval{$name} = $value;
-      }
-      else {
-         $retval{$name} = [$retval{$name}] # turn into array ref
-            unless ref $retval{$name};     # if necessary
-         push @{$retval{$name}}, $value;
-      }
+      $value =~ s{\s+\z}{}mxs; # trailing whitespace
+      $retval{$name} =
+        exists($retval{$name})
+        ? $retval{$name} . ',' . $value
+        : $value;
    }
    return \%retval;
 }
@@ -489,7 +484,6 @@ into paragraphs, where you look for header `X-Name`:
 Adapting to this input is quite easy now:
 
 ```perl
-use Data::Tubes qw< pipeline >;
 pipeline(
    ['Source::iterate_files', open_file_args => {binmode => ':raw'}],
 
@@ -502,14 +496,14 @@ pipeline(
 )->([qw< mydata-03.txt >]);
 ```
 
-From now on, anyway, we will stick to the convention described in
-_What Is A Record, Toolkit Style_ about what's available at the
-different stages, which allows us have stable inputs for tubes without
-having to worry too much about what we have before (within certain
-limits). Hence, here's how our example transforms:
+From now on, anyway, we will stick to the convention described in ["What
+Is A Record, Toolkit Style"](#what-is-a-record-toolkit-style) about
+what's available at the different stages, which allows us have stable
+inputs for tubes without having to worry too much about what we have
+before (within certain limits). Hence, here's how our example
+transforms:
 
 ```perl
-use Data::Tubes qw< pipeline >;
 pipeline(
    # Source management
    ['Source::iterate_files', open_file_args => {binmode => ':raw'}],
@@ -540,15 +534,14 @@ pipeline(
 )->([qw< mydata-03.txt >]);
 ```
 
-As anticipated,
-[Data::Tubes::Plugin::Parser](https://metacpan.org/pod/Data::Tubes::Plugin::Parser)
-contains some pre-canned factories for generating common parsers, mostly
-geared to line-oriented inputs (which can be quite common, anyway). So, if
-your input is as simple as a sequence of fields separated by a character,
-without anything fancy like quoting or escaping, you can simply rely on a
-_format_. For example, suppose you have the following data, with a name
-(that we will assume does not contain a semicolon inside), the nickname
-(ditto) and the age:
+As anticipated, [Data::Tubes::Plugin::Parser][] contains some pre-canned
+factories for generating common parsers, mostly geared to line-oriented
+inputs (which can be quite common, anyway). So, if your input is as
+simple as a sequence of fields separated by a character, without
+anything fancy like quoting or escaping, you can simply rely on
+a _format_. For example, suppose you have the following data, with
+a name (that we will assume does not contain a semicolon inside), the
+nickname (ditto) and the age:
 
     $ cat mydata-04.txt
     Foo;foorious;32
@@ -559,7 +552,6 @@ You might describe each line as being `name;nick;age`, and this is exactly
 what's needed to use `by_format`:
 
 ```perl
-use Data::Tubes qw< pipeline >;
 pipeline(
    # Source management
    ['Source::iterate_files', open_file_args => {binmode => ':raw'}],
@@ -603,11 +595,12 @@ concise:
   ...
 ```
 
-
 Another useful pre-canned parser in the toolkit is `hashy`, that allows
 you to handle something more complicated like sequences of key-value
-pairs. The assumption here is that there are two separators: one for
-separating key-value pairs, one for separating the key from the value.
+pairs. The assumption here is that there are two one-character-long
+separators: one for different key-value pairs, one for separating the
+key from the value.
+
 Here's another example, assuming that the pipe character separates
 pairs, and the equal sign separates the key from the value:
 
@@ -617,7 +610,11 @@ pairs, and the equal sign separates the key from the value:
     age=44|nick=bazzecolas|name=Baz Bazzecolas
 
 As you see, explicit naming of fields allows you to put them in any
-order inside the input:
+order inside the input.
+
+The choice of separators is purely up to you, in this case we have pipe
+characters for groups and the equal sign for separating keys from
+values.
 
 ```perl
 use Data::Tubes qw< pipeline >;
@@ -626,8 +623,11 @@ pipeline(
    'Reader::by_line',
 
    # Parsing, gets `raw`, puts `structured`
-   ['Parser::hashy', chunks_separator => '|',
-      key_value_separator = '='],
+   [
+      'Parser::hashy',
+      chunks_separator => '|',
+      key_value_separator = '='
+   ],
 
    # Rendering, gets `structured`, puts `rendered`
    sub {
@@ -659,14 +659,17 @@ Ordering in this case is purely incidental, again the un-keyed element
 can occur anywhere. The transformation is easy:
 
 ```perl
-use Data::Tubes qw< pipeline >;
 pipeline(
    ['Source::iterate_files', open_file_args => {binmode => ':raw'}],
    'Reader::by_paragraph',
 
    # Parsing, gets `raw`, puts `structured`
-   ['Parser::hashy', default_key => 'nick',
-      chunks_separator => '|', key_value_separator = '='],
+   [
+      'Parser::hashy',
+      default_key => 'nick',
+      chunks_separator => '|',
+      key_value_separator = '='
+   ],
 
    # Rendering, gets `structured`, puts `rendered`
    sub {
@@ -693,7 +696,7 @@ chances to get the job done using `ghashy` (the `g` stands for
 *generalized*). Beware of what you desire.
 
 There are more to discover, take a look at
-[Data::Tubes::Plugin::Parser](https://metacpan.org/pod/Data::Tubes::Plugin::Parser).
+[Data::Tubes::Plugin::Parser][];
 
 ## Rendering
 
