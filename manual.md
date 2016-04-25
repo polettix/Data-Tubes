@@ -776,22 +776,20 @@ it will be expanded into a list that is passed to a helper function
 `Data::Tubes::Util::read_file`... you can guess what it does, can't you?
 
 This is only scratching the surface, if you want a longer story take
-a look at [rendering `with_template_perlish`][render-tp].
+a look at [the dedicated article][render-tp].
 
 [render-tp]: https://github.com/polettix/Data-Tubes/wiki/Rendering-with_template_perlish
 
 ## Writing
 
 The last step in our typical pipeline is writing out stuff. So far, we
-just printed things out on STDOUT, but by no means we're limited to this!
-Let's take a look at
-[Data::Tubes::Plugin::Writer](https://metacpan.org/pod/Data::Tubes::Plugin::Writer).
+just printed things out on STDOUT, but by no means we're limited to
+this! Let's take a look at [Data::Tubes::Plugin::Writer][].
 
 The first tool that can help us is `write_to_files`, that allows us to
 transform our pipeline like this (without changing the behaviour):
 
 ```perl
-use Data::Tubes qw< pipeline >;
 pipeline(
    ['Source::iterate_files', open_file_args => {binmode => ':raw'}],
    'Reader::by_line',
