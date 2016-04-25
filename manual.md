@@ -233,9 +233,8 @@ Baz
 You can do like this:
 
 ```perl
-use Data::Tubes qw< pipeline >;
 pipeline(
-   'Source::iterate_files',
+   '+Source::iterate_files',
    sub {
       my $fh = $_[0]->{source}{fh};
       chomp(my @names = <$fh>);
@@ -339,7 +338,6 @@ Remember the last example from ["Managing Sources"](#managing-sources)?
 Here's a refresher:
 
 ```perl
-use Data::Tubes qw< pipeline >;
 pipeline(
    '+Source::iterate_files',
    sub {
@@ -359,7 +357,6 @@ thing that we have to consider is that the read line will be put in the
 `raw` field of a hash-based record:
 
 ```perl
-use Data::Tubes qw< pipeline >;
 pipeline(
    'Source::iterate_files',
    'Reader::by_line',
@@ -370,18 +367,33 @@ pipeline(
 ```
 
 Your eagle eye will surely have noticed that we got rid of the initial
-plus sign before the name of the plugin. If your plugin lives directly
-under the `Data::Tubes::Plugin` namespace, this is fine (although, if
-you go deeper, like `Data::Tubes::Plugin::Foo::Bar::Baz`, you will need
-to put the plus sign to get rid of the initial part until `Plugin`
-included).
+plus sign before the name of the plugin. As explained in ["Managing
+Sources"](#managing-sources), when it's only the plugin name (as a
+single keyword) and the factory name it will DWIM, so we will not bother
+any more in the rest of this manual. Your approach might differ of
+course.
 
 A plugin to read by line might seem overkill, but it already started
 sparing us a few lines of code, and I guess there are plenty of occasions
-where your input records are line-based. You're invited to take a look at
-[Data::Tubes::Plugin::Reader](https://metacpan.org/pod/Data::Tubes::Plugin::Reader),
-where you might find `by_paragraph`, that reads... by the paragraph, and
-other reading functions.
+where your input records are line-based. You're invited to take a look
+at [Data::Tubes::Plugin::Reader][], where you might find `by_paragraph`,
+that reads... by the paragraph, and other reading functions.
+
+Before the end of this section, it's also worth taking a look at the
+equivalent "straight code" in Perl:
+
+```perl
+for my $filename (qw< mydata-01.txt mydata-02.txt >) {
+    open my $fh, '<', $filename or die "open(): $!\n";
+    binmode $fh, ':encoding(UTF-8)';
+    while (<$fh>) {
+        chomp();
+        print "Hey, $_!\n";
+    }
+}
+```
+
+We're already at a comparable number of lines...
 
 ## Passing Options To Plugins
 
