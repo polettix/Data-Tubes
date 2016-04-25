@@ -111,27 +111,27 @@ address the use case above, or the variant you might have.
 ## What You Need 99% Of The Times
 
 In most of the cases, you will only need to use function `pipeline` from
-the main module [Data::Tubes](https://metacpan.org/pod/Data::Tubes). It
-allows you to define a sequence of tubes, or things that can be turned
-into tubes, with minimal hassle.
+the main module [Data::Tubes][]. It allows you to define a sequence of
+tubes, or things that can be turned into tubes, with minimal hassle.
 
 To show you how to use it, we will replicate the behaviour of the
 following simple program:
 
 ```perl
 my @names = qw< Foo Bar Baz >;
+
 for my $name (@names) {
    print "Hey, $name!\n";
 }
 ```
 
-We can re-implement it with
-[Data::Tubes](https://metacpan.org/pod/Data::Tubes) using much, much more
-code! Here's some way to do it:
+We can re-implement it with [Data::Tubes][] using much, much more code!
+Here's some way to do it:
 
 ```perl
-use Data::Tubes qw< pipeline >;
 my @names = qw< Foo Bar Baz >;
+
+use Data::Tubes qw< pipeline >;
 pipeline(
    sub { return records => $_[0] }, # will iterate over items
    sub { return "Hey, $_[0]!\n"  }, # returns the string
@@ -144,25 +144,23 @@ Does not seem to be very exciting, huh? Whatever, it allows us to get
 our feet wet with `pipeline`:
 
 - it returns a sub reference that behaves like a tube itself. The `tap`
-indication in the final options hash reference says that the output
-should be thrown in the `sink`, so this tube will always return
-nothing, but it's ok;
-- it makes sure to get the output from a tube, and feed the following tube
-accordingly. In particular, if a tube returns multiple records (e.g. the
-first tube does this, as it returns `records` and a reference to an
-array), it takes care to iterate over all of them and feed them to the
-following tube one by one;
+  indication in the final options hash reference says that the output
+  should be thrown in the `sink`, so this tube will always return
+  nothing, but it's ok;
+- it makes sure to get the output from a tube, and feed the following
+  tube accordingly. In particular, if a tube returns multiple records
+  (e.g. the first tube does this, as it returns `records` and a
+  reference to an array), it takes care to iterate over all of them and
+  feed them to the following tube one by one;
 - it does not make any assumption as to the nature of the _record_ at
-each step
+  each step
 - thanks to the specific setting for `tap`, it takes care to exhaust all
-inputs and possible intermediate records that are generated.
+  inputs and possible intermediate records that are generated.
 
 Of course, we might have decided that the rendering step was not needed
 in our case, so we might have done something like this:
 
 ```perl
-use Data::Tubes qw< pipeline >;
-my @names = qw< Foo Bar Baz >;
 pipeline(
    sub { return records => $_[0] }, # will iterate over items
    sub { print "Hey, $_[0]!\n"   },
@@ -173,8 +171,34 @@ pipeline(
 It really depends on what you want to do. In general terms, it's still
 useful to think the pipeline in terms of the ["Typical Use
 Case"](#typical-use-case), because the toolset provided by
-[Data::Tubes](https://metacpan.org/pod/Data::Tubes)' plugins usually
-provide you only one of those steps but, again, it's up to you.
+[Data::Tubes][]' plugins usually provide you only one of those steps
+but, again, it's up to you.
+
+You might be wondering at this point: is it worth the effort? How would
+complicating a simple operation like the initial loop lead to a benefit?
+Here are the few advantages that actually led to [Data::Tubes][]:
+
+- thinking in terms of _records_ that traverse operations is a
+  convenient way to add/drop intermediate steps as you evolve in your
+  code. Knowing that you are going to have all info at hand provides you
+  an invaluable tool for inspecting and debugging;
+- what you are concentrating on initially might not be what you want to
+  focus later. For example, you might initially just assume that your
+  inputs come from a file. Then you wonder about getting them from
+  standard input, to support UNIX pipes style. Then you are told that
+  sometimes inputs come in multiple files. All of a sudden, you end up
+  managing input records of a different nature (i.e. the sources
+  themselves) but what you are really interested to is transforming
+  those *macro-records* into what you have to really process;
+- having a toolkit of transformation operations that act over a
+  (hopefully) consistent interface can greatly speed up your code
+  production, letting you concentrate on the logic instead of other
+  details.
+
+Hence, if your program is going to remain a simple loop, there's really
+no absolute reason for using [Data::Tubes][]. If it's just the initial
+*proof of concept* of something that you suspect might turn into a
+beast, you might want to read on.
 
 ## Managing Sources
 
@@ -1455,10 +1479,10 @@ _avoid_ setting a `tap`, otherwise we wouldn't get a tube back!
 ## Process In Peace
 
 Alas, we have come to the end of our journey through
-[Data::Tubes](https://metacpan.org/pod/Data::Tubes). There's much more to
+[Data::Tubes][]. There's much more to
 discover in the manual pages for each individual module: 
 
-- [Data::Tubes](https://metacpan.org/pod/Data::Tubes)
+- [Data::Tubes][]
 - [Data::Tubes::Plugin::Parser](https://metacpan.org/pod/Data::Tubes::Plugin::Parser)
 - [Data::Tubes::Plugin::Plumbing](https://metacpan.org/pod/Data::Tubes::Plugin::Plumbing)
 - [Data::Tubes::Plugin::Reader](https://metacpan.org/pod/Data::Tubes::Plugin::Reader)
@@ -1470,7 +1494,7 @@ discover in the manual pages for each individual module:
 - [Data::Tubes::Util::Output](https://metacpan.org/pod/Data::Tubes::Util::Output)
 
 If you want to contribute,
-[Data::Tubes](https://metacpan.org/pod/Data::Tubes) is on GitHub at
+[Data::Tubes][] is on GitHub at
 [https://github.com/polettix/Data-Tubes](https://github.com/polettix/Data-Tubes).
 One way to contribute might be releasing your own plugins... e.g. if you
 prefer to use [Template](https://metacpan.org/pod/Template) instead of
