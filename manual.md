@@ -702,12 +702,14 @@ There are more to discover, take a look at
 
 If you have to render a very simple string like the salutation we saw so
 far, the simple system we used so far is quite effective. If your output
-gets any more complicated, chances are you can benefit from using a
-template. The plugin [Data::Tubes::Plugin::Renderer](https://metacpan.org/pod/Data::Tubes::Plugin::Renderer) provides you a
-factory to use templates built for [Template::Perlish](https://metacpan.org/pod/Template::Perlish), let's see how.
+gets any more complicated, chances are you can benefit from using
+a template. The plugin [Data::Tubes::Plugin::Renderer][] provides you
+a factory to use templates built for [Template::Perlish][], let's see
+how.
+
+[Template::Perlish]: https://metacpan.org/pod/Template::Perlish
 
 ```perl
-use Data::Tubes qw< pipeline >;
 pipeline(
    ['Source::iterate_files', open_file_args => {binmode => ':raw'}],
    'Reader::by_line',
@@ -730,14 +732,15 @@ END
 )->([qw< mydata-04.txt >]);
 ```
 
-As long as you only have _simple_ variables,
-[Template::Perlish](https://metacpan.org/pod/Template::Perlish) behaves
-much like the famous [Template](https://metacpan.org/pod/Template)
-toolkit. Anything more complicated leads you to using Perl, anyway.
+As long as you only have _simple_ variables, [Template::Perlish][]
+behaves much like the famous [Template Toolkit][Template].
+Anything more complicated leads you to using Perl, anyway.
+
+[Template]: https://metacpan.org/pod/Template
 
 The same sequence can of course be used to render the input data in some
 other format, e.g. as YAML as in the following example (we're ignoring
-the need to do any escaping, of course):
+the need to do any escaping... just to get the idea):
 
 ```perl
 use Data::Tubes qw< pipeline >;
@@ -771,6 +774,11 @@ first one. It is also worth noting that this parameter undergoes some
 DWIMmery before being used. In particular, if you pass an array reference
 it will be expanded into a list that is passed to a helper function
 `Data::Tubes::Util::read_file`... you can guess what it does, can't you?
+
+This is only scratching the surface, if you want a longer story take
+a look at [rendering `with_template_perlish`][render-tp].
+
+[render-tp]: https://github.com/polettix/Data-Tubes/wiki/Rendering-with_template_perlish
 
 ## Writing
 
