@@ -110,9 +110,13 @@ address the use case above, or the variant you might have.
 
 ## What You Need 99% Of The Times
 
-In most of the cases, you will only need to use function `pipeline` from
-the main module [Data::Tubes][]. It allows you to define a sequence of
-tubes, or things that can be turned into tubes, with minimal hassle.
+In most of the cases, you will only need to use function [pipeline][]
+from the main module [Data::Tubes][]. It allows you to define a sequence
+of tubes, or things that can be turned into tubes, with minimal hassle.
+
+[pipeline]: https://metacpan.org/pod/Data::Tubes#pipeline
+[summon]: https://metacpan.org/pod/Data::Tubes#summon
+[sequence]: https://metacpan.org/pod/Data::Tubes::Plugin::Plumbing#sequence
 
 To show you how to use it, we will replicate the behaviour of the
 following simple program:
@@ -141,7 +145,7 @@ pipeline(
 ```
 
 Does not seem to be very exciting, huh? Whatever, it allows us to get
-our feet wet with `pipeline`:
+our feet wet with [pipeline][]:
 
 - it returns a sub reference that behaves like a tube itself. The `tap`
   indication in the final options hash reference says that the output
@@ -210,9 +214,11 @@ of nothing. You decide.
 
 If you happen to take your inputs from files, the toolbox provides you
 with a few tools inside [Data::Tubes::Plugin::Source][] One, in
-particular, will be your friend most of the times: `iterate_files`.
+particular, will be your friend most of the times:
+[iterate\_files][iterate-files].
 
 [Data::Tubes::Plugin::Source]: https://metacpan.org/pod/Data::Tubes::Plugin::Source
+[iterate-files]: https://metacpan.org/pod/Data::Tubes::Plugin::Source#iterate_files
 
 This function is a _factory_, in the sense that you give it some
 arguments and it returns you a tube-compliant sub reference. All it does
@@ -250,10 +256,10 @@ In other terms, you have substituted the input gathering process with
 different tubes, while keeping the rest of the pipeline as it was
 before.
 
-We can notice one interesting thing about `pipeline`: in addition to
-_real_ tubes, i.e. sub references, it can accept simple strings as
-well, that it will take care to automatically transform into tubes. In
-this case, it first turns `Source::iterate_files` into
+We can notice one interesting thing about [pipeline][]: in addition to
+_real_ tubes, i.e. sub references, it can accept simple strings as well,
+that it will take care to automatically transform into tubes. In this
+case, it first turns `Source::iterate_files` into
 `Data::Tubes::Plugin::Source::iterate_files`, then loads the function
 `iterate_files` from the relevant module and used it as a factory to
 generate the real tube. We will see later how we can pass additional
@@ -353,9 +359,13 @@ pipeline(
 ```
 
 It turns out that you actually don't need to do the reading of the file
-line by line yourself, because there's a plugin to do that. The only
+line by line yourself, because there's a pre-canned function to do that,
+[read\_by\_line][by-line] (also known as [by\_line][by-line]). The only
 thing that we have to consider is that the read line will be put in the
 `raw` field of a hash-based record:
+
+[by-line]: https://metacpan.org/pod/Data::Tubes::Plugin::Reader#by_line
+[by-paragraph]: https://metacpan.org/pod/Data::Tubes::Plugin::Reader#by_paragraph
 
 ```perl
 pipeline(
@@ -377,8 +387,9 @@ course.
 A plugin to read by line might seem overkill, but it already started
 sparing us a few lines of code, and I guess there are plenty of occasions
 where your input records are line-based. You're invited to take a look
-at [Data::Tubes::Plugin::Reader][], where you might find `by_paragraph`,
-that reads... by the paragraph, and other reading functions.
+at [Data::Tubes::Plugin::Reader][], where you might find
+[by\_paragraph][by-paragraph], that reads... by the paragraph, and other
+reading functions.
 
 Before the end of this section, it's also worth taking a look at the
 equivalent "straight code" in Perl:
@@ -401,10 +412,11 @@ We're already at a comparable number of lines...
 All of a sudden, your greetings applications starts to choke and you
 eventually figure that it depends on the encoding of the input file. In
 particular, we saw at the end of the previous section that
-`iterate_files` defaults on opening files as `UTF-8` (look at the
-`binmode` in the equivalent code at the end), which is fine per-se, but
-when you print things out you get strange messages and unfortunately
-your boss stops you from setting the same encoding on STDOUT.
+[iterate\_files][iterate-files] defaults on opening files as `UTF-8`
+(look at the `binmode` in the equivalent code at the end), which is fine
+per-se, but when you print things out you get strange messages and
+unfortunately your boss stops you from setting the same encoding on
+STDOUT.
 
 Don't despair! You have a few arrows available. The first one is to just
 turn the input filehandle back to `:raw`, like this:
@@ -420,12 +432,12 @@ pipeline(
 )->([qw< mydata-01.txt mydata-02.txt >]);
 ```
 
-The second one is to avoid setting the encoding in `iterate_files` in
-the first place, which can be obtained by passing options to the
-factory. Just substitute the simple string with an array reference,
-where the first item is the same as the string (i.e. a _locator_ for the
-factory function), and the following ones are arguments for the factory
-itself:
+The saner alternative is to avoid setting the encoding in
+[iterate\_files][iterate-files] in the first place, which can be
+obtained by passing options to the factory. Just substitute the simple
+string with an array reference, where the first item is the same as the
+string (i.e. a _locator_ for the factory function), and the following
+ones are arguments for the factory itself:
 
 ```perl
 pipeline(
@@ -442,7 +454,11 @@ hash (i.e. a list of key/value pairs) or a hash reference. In many cases,
 anyway, there is one parameter that somehow is *outstanding*; if you hit
 such a factory function, you will be allowed to pass the first parameter
 without explicitly naming it. We will see an example with
-`Parser::by_format` below.
+[Parser::by\_format][by-format] below.
+
+[by-format]: https://metacpan.org/pod/Data::Tubes::Plugin::Parser#by_format
+[hashy]: https://metacpan.org/pod/Data::Tubes::Plugin::Parser#hashy
+[ghashy]: https://metacpan.org/pod/Data::Tubes::Plugin::Parser#ghashy
 
 ## Parsing
 
@@ -549,8 +565,8 @@ nickname (ditto) and the age:
     Bar;barious;19
     Baz;bazzecolas;44
 
-You might describe each line as being `name;nick;age`, and this is exactly
-what's needed to use `by_format`:
+You might describe each line as being `name;nick;age`, and this is
+exactly what's needed to use [by\_format][by-format]:
 
 ```perl
 pipeline(
@@ -584,10 +600,10 @@ Actually, any sequence of non-word characters (Perl-wise) is considered
 a separator in the format, and any sequence of word characters is
 considered the name of a field.
 
-As anticipated, `Parser::by_format` is one of those tube factories where
-one of the allowed arguments *outstands* with respect to the others, and
-you can guess what it is: `format`. For this reason, you can be more
-concise:
+As anticipated, [by\_format][by-format] is one of those tube factories
+where one of the allowed arguments *outstands* with respect to the
+others, and you can guess what it is: `format`. For this reason, you can
+be more concise:
 
 ```perl
   ...
@@ -596,11 +612,11 @@ concise:
   ...
 ```
 
-Another useful pre-canned parser in the toolkit is `hashy`, that allows
-you to handle something more complicated like sequences of key-value
-pairs. The assumption here is that there are two one-character-long
-separators: one for different key-value pairs, one for separating the
-key from the value.
+Another useful pre-canned parser in the toolkit is [hashy][], that
+allows you to handle something more complicated like sequences of
+key-value pairs. The assumption here is that there are two
+one-character-long separators: one for different key-value pairs, one
+for separating the key from the value.
 
 Here's another example, assuming that the pipe character separates
 pairs, and the equal sign separates the key from the value:
@@ -618,7 +634,6 @@ characters for groups and the equal sign for separating keys from
 values.
 
 ```perl
-use Data::Tubes qw< pipeline >;
 pipeline(
    ['Source::iterate_files', open_file_args => {binmode => ':raw'}],
    'Reader::by_line',
@@ -647,7 +662,7 @@ pipeline(
 )->([qw< mydata-05.txt >]);
 ```
 
-`hashy` also allows setting a _default key_, in case none is found for
+[hashy][] also allows setting a _default key_, in case none is found for
 a pair, so that you can have something like this if your lines are
 _indexed_ by nick:
 
@@ -693,11 +708,11 @@ If you're in real hurry and you find hashy a bit too strict (single
 character to separate chunks, single character to separate keys and
 values, no automatic removal of leading/trailing spaces, defaults that
 might not be what you have... are we joking?!?) you can increase your
-chances to get the job done using `ghashy` (the `g` stands for
+chances to get the job done using [ghashy][] (the `g` stands for
 *generalized*). Beware of what you desire.
 
 There are more to discover, take a look at
-[Data::Tubes::Plugin::Parser][];
+[Data::Tubes::Plugin::Parser][].
 
 ## Rendering
 
@@ -706,9 +721,10 @@ far, the simple system we used so far is quite effective. If your output
 gets any more complicated, chances are you can benefit from using
 a template. The plugin [Data::Tubes::Plugin::Renderer][] provides you
 a factory to use templates built for [Template::Perlish][], let's see
-how.
+how [with\_template\_perlish][with-tp] works.
 
 [Template::Perlish]: https://metacpan.org/pod/Template::Perlish
+[with-tp]: https://metacpan.org/pod/Data::Tubes::Plugin::Renderer#with_template_perlish
 
 ```perl
 pipeline(
@@ -774,7 +790,10 @@ As you have probably guessed by now, you can get rid of the name
 first one. It is also worth noting that this parameter undergoes some
 DWIMmery before being used. In particular, if you pass an array reference
 it will be expanded into a list that is passed to a helper function
-`Data::Tubes::Util::read_file`... you can guess what it does, can't you?
+[Data::Tubes::Util::read\_file][read-file]... you can guess what it
+does, can't you?
+
+[read-file]: https://metacpan.org/pod/Data::Tubes::Util#read_file
 
 This is only scratching the surface, if you want a longer story take
 a look at [the dedicated article][render-tp].
@@ -787,8 +806,11 @@ The last step in our typical pipeline is writing out stuff. So far, we
 just printed things out on STDOUT, but by no means we're limited to
 this! Let's take a look at [Data::Tubes::Plugin::Writer][].
 
-The first tool that can help us is `write_to_files`, that allows us to
-transform our pipeline like this (without changing the behaviour):
+The first tool that can help us is [write\_to\_files][to-files] (or its
+alias [to\_files][to-files]), that allows us to transform our pipeline
+like this (without changing the behaviour):
+
+[to-files]: https://metacpan.org/pod/Data::Tubes::Plugin::Writer#to_files
 
 ```perl
 pipeline(
@@ -814,9 +836,10 @@ END
 From here, it's easy to deduce that you can pass other things as
 `filename`, for example... a filename!
 
-You have surely noticed that we talked about function `write_to_files` but
-then used `to_files`. Every plugin usually has the double version of each
-factory function for easier typing.
+You have surely noticed that we talked about function
+[write\_to\_files][to-files] but then used the alias
+[to\_files][to-files]. Every plugin usually has the double version of
+each factory function for easier typing.
 
 ### Framing records
 
@@ -898,8 +921,8 @@ a trailing one, so the following would be incorrect:
 
 because the last comma would be out of place.
 
-Fortunately, `to_files` can help you with `header`, `interlude` and
-`footer`:
+Fortunately, [to\_files][to-files] can help you with `header`,
+`interlude` and `footer`:
 
 ```perl
 pipeline(
@@ -967,17 +990,17 @@ This now prints:
 
 which you might like more.
 
-As we already discussed for `Renderer::with_template_perlish`, the three
-arguments `header`, `interlude` and `footer` can either be strings, or
-array references that will be turned into the argument list for
-`Data::Tubes::Util::read_file`.
+As we already discussed for [with\_template\_perlish][with-tp], the
+three arguments `header`, `interlude` and `footer` can either be
+strings, or array references that will be turned into the argument list
+for `Data::Tubes::Util::read_file`.
 
 ### Segmenting the output
 
 If you're handling _a lot_ of input records, you might want to segment
 the output in order to distribute the records into multiple files,
-instead of having only one single file. It turns out that `to_files`
-gets you covered also in this case!
+instead of having only one single file. It turns out that
+[to\_files][to-files] gets you covered also in this case!
 
 The basic thing that you can do is to set a _policy_ object, where you
 have two knobs: `records_threshold` and `characters_threshold`. They set
@@ -1071,9 +1094,11 @@ This should make you happy, at least!
 
 ### Output encoding
 
-Last thing you need to know about `to_files` is that you can set the
-encoding too, just set a `CORE::binmode` compatible string using the
-`binmode` argument, that is set to `:encoding(UTF-8)` by default.
+Last thing you need to know about [to\_files][to-files] is that you can
+set the encoding too, just set
+a [CORE::binmode](http://perldoc.perl.org/functions/binmode.html)
+compatible string using the `binmode` argument, that is set to
+`:encoding(UTF-8)` by default.
 
 ```perl
 use Data::Tubes qw< pipeline >;
@@ -1100,9 +1125,9 @@ Now, you have full control over your output. Or have you?
 
 ## Writing, Reloaded
 
-In the previous section about ["Writing"](#writing) we saw that there's a very
-flexible tool `to_files`. Is it sufficient to get you covered in all
-cases? Arguably not.
+In the previous section about ["Writing"](#writing) we saw that there's
+a very flexible tool [to\_files][to-files]. Is it sufficient to get you
+covered in all cases? Arguably not.
 
 Suppose that you want to divide your outputs in two groups, one with
 people with nicknames starting with letter `a` to `m`, another with
@@ -1111,8 +1136,8 @@ the rest. How do you do this?
 ### Dispatching manually
 
 One interesting thing about the toolkit is that you can use its
-functions outside of `pipeline`, if you need to. The `summon` function
-helps you import the right function with minimal hassle.
+functions outside of [pipeline][], if you need to. The [summon][]
+function helps you import the right function with minimal hassle.
 
 For example, you can do like this:
 
@@ -1162,8 +1187,11 @@ technique! But there's more... read on.
 Considering that dispatching can be quite common, you can guess that
 there's something in the toolkit to get you covered. You guessed right!
 
-[Data::Tubes::Plugin::Writer][] provides you `dispatch_to_files`, that
-helps you streamline what we saw in the previous section. Here's how:
+[Data::Tubes::Plugin::Writer][] provides you
+[dispatch\_to\_files][dispatch-to-files], that helps you streamline what
+we saw in the previous section. Here's how:
+
+[dispatch-to-files]: https://metacpan.org/pod/Data::Tubes::Plugin::Writer#dispatch_to_files
 
 ```perl
 pipeline(
@@ -1195,9 +1223,9 @@ pipeline(
 )->([qw< mydata-04.txt >]);
 ```
 
-Most parameters are the same as `to_files`, so we already know about
-them. The `filename` seems familiar but somewhat different. The
-`selector` is definitely a new entry.
+Most parameters are the same as [to\_files][to-files], so we already
+know about them. The `filename` seems familiar but somewhat different.
+The `selector` is definitely a new entry.
 
 The latter (`selector`) is a sub reference that receives the record as
 input, and is supposed to provide a _key_ back. Whenever this key is
@@ -1224,8 +1252,9 @@ added flexibility... take a look to the documentation to see how.
 In ["Dispatching, the movie"](#dispatching-the-movie) we saw that you can
 dispatch to the right output channel depending on what's inside each
 single record. The dispatching technique can be applied to other stages,
-though, if you are brave enough to look at `dispatch` in
-[Data::Tubes::Plugin::Plumbing][Plumbing].
+though, if you are brave enough to look at [dispatch][].
+
+[dispatch]: https://metacpan.org/pod/Data::Tubes::Plugin::Plumbing#dispatch
 
 ### General dispatching
 
@@ -1298,16 +1327,17 @@ key in the arguments, but if you already have your key in the record you
 can just set a `key` argument. In this example, we're doing this
 classification immediately after the parse phase, so from that point on we
 have a `class` key inside the record, that we can use (and we do, both
-in `dispatch` and in `dispatch_to_files`. This is the advantage of
-having all the details about a record along the pipeline, although you
-might argue that this might introduce some *action at a distance*).
+in [dispatch][] and in [dispatch\_to\_files][dispatch-to-files]. This is
+the advantage of having all the details about a record along the
+pipeline, although you might argue that this might introduce some
+*action at a distance*).
 
 In case the dispatcher does not (yet) know which tube is associated to a
 given string returned by the _selector_, it's time for some
-_generation_. `dispatch_to_files` already knows how to generate files
-(although you can override this), and is fine with `filename_template`;
-on the other hand, the generic `dispatch` needs to know something more,
-which is why we're using `factory` here.
+_generation_. [dispatch\_to\_files][dispatch-to-files] already knows how
+to generate files (although you can override this), and is fine with
+`filename_template`; on the other hand, the generic [dispatch][] needs
+to know something more, which is why we're using `factory` here.
 
 The `factory` in a dispatcher allows you to receive the key returned by
 the selector (and also the whole record, should you need it) and return
@@ -1443,10 +1473,10 @@ example, we might want to avoid processing wrong records too much, but
 do some additional mangling on good ones.
 
 Enter `sequence` from [Data::Tubes::Plugin::Plumbing]. This function is
-similar to `pipeline` --as a matter of fact, `pipeline` uses it behind
-the scenes, and returns it if you don't provide any `tap`.
+similar to [pipeline][] --as a matter of fact, [pipeline][] uses it
+behind the scenes, and returns it if you don't provide any `tap`.
 
-Hence, you can use dispatch to divide your flow across different
+Hence, you can use [dispatch][] to divide your flow across different
 sequences, each with its own processing. Let's see how.
 
 ```perl
@@ -1518,16 +1548,16 @@ Of course, we might have just added `message` to the sub-hash
 `structured`, but that would have been sort of cheating, wouldn't it?
 
 The second thing is that, as anticipated, we managed to create two
-different tracks for the input records, where the `Plumbing::dispatch`
-does the split of the records stream across them. This allows each of
-the sub-tube to be independent of each other (there are two here, they
-might be many more of course). Note that `$good` and `$bad` are
-created using `pipeline` (so that we avoid `summon`ing
-`Plumbing::sequence` and shave off a few characters), taking care to
-_avoid_ setting a `tap`. This is not strictly necessary, because the
-`sink` tap actually generates a valid tube, but we want to be sure that
-we get a record from either tube in case we need to add some
-post-processing at some later time in the future.
+different tracks for the input records, where [dispatch][] does the
+split of the records stream across them. This allows each of the
+sub-tube to be independent of each other (there are two here, they might
+be many more of course). Note that `$good` and `$bad` are created using
+[pipeline][] (so that we avoid [summon][]ing [sequence][] and shave off
+a few characters), taking care to _avoid_ setting a `tap`. This is not
+strictly necessary, because the `sink` tap actually generates a valid
+tube, but we want to be sure that we get a record from either tube in
+case we need to add some post-processing at some later time in the
+future.
 
 ## Process In Peace
 
