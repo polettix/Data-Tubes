@@ -21,22 +21,22 @@ This manual is a bit long... here's a table of contents for guiding you:
 
 ## A Few Definitions
 
-A _record_ can be whatever scalar you can think of. I might even be
+A _record_ can be whatever scalar you can think of. It might even be
 `undef`. What's in a record, and what it does mean, is completely up to
 you --and, of course, to the tube that is going to manage that record.
 
 A _record_ might even evolve through the pipeline to become something
-different, e.g. multiple records. In other words, some tubes might take
-an input record of some nature, and emit output record(s) of a
-completely different one. Again, it's up to the tube to decide this,
-which means that, eventually, it's up to you.
+different, e.g. multiple records or no record at all. In other words,
+some tubes might take an input record of some nature, and emit output
+record(s) of a completely different one. Again, it's up to the tube to
+decide this, which means that, eventually, it's up to you.
 
 So, a _tube_ is a transformation function, that turns one single _input
 record_ into zero, one or more _output records_, according to the model
 drawn below:
 
                \________/
-                           --| nothing
+                           --X nothing
      input  --\            --> one output record
      record --/            ==> some output records (array reference)
                 _________  ==> some output records (iterator)
@@ -50,12 +50,9 @@ called outside of the _tube_ definition);
 - at each call in _list context_, returns one of the following (every
 call is a story apart, of course):
     - _nothing_ (i.e. the empty list);
-
     - _exactly one scalar_, representing the _output record_;
-
     - the string `records` followed by an _array reference_, containing
       the sequence of _output records_;
-
     - the string _iterator_ followed by a _sub reference_, from where you
       can draw the _output records_.
 
