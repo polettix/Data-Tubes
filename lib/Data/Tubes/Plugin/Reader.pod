@@ -98,7 +98,7 @@ name of the tube, for easier debugging;
 
 name of the output field. The output record is ALWAYS a hash reference,
 containing the input record and the output correponding to this key.
-Defaults to c<raw>;
+Defaults to C<raw>;
 
 =item C<record_reader>
 
@@ -154,7 +154,7 @@ name of the tube, for easier debugging;
 
 name of the output field. The output record is ALWAYS a hash reference,
 containing the input record and the output correponding to this key.
-Defaults to c<raw>;
+Defaults to C<raw>;
 
 =item C<separator>
 

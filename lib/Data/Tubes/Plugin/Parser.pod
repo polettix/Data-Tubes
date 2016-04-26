@@ -124,6 +124,10 @@ name of the tube, useful for debugging;
 
 name of the output field, defaults to C<structured>;
 
+=item C<trim>
+
+remove leading and trailing whitespaces from the extracted values.
+
 =back
 
 =item B<< by_regex >>
@@ -189,6 +193,35 @@ The following arguments are supported:
 
 =over
 
+=item C<double_quoted>
+
+accept as values also double-quoted strings. These strings are delimited
+by double quotes (defined as ASCII 0x22) and whatever they contain is
+taken verbatim except for backslashes, that escape the following
+character (which might be, for example, a double quote or a backslash
+itself).
+
+Double-quoted strings can contain virtually everything, including
+separators (that will not be matched), double quotes (via escaping) and
+backslashes (again, via escaping).
+
+When this option is I<true> and a double-quoted string is matched, the
+quotes are removed and the rest of the string is de-escaped before being
+set in the relevant slot of the output record.
+
+See also C<escaped> and C<single_quoted>;
+
+=item C<escaped>
+
+accepts escaped sequences, where the backslash characters acts as an
+escaping mechanism allowing the verbatim introduction of its following
+character (which might be a backslash itself). This allows you to insert
+sequences that might otherwise be matched by separators.
+
+When this option is I<true> and an escaped string is matched, the string
+is de-escaped before being set in the relevant slot of the output
+record;
+
 =item C<input>
 
 name of the input field, defaults to C<raw>;
@@ -206,11 +239,69 @@ name of the tube, useful for debugging;
 
 name of the output field, defaults to C<structured>;
 
+=item C<quoted>
+
+if I<true>, same as setting C<double_quoted> and C<single_quoted> to
+I<true>;
+
 =item C<separators>
 
 a reference to an array containing the list of separators to be used for
 splitting the input. This parameter can also be passed as the first,
 unnamed argument.
+
+Each separator can be:
+
+=over
+
+=item *
+
+a I<sub reference>, that is invoked once with a reference to the arguments,
+and must return either of the following forms;
+
+=item *
+
+a I<regular expression reference>, that will be used as-is at the right
+place;
+
+=item *
+
+a I<plain string>, that will be matched verbatim (through a regular
+expression matching the string after passing it through
+C<CORE::quotemeta>);
+
+=back
+
+=item C<single_quoted>
+
+accept as values also single-quoted strings. These strings are delimited
+by single quotes (defined as ASCII 0x27) and whatever they contain is
+taken verbatim. This is different from single-quoted strings in Perl
+where you can escape a few characters, there is no escaping mechanism
+available here.
+
+Single-quoted strings can contain separators without them being matched.
+In particular, this means you cannot insert a single quote in a
+single-quoted string. If you need, either use C<escaped> or
+C<double_quoted> strings.
+
+When this option is I<true> and a single-quoted string is matched, the
+quotes are removed and the rest of the string is set in the relevant
+slot of the output record;
+
+=item C<specials>
+
+if I<true>, same as setting C<double_quoted>, C<escaped> and
+C<single_quoted> to I<true>;
+
+=item C<trim>
+
+remove leading and trailing whitespaces from the extracted values.
+Example:
+
+   @seps  = qw< : ; , >;
+   $input = ' what : ever    ;you,do  ';
+   @elements = ('what', 'ever', 'you', 'do');
 
 =back
 
@@ -270,9 +361,21 @@ name of the output field, defaults to C<structured>;
 
 =item C<separator>
 
-a reference to an array containing the list of separators to be
-used for splitting the input. This is the I<main> argument, and can be
-passed also as the first unnamed one in the argument list.
+the separator to be used for C<CORE::split>. If it is a code reference,
+it is invoked once with the provided arguments to get the separator
+back. After this, it can be either a regular expression, used as-is, or
+a string that is passed through C<CORE::quotemeta> before being used;
+
+=item C<trim>
+
+remove leading and trailing whitespaces from the extracted values. As
+you might expect, if the C<separator> is a colon, the following input:
+
+   $input = ' what : ever    :you:do  ';
+
+would be split into the following elements:
+
+   @elements = ('what', 'ever', 'you', 'do');
 
 =back
 

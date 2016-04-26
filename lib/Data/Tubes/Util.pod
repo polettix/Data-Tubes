@@ -764,6 +764,12 @@ test whether all elements in C<@list> are equal to one another or not,
 and return test output as a boolean value (i.e. something that Perl
 considers true or false).
 
+=item B<< trim >>
+
+   trim(@strings);
+
+remove leading/trailing whitespaces from input C<@strings>, in-place.
+
 =item B<< traverse >>
 
    my $item = traverse($data, @keys);

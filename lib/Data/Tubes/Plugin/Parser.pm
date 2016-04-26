@@ -14,6 +14,7 @@ use Data::Tubes::Util qw<
   normalize_args
   shorter_sub_names
   test_all_equal
+  trim
   unzip
 >;
 use Data::Tubes::Plugin::Util qw< identify >;
@@ -42,17 +43,21 @@ sub parse_by_format {
      or LOGDIE "'format' parser [$format] "
      . "has duplicate key $EVAL_ERROR->{message}";
 
-   # a simple split will do if all separators are the same
-   return parse_by_split(
-      %args,
-      keys      => $keys,
-      separator => $separators->[0]
-   ) if test_all_equal(@$separators);
+   my $value = $args{value} //= ['whatever'];
+   $value = [$value] unless ref $value;
+   my $multiple = (scalar(@$value) > 1) || ($value->[0] ne 'whatever');
 
    return parse_by_separators(
       %args,
       keys       => $keys,
       separators => $separators
+   ) if $multiple || !test_all_equal(@$separators);
+
+   # a simple split will do if all separators are the same
+   return parse_by_split(
+      %args,
+      keys      => $keys,
+      separator => $separators->[0]
    );
 } ## end sub parse_by_format
 
@@ -84,14 +89,141 @@ sub parse_by_regex {
    };
 } ## end sub parse_by_regex
 
+sub _resolve_separator {
+   my ($separator, $args) = @_;
+   return unless defined $separator;
+   $separator = $separator->($args) if ref($separator) eq 'CODE';
+   my $ref = ref $separator;
+   return $separator if $ref eq 'Regexp';
+   LOGCROAK "$args->{name}: unknown separator type $ref" if $ref;
+   $separator = quotemeta $separator;
+   return qr{(?-i:$separator)};
+} ## end sub _resolve_separator
+
+sub _resolve_value {
+   my ($value, $args) = @_;
+   $value //= 'whatever';
+   $value = $value->($args) if ref($value) eq 'CODE';
+   my $ref = ref $value;
+   return $value if $ref eq 'Regexp';
+   ($value, $ref) = ([$value], 'ARRAY') unless $ref;
+   LOGCROAK "$args->{name}: unknown value type $ref" if $ref ne 'ARRAY';
+
+   my (%flag_for, @regexps);
+   for my $part (@$value) {
+      my $ref = ref $part;
+      if ($ref eq 'Regexp') {
+         push @regexps, $part;
+      }
+      elsif (
+         $part =~ m{\A(?:
+              (?:single|double)[-_]quoted 
+            | escaped
+            | whatever
+            )\z}mxs
+        )
+      {
+         $part =~ s{-}{_}mxs;
+         $flag_for{$part} = 1;
+      } ## end elsif ($part =~ m{\A(?: )})
+      elsif ($part eq 'quoted') {
+         $flag_for{single_quoted} = 1;
+         $flag_for{double_quoted} = 1;
+      }
+      elsif ($part eq 'specials') {
+         $flag_for{single_quoted} = 1;
+         $flag_for{double_quoted} = 1;
+         $flag_for{escaped}       = 1;
+      }
+      elsif ($ref) {
+         LOGCROAK "$args->{name}: unknown part of type $ref";
+      }
+      else {
+         LOGCROAK "$args->{name}: unknown part $part";
+      }
+   } ## end for my $part (@$value)
+
+   my @escape;
+   if ($flag_for{single_quoted}) {
+      push @escape, q{'};
+      unshift @regexps, q{(?mxs: '[^']*' )};
+   }
+   if ($flag_for{double_quoted}) {
+      push @escape, q{"};
+      unshift @regexps, q{(?mxs: "(?: [^\\"] | \\\\.)*" )};
+   }
+   if ($flag_for{escaped}) {
+      push @escape, '\\';
+      my $escape = quotemeta join '', @escape;
+      push @regexps, qq{(?mxs-i: (?: [^$escape] | \\\\.)*?)};
+   }
+   if ($flag_for{whatever}) {
+      push @regexps, qq{(?mxs:.*?)};
+   }
+
+   my $regex = '(' . join('|', @regexps) . ')';
+   return ($regex, \%flag_for);
+} ## end sub _resolve_value
+
+sub _resolve_decode {
+   my $args    = shift;
+   my $name    = $args->{name};
+   my $escape  = $args->{escaped};
+   my $squote  = $args->{single_quoted};
+   my $dquote  = $args->{double_quoted};
+   my $vdecode = $args->{decode};
+   my $decode  = $args->{decode_values};
+   if ($vdecode) {
+      $decode ||= sub {
+         my $values = shift;
+         for my $value (@$values) {
+            $value = $vdecode->($value);
+         }
+         return $values;
+        }
+   } ## end if ($vdecode)
+   elsif ($escape || $squote || $dquote) {
+      $decode ||= sub {
+         my $values = shift;
+         for my $i (0 .. $#$values) {
+            my $value = $values->[$i];
+            my $len   = length $value or next;
+            my $first = substr $value, 0, 1;
+            if ($dquote && $first eq q{"}) {
+               die {message => "'$name': invalid record, "
+                    . "unterminated double quote at field $i (0-based)"
+                 }
+                 unless $len > 1 && substr($value, -1, 1) eq q{"};
+               $values->[$i] = substr $value, 1, $len - 2;    # unquote
+               $values->[$i] =~ s{\\(.)}{$1}gmxs;             # unescape
+            } ## end if ($dquote && $first ...)
+            elsif ($squote && $first eq q{'}) {
+               die {message => "'$name': invalid record, "
+                    . "unterminated single quote at field $i (0-based)",
+                 }
+                 unless $len > 1 && substr($value, -1, 1) eq q{'};
+               $values->[$i] = substr $value, 1, $len - 2;    # unquote
+            } ## end elsif ($squote && $first ...)
+            elsif ($escape) {
+               $values->[$i] =~ s{\\(.)}{$1}gmxs;             # unescape
+            }
+         } ## end for my $i (0 .. $#$values)
+         return $values;
+        }
+   } ## end elsif ($escape || $squote...)
+   return $decode;
+} ## end sub _resolve_decode
+
 sub parse_by_separators {
-   my %args = normalize_args(@_, [{%global_defaults}, 'separators']);
+   my %args = normalize_args(@_,
+      [{%global_defaults, name => 'parse by separators'}, 'separators']);
    identify(\%args);
    my $name = $args{name};
 
    my $separators = $args{separators};
    LOGDIE "parse_by_separators needs separators"
      unless defined $separators;
+   $separators = [map { _resolve_separator($_, \%args) } @$separators];
 
    my $keys = $args{keys};
    my ($delta, $n_keys);
@@ -107,11 +239,12 @@ sub parse_by_separators {
       $delta  = 1;
    }
 
+   my ($value_regex, $flag_for) = _resolve_value($args{value}, \%args);
+
    my @items;
    for my $i (0 .. $#$keys) {
-      push @items, '(.*?)';                                     # keys
-      push @items, '(?:' . quotemeta($separators->[$i]) . ')'
-        if $i <= $#$separators;
+      push @items, $value_regex;
+      push @items, $separators->[$i] if $i <= $#$separators;
    }
 
    # if not a separator, the last item becomes a catchall
@@ -127,10 +260,25 @@ sub parse_by_separators {
    # values in a hash with @keys
    my $input  = $args{input};
    my $output = $args{output};
+   my $trim   = $args{trim};
+   my $decode = _resolve_decode({%args, %$flag_for});
    return sub {
       my $record = shift;
       my @values = $record->{$input} =~ m{$regex}
-        or die {message => 'invalid record', record => $record};
+        or die {
+         message => 'invalid record',
+         record  => $record,
+         regex   => $regex
+        };
+      trim(@values) if $trim;
+      if ($decode) {
+         eval { @values = @{$decode->(\@values)}; 1 } or do {
+            my $e = $@;
+            $e = {message => $e} unless ref $e;
+            $e = {%$e, record => $record} if ref($e) eq 'HASH';
+            die $e;
+         };
+      } ## end if ($decode)
 
       if ($n_keys) {
          my $n_values = scalar @values;
@@ -157,13 +305,7 @@ sub parse_by_split {
       [{%global_defaults, name => 'parse by split'}, 'separator']);
    identify(\%args);
 
-   my $separator = $args{separator};
-   LOGDIE "parse_by_split needs a separator"
-     unless defined $separator;
-   if (!ref $separator) {
-      $separator = quotemeta($separator);
-      $separator = qr{$separator};
-   }
+   my $separator = _resolve_separator($args{separator}, \%args);
 
    my $name          = $args{name};
    my $keys          = $args{keys};
@@ -171,14 +313,14 @@ sub parse_by_split {
    my $input         = $args{input};
    my $output        = $args{output};
    my $allow_missing = $args{allow_missing} || 0;
+   my $trim          = $args{trim};
 
    return sub {
       my $record = shift;
 
-      my @values =
-        $n_keys
-        ? split(/$separator/, $record->{$input}, $n_keys)
-        : split(/$separator/, $record->{$input});
+      my @values = split(/$separator/, $record->{$input}, $n_keys);
+      trim(@values) if $trim;
+
       my $n_values = @values;
       die {
          message => "'$name': invalid record, expected $n_keys items, "
@@ -188,13 +330,8 @@ sub parse_by_split {
         }
         if $n_values + $allow_missing < $n_keys;
 
-      if ($n_keys) {
-         $record->{$output} = \my %retval;
-         @retval{@$keys} = @values;
-      }
-      else {
-         $record->{$output} = \@values;
-      }
+      $record->{$output} = \my %retval;
+      @retval{@$keys} = @values;
       return $record;
      }
      if $n_keys;
@@ -202,11 +339,82 @@ sub parse_by_split {
    return sub {
       my $record = shift;
       my @retval = split /$separator/, $record->{$input};
+      trim(@retval) if $trim;
       $record->{$output} = \@retval;
       return $record;
    };
 
 } ## end sub parse_by_split
+
+sub parse_by_value_separator {
+   my %args = normalize_args(
+      @_,
+      [
+         {%global_defaults, name => 'parse by value and separator'},
+         'separator'
+      ]
+   );
+   identify(\%args);
+   my $name = $args{name};
+
+   my $separator = _resolve_separator($args{separator}, \%args);
+   LOGCROAK "$name: argument separator is mandatory"
+     unless defined $separator;
+
+   my ($value, $flag_for) = _resolve_value($args{value}, \%args);
+   my $decode = _resolve_decode({%args, %$flag_for});
+
+   my $keys          = $args{keys};
+   my $n_keys        = defined($keys) ? scalar(@$keys) : 0;
+   my $input         = $args{input};
+   my $output        = $args{output};
+   my $allow_missing = $args{allow_missing} || 0;
+   my $allow_surplus = $args{allow_surplus} || 0;
+   my $trim          = $args{trim};
+
+   return sub {
+      my $record = shift;
+
+      my @values;
+      $record->{$input} =~ m/
+         \A (?: $value $separator (?{push @values, $^N}) )*
+            $value \z (?{push @values, $^N})
+         /gmxs
+        or die {
+         message   => 'invalid record',
+         separator => $separator,
+         value     => $value,
+         record    => $record,
+        };
+      trim(@values) if $trim;
+      if ($decode) {
+         eval { @values = @{$decode->(\@values)}; 1 } or do {
+            my $e = $EVAL_ERROR;
+            $e = {message => $e} unless ref $e;
+            $e = {%$e, record => $record} if ref($e) eq 'HASH';
+            die $e;
+         };
+      } ## end if ($decode)
+
+      if ($n_keys) {
+         my $n_values = @values;
+         die {
+            message => "'$name': invalid record, expected $n_keys items, "
+              . "got $n_values",
+            input  => $input,
+            record => $record,
+           }
+           if ($n_values + $allow_missing < $n_keys)
+           || ($n_values - $allow_surplus > $n_keys);
+         $record->{$output} = \my %retval;
+         @retval{@$keys} = @values;
+      } ## end if ($n_keys)
+      else {
+         $record->{$output} = \@values;
+      }
+      return $record;
+   };
+} ## end sub parse_by_value_separator
 
 sub parse_ghashy {
    my %args = normalize_args(@_,

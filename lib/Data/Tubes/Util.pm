@@ -27,6 +27,7 @@ our @EXPORT_OK = qw<
   sprintffy
   test_all_equal
   traverse
+  trim
   tube
   unzip
 >;
@@ -422,6 +423,10 @@ sub traverse {
    } ## end for my $key (@keys)
    return $data;
 } ## end sub traverse
+
+sub trim {
+   s{\A\s+|\s+\z}{}gmxs for @_;
+}
 
 sub tube {
    my $locator = shift;
