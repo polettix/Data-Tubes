@@ -193,35 +193,6 @@ The following arguments are supported:
 
 =over
 
-=item C<double_quoted>
-
-accept as values also double-quoted strings. These strings are delimited
-by double quotes (defined as ASCII 0x22) and whatever they contain is
-taken verbatim except for backslashes, that escape the following
-character (which might be, for example, a double quote or a backslash
-itself).
-
-Double-quoted strings can contain virtually everything, including
-separators (that will not be matched), double quotes (via escaping) and
-backslashes (again, via escaping).
-
-When this option is I<true> and a double-quoted string is matched, the
-quotes are removed and the rest of the string is de-escaped before being
-set in the relevant slot of the output record.
-
-See also C<escaped> and C<single_quoted>;
-
-=item C<escaped>
-
-accepts escaped sequences, where the backslash characters acts as an
-escaping mechanism allowing the verbatim introduction of its following
-character (which might be a backslash itself). This allows you to insert
-sequences that might otherwise be matched by separators.
-
-When this option is I<true> and an escaped string is matched, the string
-is de-escaped before being set in the relevant slot of the output
-record;
-
 =item C<input>
 
 name of the input field, defaults to C<raw>;
@@ -238,11 +209,6 @@ name of the tube, useful for debugging;
 =item C<output>
 
 name of the output field, defaults to C<structured>;
-
-=item C<quoted>
-
-if I<true>, same as setting C<double_quoted> and C<single_quoted> to
-I<true>;
 
 =item C<separators>
 
@@ -272,28 +238,6 @@ C<CORE::quotemeta>);
 
 =back
 
-=item C<single_quoted>
-
-accept as values also single-quoted strings. These strings are delimited
-by single quotes (defined as ASCII 0x27) and whatever they contain is
-taken verbatim. This is different from single-quoted strings in Perl
-where you can escape a few characters, there is no escaping mechanism
-available here.
-
-Single-quoted strings can contain separators without them being matched.
-In particular, this means you cannot insert a single quote in a
-single-quoted string. If you need, either use C<escaped> or
-C<double_quoted> strings.
-
-When this option is I<true> and a single-quoted string is matched, the
-quotes are removed and the rest of the string is set in the relevant
-slot of the output record;
-
-=item C<specials>
-
-if I<true>, same as setting C<double_quoted>, C<escaped> and
-C<single_quoted> to I<true>;
-
 =item C<trim>
 
 remove leading and trailing whitespaces from the extracted values.
@@ -302,6 +246,92 @@ Example:
    @seps  = qw< : ; , >;
    $input = ' what : ever    ;you,do  ';
    @elements = ('what', 'ever', 'you', 'do');
+
+=item C<value>
+
+this is how you provide a description of what you consider a
+I<valid value>. It can be multiple things:
+
+=over
+
+=item *
+
+a I<sub reference>, that is called and MUST provide back one of the
+following alternatives;
+
+=item *
+
+a I<regular expression reference>, that is used directly;
+
+=item *
+
+a I<plain string>, that is turned into an array reference by creating an
+anonymous array with the string as its only element, then processed as
+in the following bullet;
+
+=item *
+
+an I<array reference> with elements inside, that will be described in
+the following list.
+
+=back
+
+If you end up with an I<array reference>, each element will be put in a
+big regular expression that is the C<OR> of all elements. Each can be:
+
+=over
+
+=item *
+
+a I<regular expression reference>, that is fit as-is in the big regular
+expression;
+
+=item *
+
+the string C<specials>, that is the same as having put the three string
+C<escaped>, C<single-quoted> and C<double-quoted>;
+
+=item *
+
+the string C<quoted>, that is the same as having put the three string
+C<single-quoted> and C<double-quoted>;
+
+=item *
+
+the string C<single-quoted> (or C<single_quoted>), that allows you to
+match a string that is delimited by single quotes, with no escaping
+inside. This is always put at the beginning of the big regular
+expression (although C<double-quoted> strings can be fit before
+actually);
+
+=item *
+
+the string C<double-quoted> (or C<double_quoted>), that allows you to
+match a string that is delimited by double quotes, also allowing escaped
+elements inside (via backslashes). This is always put at the beginning
+of the big regular expression;
+
+=item *
+
+the string C<escaped>, that allows you to match a non-greedy sequence of
+escaped characters (via backslash). If C<single-quoted> is also
+specified, single quotes need to be escaped too. If C<double-quoted> is
+also specified, double quotes need to be escaped too. This is always set
+at the end of the big regular expression (except for C<whatever>, that
+might appear after it);
+
+=item *
+
+the string C<whatever>, that allows you to match a non-greedy sequence
+of characters, i.e. it is a synonym of regular expression C<(?ms:.*?)>.
+If present, it is always set at the end of the big regular expression.
+
+=back
+
+For example, if you want to accept single quoted, double quoted and
+unquoted strings, you might provide the following:
+
+   [qw< single-quoted double-quoted whatever >]
 
 =back
 
@@ -378,6 +408,218 @@ would be split into the following elements:
    @elements = ('what', 'ever', 'you', 'do');
 
 =back
+
+=item B<< by_value_separator >>
+
+=item B<< parse_by_value_separator >>
+
+   $tube = by_value_separator($separator, %args); # OR
+   $tube = by_value_separator(%args); # OR
+   $tube = by_value_separator(\%args);
+
+parse a sequence of value-and-separator. This is a generalization of
+L</by_split>, where you can provide a way to specify what you consider
+I<valid> values, e.g. to allow for escaping or quoting (hence also
+allowing having the separator inside your values).
+
+Just to make an example, suppose that you are using semicolons as
+separators. C<by_value_separator> would allow you to take this:
+
+   'some;thing';  what\;ever ; "this;\"goes\";fine"
+
+and turn it into this:
+
+   ['some;thing', 'what;ever', 'this:"goes";fine']
+
+As noted, it is similar to L</by_split>; as a matter of fact, this might
+be re-implemented (less efficiently) through L<by_value_separator>.
+Unless there are bugs, of course. Like L</by_split>, you can provide a
+C<separator> parameter (also via the first, unnamed parameter) that can
+be either a sub reference, a string or a regular expression.
+
+Additionally, you can provide a C<value> parameter that tells what is
+considered an I<acceptable> input value. A value can be different things
+(see below), but it boils down to providing regular expressions,
+indication of pre-canned matching expressions, or a combination.
+
+When you match values, you can then I<decode> them. For example, if you
+specify that you want to accept double-quoted strings, it makes sense to
+remove the quotes and un-escape the remaining sequence before using it.
+Depending on what you pass as a definition for a valid C<value>, your
+decoding approach might vary. Decoding can happen in two ways: either
+you provide a C<decode> function that will be applied to each value, or
+a C<decode_values> that is applied to the whole values array. You might
+want to choose the latter for improving performance (1 sub call against
+N).
+
+Normally, an input would be split and an array reference would populate
+the C<output> field (that is, the field indicated by the C<output>
+argument). If you would rather get a hash, you can pass C<keys> to use,
+in order. If this is the case, you can also accept getting more values
+than you have keys for with C<allow_surplus>, or less of them with
+C<allow_missing>.
+
+Last, you might want to take advantage of C<trim> if your values
+shouldn't have leading/trailing spaces. Be sure to read the fine prints
+about trimming quoted strings, though.
+
+Accepted arguments are:
+
+=over
+
+=item C<allow_missing>
+
+=item C<allow_surplus>
+
+these are integer values that set how much less/more values you are
+willing to admit with respect to the provided C<keys> (see below).
+Hence, they only work when C<keys> is set.
+
+By default they are set to 0, meaning that you expect to have exactly
+the same number of values as there are keys. Allowing I<missing> means
+that you accept getting less values than there are keys, that will be
+associated to C<undef>. Allowing I<surplus> means that you're willing to
+ditch that number of exceeding values;
+
+=item C<input>
+
+name of the input field, defaults to C<raw>;
+
+=item C<keys>
+
+an array reference with the keys to be associated (one-by-one, in order)
+to the extracted values;
+
+=item C<name>
+
+name of the tube, useful for debugging. Defaults to
+C<parse by value and separator>;
+
+=item C<output>
+
+name of the output field, defaults to C<structured>;
+
+=item C<separator>
+
+the separator to be used between two consecutive valid I<value>s. It can
+be one of the following:
+
+=over
+
+=item *
+
+a I<sub reference>, that is called with whatever arguments provided (as
+a hash reference) and MUST return one of the following two alternatives;
+
+=item *
+
+a I<regular expression reference>, that will be matched for the
+separator;
+
+=item *
+
+a I<plain string>, that will be matched verbatim.
+
+=back
+
+There is no default, you MUST provide one either as the first, unnamed
+parameter or as argument C<separator>;
+
+=item C<trim>
+
+remove leading and trailing whitespaces from the extracted values. This
+is applied I<before> decoding is applied, which means that
+leading/trailing whitespaces I<inside> quoted strings will be kept.
+Defaults to a I<false> value, meaning that no trimming is performed;
+
+=item C<value>
+
+this is how you provide a description of what you consider a
+I<valid value>. It can be multiple things:
+
+=over
+
+=item *
+
+a I<sub reference>, that is called and MUST provide back one of the
+following alternatives;
+
+=item *
+
+a I<regular expression reference>, that is used directly;
+
+=item *
+
+a I<plain string>, that is turned into an array reference by creating an
+anonymous array with the string as its only element, then processed as
+in the following bullet;
+
+=item *
+
+an I<array reference> with elements inside, that will be described in
+the following list.
+
+=back
+
+If you end up with an I<array reference>, each element will be put in a
+big regular expression that is the C<OR> of all elements. Each can be:
+
+=over
+
+=item *
+
+a I<regular expression reference>, that is fit as-is in the big regular
+expression;
+
+=item *
+
+the string C<specials>, that is the same as having put the three string
+C<escaped>, C<single-quoted> and C<double-quoted>;
+
+=item *
+
+the string C<quoted>, that is the same as having put the three string
+C<single-quoted> and C<double-quoted>;
+
+=item *
+
+the string C<single-quoted> (or C<single_quoted>), that allows you to
+match a string that is delimited by single quotes, with no escaping
+inside. This is always put at the beginning of the big regular
+expression (although C<double-quoted> strings can be fit before
+actually);
+
+=item *
+
+the string C<double-quoted> (or C<double_quoted>), that allows you to
+match a string that is delimited by double quotes, also allowing escaped
+elements inside (via backslashes). This is always put at the beginning
+of the big regular expression;
+
+=item *
+
+the string C<escaped>, that allows you to match a non-greedy sequence of
+escaped characters (via backslash). If C<single-quoted> is also
+specified, single quotes need to be escaped too. If C<double-quoted> is
+also specified, double quotes need to be escaped too. This is always set
+at the end of the big regular expression (except for C<whatever>, that
+might appear after it);
+
+=item *
+
+the string C<whatever>, that allows you to match a non-greedy sequence
+of characters, i.e. it is a synonym of regular expression C<(?ms:.*?)>.
+If present, it is always set at the end of the big regular expression.
+
+=back
+
+For example, if you want to accept single quoted, double quoted and
+unquoted strings, you might provide the following:
+
+   [qw< single-quoted double-quoted whatever >]
+
+=back
+
 
 =item B<< ghashy >>
 
