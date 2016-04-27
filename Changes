@@ -8,6 +8,7 @@
    - expanded by_format and by_separators to accept escaped or quoted
      strings
    - by_separators now can accept regular expressions as separators
+   - added by_value_separator
 
 0.728  2016-04-18 18:29:10 CEST
    - by_split and by_separators accept missing $keys now
