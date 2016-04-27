@@ -117,4 +117,21 @@ ok __PACKAGE__->can('parse_by_format'), "summoned parse_by_format";
      'parse with specials and trim';
 }
 
+{
+   my $string = q<'FO;O';  BA\\;R  ;"BA\\"A;A\\"AZ">;
+   my $parser = parse_by_format(
+      'foo;bar;baz',
+      value => [qw< single-quoted double-quoted escaped >],
+      trim  => 1
+   );
+   my $record = $parser->({raw => $string});
+   is ref($record), 'HASH', 'record is a hash';
+   is_deeply $record,
+     {
+      structured => {foo => 'FO;O', bar => 'BA;R', baz => 'BA"A;A"AZ'},
+      raw        => $string
+     },
+     'parsed by format, single-quoted, double-quoted, escaped, trim';
+}
+
 done_testing();
