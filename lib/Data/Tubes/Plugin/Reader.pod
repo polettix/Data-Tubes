@@ -126,13 +126,14 @@ Accepted arguments are:
 
 =item C<chomp>
 
-apply the C<chomp> function before emitting what's read;
+apply the C<chomp> function before emitting what's read. Defaults to a
+I<true> value;
 
 =item C<emit_eof>
 
 when an end-of-file is hit, emit a record with the output field set to
 C<undef>, so that this condition will be visible in the tubes on the
-downstream;
+downstream. Defaults to a I<false> value;
 
 =item C<identification>
 
