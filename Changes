@@ -1,4 +1,6 @@
 {{$NEXT}}
+
+0.729  2016-05-01 23:00:31 CEST
    - tubergen-generated scripts are now easier to write and use
    - with_template_perlish: templates in records
    - with_template_perlish: code ref can return array ref for read_file

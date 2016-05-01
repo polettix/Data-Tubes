@@ -8,7 +8,7 @@ BEGIN {
 use strict;
 use warnings;
 use 5.010;
-my $VERSION = "0.728001";
+my $VERSION = "0.729";
 use Log::Log4perl::Tiny qw< :easy LOGLEVEL >;
 use Data::Tubes qw< pipeline >;
 
@@ -1977,7 +1977,7 @@ END_OF_FILE
  use strict;
  use warnings;
  use English qw< -no_match_vars >;
- our $VERSION = '0.728';
+ our $VERSION = '0.729';
  use Exporter qw< import >;
  
  use Log::Log4perl::Tiny qw< :easy :dead_if_first LOGLEVEL >;
@@ -1985,6 +1985,7 @@ END_OF_FILE
    args_array_with_options
    load_sub
    normalize_args
+   pump
    resolve_module
    tube
  >;
@@ -2001,9 +2002,13 @@ END_OF_FILE
  
  sub drain {
     my $tube = shift;
-    my ($type, $iterator) = $tube->(@_) or return;
-    return unless defined($iterator) && ($type eq 'iterator');
-    while (my @items = $iterator->()) { }
+    my @outcome = $tube->(@_);
+    return @outcome if scalar(@outcome) < 2;
+    return pump($outcome[1]) if $outcome[0] eq 'iterator';
+    my $wa = wantarray();
+    return if ! defined($wa);
+    return $outcome[1] unless $wa;
+    return @{$outcome[1]};
  } ## end sub drain
  
  sub pipeline {
@@ -2091,7 +2096,7 @@ END_OF_FILE
  use warnings;
  use English qw< -no_match_vars >;
  use Exporter 'import';
- our $VERSION = '0.728';
+ our $VERSION = '0.729';
  
  use Log::Log4perl::Tiny qw< :easy :dead_if_first >;
  
@@ -2104,6 +2109,7 @@ END_OF_FILE
    metadata
    normalize_args
    normalize_filename
+   pump
    read_file
    read_file_maybe
    resolve_module
@@ -2111,6 +2117,7 @@ END_OF_FILE
    sprintffy
    test_all_equal
    traverse
+   trim
    tube
    unzip
  >;
@@ -2267,10 +2274,7 @@ END_OF_FILE
  } ## end sub generalized_hashy
  
  sub load_module {
-    my $module = resolve_module(@_);
-    (my $packfile = $module . '.pm') =~ s{::}{/}gmxs;
-    require $packfile;
-    return $module;
+    return _load_module(resolve_module(@_));
  } ## end sub load_module
  
  sub load_sub {
@@ -2351,6 +2355,26 @@ END_OF_FILE
     } ## end if (my ($handlename) =...)
     return $filename;
  } ## end sub normalize_filename
+ 
+ sub pump {
+    my ($iterator, $sink) = @_;
+    if ($sink) {
+       while (my @items = $iterator->()) {
+          $sink->(@items);
+       }
+       return;
+    }
+    my $wa = wantarray();
+    if (! defined $wa) {
+       while (my @items = $iterator->()) {}
+       return;
+    }
+    my @records;
+    while (my @items = $iterator->()) {
+       push @records, @items;
+    }
+    return $wa ? @records : \@records;
+ }
  
  sub read_file {
     my %args = normalize_args(
@@ -2490,6 +2514,10 @@ END_OF_FILE
     return $data;
  } ## end sub traverse
  
+ sub trim {
+    s{\A\s+|\s+\z}{}gmxs for @_;
+ }
+ 
  sub tube {
     my $locator = shift;
     return load_sub($locator)->(@_);
@@ -2523,7 +2551,7 @@ END_OF_FILE
  use warnings;
  use English qw< -no_match_vars >;
  use Log::Log4perl::Tiny qw< :easy :dead_if_first LOGLEVEL >;
- our $VERSION = '0.728';
+ our $VERSION = '0.729';
  
  use Data::Tubes::Util
    qw< normalize_args normalize_filename args_array_with_options >;
@@ -2657,7 +2685,7 @@ END_OF_FILE
  use warnings;
  use English qw< -no_match_vars >;
  use Data::Dumper;
- our $VERSION = '0.728';
+ our $VERSION = '0.729';
  
  use Log::Log4perl::Tiny qw< :easy :dead_if_first >;
  
@@ -2668,6 +2696,7 @@ END_OF_FILE
    normalize_args
    shorter_sub_names
    test_all_equal
+   trim
    unzip
  >;
  use Data::Tubes::Plugin::Util qw< identify >;
@@ -2696,17 +2725,21 @@ END_OF_FILE
       or LOGDIE "'format' parser [$format] "
       . "has duplicate key $EVAL_ERROR->{message}";
  
-    # a simple split will do if all separators are the same
-    return parse_by_split(
-       %args,
-       keys      => $keys,
-       separator => $separators->[0]
-    ) if test_all_equal(@$separators);
+    my $value = $args{value} //= ['whatever'];
+    $value = [$value] unless ref $value;
+    my $multiple = (scalar(@$value) > 1) || ($value->[0] ne 'whatever');
  
     return parse_by_separators(
        %args,
        keys       => $keys,
        separators => $separators
+    ) if $multiple || !test_all_equal(@$separators);
+ 
+    # a simple split will do if all separators are the same
+    return parse_by_split(
+       %args,
+       keys      => $keys,
+       separator => $separators->[0]
     );
  } ## end sub parse_by_format
  
@@ -2738,14 +2771,141 @@ END_OF_FILE
     };
  } ## end sub parse_by_regex
  
+ sub _resolve_separator {
+    my ($separator, $args) = @_;
+    return unless defined $separator;
+    $separator = $separator->($args) if ref($separator) eq 'CODE';
+    my $ref = ref $separator;
+    return $separator if $ref eq 'Regexp';
+    LOGCROAK "$args->{name}: unknown separator type $ref" if $ref;
+    $separator = quotemeta $separator;
+    return qr{(?-i:$separator)};
+ } ## end sub _resolve_separator
+ 
+ sub _resolve_value {
+    my ($value, $args) = @_;
+    $value //= 'whatever';
+    $value = $value->($args) if ref($value) eq 'CODE';
+    my $ref = ref $value;
+    return $value if $ref eq 'Regexp';
+    ($value, $ref) = ([$value], 'ARRAY') unless $ref;
+    LOGCROAK "$args->{name}: unknown value type $ref" if $ref ne 'ARRAY';
+ 
+    my (%flag_for, @regexps);
+    for my $part (@$value) {
+       my $ref = ref $part;
+       if ($ref eq 'Regexp') {
+          push @regexps, $part;
+       }
+       elsif (
+          $part =~ m{\A(?:
+               (?:single|double)[-_]quoted 
+             | escaped
+             | whatever
+             )\z}mxs
+         )
+       {
+          $part =~ s{-}{_}mxs;
+          $flag_for{$part} = 1;
+       } ## end elsif ($part =~ m{\A(?: )})
+       elsif ($part eq 'quoted') {
+          $flag_for{single_quoted} = 1;
+          $flag_for{double_quoted} = 1;
+       }
+       elsif ($part eq 'specials') {
+          $flag_for{single_quoted} = 1;
+          $flag_for{double_quoted} = 1;
+          $flag_for{escaped}       = 1;
+       }
+       elsif ($ref) {
+          LOGCROAK "$args->{name}: unknown part of type $ref";
+       }
+       else {
+          LOGCROAK "$args->{name}: unknown part $part";
+       }
+    } ## end for my $part (@$value)
+ 
+    my @escape;
+    if ($flag_for{single_quoted}) {
+       push @escape, q{'};
+       unshift @regexps, q{(?mxs: '[^']*' )};
+    }
+    if ($flag_for{double_quoted}) {
+       push @escape, q{"};
+       unshift @regexps, q{(?mxs: "(?: [^\\"] | \\\\.)*" )};
+    }
+    if ($flag_for{escaped}) {
+       push @escape, '\\';
+       my $escape = quotemeta join '', @escape;
+       push @regexps, qq{(?mxs-i: (?: [^$escape] | \\\\.)*?)};
+    }
+    if ($flag_for{whatever}) {
+       push @regexps, qq{(?mxs:.*?)};
+    }
+ 
+    my $regex = '(' . join('|', @regexps) . ')';
+    return ($regex, \%flag_for);
+ } ## end sub _resolve_value
+ 
+ sub _resolve_decode {
+    my $args    = shift;
+    my $name    = $args->{name};
+    my $escape  = $args->{escaped};
+    my $squote  = $args->{single_quoted};
+    my $dquote  = $args->{double_quoted};
+    my $vdecode = $args->{decode};
+    my $decode  = $args->{decode_values};
+    if ($vdecode) {
+       $decode ||= sub {
+          my $values = shift;
+          for my $value (@$values) {
+             $value = $vdecode->($value);
+          }
+          return $values;
+         }
+    } ## end if ($vdecode)
+    elsif ($escape || $squote || $dquote) {
+       $decode ||= sub {
+          my $values = shift;
+          for my $i (0 .. $#$values) {
+             my $value = $values->[$i];
+             my $len   = length $value or next;
+             my $first = substr $value, 0, 1;
+             if ($dquote && $first eq q{"}) {
+                die {message => "'$name': invalid record, "
+                     . "unterminated double quote at field $i (0-based)"
+                  }
+                  unless $len > 1 && substr($value, -1, 1) eq q{"};
+                $values->[$i] = substr $value, 1, $len - 2;    # unquote
+                $values->[$i] =~ s{\\(.)}{$1}gmxs;             # unescape
+             } ## end if ($dquote && $first ...)
+             elsif ($squote && $first eq q{'}) {
+                die {message => "'$name': invalid record, "
+                     . "unterminated single quote at field $i (0-based)",
+                  }
+                  unless $len > 1 && substr($value, -1, 1) eq q{'};
+                $values->[$i] = substr $value, 1, $len - 2;    # unquote
+             } ## end elsif ($squote && $first ...)
+             elsif ($escape) {
+                $values->[$i] =~ s{\\(.)}{$1}gmxs;             # unescape
+             }
+          } ## end for my $i (0 .. $#$values)
+          return $values;
+         }
+    } ## end elsif ($escape || $squote...)
+    return $decode;
+ } ## end sub _resolve_decode
+ 
  sub parse_by_separators {
-    my %args = normalize_args(@_, [{%global_defaults}, 'separators']);
+    my %args = normalize_args(@_,
+       [{%global_defaults, name => 'parse by separators'}, 'separators']);
     identify(\%args);
     my $name = $args{name};
  
     my $separators = $args{separators};
     LOGDIE "parse_by_separators needs separators"
       unless defined $separators;
+    $separators = [map { _resolve_separator($_, \%args) } @$separators];
  
     my $keys = $args{keys};
     my ($delta, $n_keys);
@@ -2761,11 +2921,12 @@ END_OF_FILE
        $delta  = 1;
     }
  
+    my ($value_regex, $flag_for) = _resolve_value($args{value}, \%args);
+ 
     my @items;
     for my $i (0 .. $#$keys) {
-       push @items, '(.*?)';                                     # keys
-       push @items, '(?:' . quotemeta($separators->[$i]) . ')'
-         if $i <= $#$separators;
+       push @items, $value_regex;
+       push @items, $separators->[$i] if $i <= $#$separators;
     }
  
     # if not a separator, the last item becomes a catchall
@@ -2781,10 +2942,25 @@ END_OF_FILE
     # values in a hash with @keys
     my $input  = $args{input};
     my $output = $args{output};
+    my $trim   = $args{trim};
+    my $decode = _resolve_decode({%args, %$flag_for});
     return sub {
        my $record = shift;
        my @values = $record->{$input} =~ m{$regex}
-         or die {message => 'invalid record', record => $record};
+         or die {
+          message => 'invalid record',
+          record  => $record,
+          regex   => $regex
+         };
+       trim(@values) if $trim;
+       if ($decode) {
+          eval { @values = @{$decode->(\@values)}; 1 } or do {
+             my $e = $@;
+             $e = {message => $e} unless ref $e;
+             $e = {%$e, record => $record} if ref($e) eq 'HASH';
+             die $e;
+          };
+       } ## end if ($decode)
  
        if ($n_keys) {
           my $n_values = scalar @values;
@@ -2811,13 +2987,7 @@ END_OF_FILE
        [{%global_defaults, name => 'parse by split'}, 'separator']);
     identify(\%args);
  
-    my $separator = $args{separator};
-    LOGDIE "parse_by_split needs a separator"
-      unless defined $separator;
-    if (!ref $separator) {
-       $separator = quotemeta($separator);
-       $separator = qr{$separator};
-    }
+    my $separator = _resolve_separator($args{separator}, \%args);
  
     my $name          = $args{name};
     my $keys          = $args{keys};
@@ -2825,14 +2995,14 @@ END_OF_FILE
     my $input         = $args{input};
     my $output        = $args{output};
     my $allow_missing = $args{allow_missing} || 0;
+    my $trim          = $args{trim};
  
     return sub {
        my $record = shift;
  
-       my @values =
-         $n_keys
-         ? split(/$separator/, $record->{$input}, $n_keys)
-         : split(/$separator/, $record->{$input});
+       my @values = split(/$separator/, $record->{$input}, $n_keys);
+       trim(@values) if $trim;
+ 
        my $n_values = @values;
        die {
           message => "'$name': invalid record, expected $n_keys items, "
@@ -2842,13 +3012,8 @@ END_OF_FILE
          }
          if $n_values + $allow_missing < $n_keys;
  
-       if ($n_keys) {
-          $record->{$output} = \my %retval;
-          @retval{@$keys} = @values;
-       }
-       else {
-          $record->{$output} = \@values;
-       }
+       $record->{$output} = \my %retval;
+       @retval{@$keys} = @values;
        return $record;
       }
       if $n_keys;
@@ -2856,11 +3021,82 @@ END_OF_FILE
     return sub {
        my $record = shift;
        my @retval = split /$separator/, $record->{$input};
+       trim(@retval) if $trim;
        $record->{$output} = \@retval;
        return $record;
     };
  
  } ## end sub parse_by_split
+ 
+ sub parse_by_value_separator {
+    my %args = normalize_args(
+       @_,
+       [
+          {%global_defaults, name => 'parse by value and separator'},
+          'separator'
+       ]
+    );
+    identify(\%args);
+    my $name = $args{name};
+ 
+    my $separator = _resolve_separator($args{separator}, \%args);
+    LOGCROAK "$name: argument separator is mandatory"
+      unless defined $separator;
+ 
+    my ($value, $flag_for) = _resolve_value($args{value}, \%args);
+    my $decode = _resolve_decode({%args, %$flag_for});
+ 
+    my $keys          = $args{keys};
+    my $n_keys        = defined($keys) ? scalar(@$keys) : 0;
+    my $input         = $args{input};
+    my $output        = $args{output};
+    my $allow_missing = $args{allow_missing} || 0;
+    my $allow_surplus = $args{allow_surplus} || 0;
+    my $trim          = $args{trim};
+ 
+    return sub {
+       my $record = shift;
+ 
+       my @values;
+       $record->{$input} =~ m/
+          \A (?: $value $separator (?{push @values, $^N}) )*
+             $value \z (?{push @values, $^N})
+          /gmxs
+         or die {
+          message   => 'invalid record',
+          separator => $separator,
+          value     => $value,
+          record    => $record,
+         };
+       trim(@values) if $trim;
+       if ($decode) {
+          eval { @values = @{$decode->(\@values)}; 1 } or do {
+             my $e = $EVAL_ERROR;
+             $e = {message => $e} unless ref $e;
+             $e = {%$e, record => $record} if ref($e) eq 'HASH';
+             die $e;
+          };
+       } ## end if ($decode)
+ 
+       if ($n_keys) {
+          my $n_values = @values;
+          die {
+             message => "'$name': invalid record, expected $n_keys items, "
+               . "got $n_values",
+             input  => $input,
+             record => $record,
+            }
+            if ($n_values + $allow_missing < $n_keys)
+            || ($n_values - $allow_surplus > $n_keys);
+          $record->{$output} = \my %retval;
+          @retval{@$keys} = @values;
+       } ## end if ($n_keys)
+       else {
+          $record->{$output} = \@values;
+       }
+       return $record;
+    };
+ } ## end sub parse_by_value_separator
  
  sub parse_ghashy {
     my %args = normalize_args(@_,
@@ -2947,7 +3183,7 @@ END_OF_FILE
  use strict;
  use warnings;
  use English qw< -no_match_vars >;
- our $VERSION = '0.728';
+ our $VERSION = '0.729';
  
  use Log::Log4perl::Tiny qw< :easy :dead_if_first >;
  
@@ -2961,7 +3197,8 @@ END_OF_FILE
  sub _resolve_template {
     my $args     = shift;
     my $template = read_file_maybe($args->{template});
-    $template = $template->($args) if ref($template) eq 'CODE';
+    $template = read_file_maybe($template->($args))
+      if ref($template) eq 'CODE';
     LOGDIE 'undefined template' unless defined $template;
     $template = $args->{template_perlish}->compile($template)
       unless ref $template;
@@ -2977,6 +3214,97 @@ END_OF_FILE
        grep { defined $args->{$_} } qw< start stop variables >
     );
  } ## end sub _create_tp
+ 
+ sub _rwtp_ntp_nt {
+    my $args     = shift;
+    my $input    = $args->{input};
+    my $output   = $args->{output};
+    my $tp       = $args->{template_perlish};
+    my $template = _resolve_template($args) // LOGDIE 'undefined template';
+    return sub {
+       my $record = shift;
+       $record->{$output} =
+         $tp->evaluate($template, $record->{$input} // {});
+       return $record;
+    };
+ } ## end sub _rwtp_ntp_nt
+ 
+ sub _rwtp_ntp_t {
+    my $args   = shift;
+    my $itf    = $args->{template_input};
+    my $input  = $args->{input};
+    my $output = $args->{output};
+    my $tp     = $args->{template_perlish};
+    my $ctmpl =
+      defined($args->{template}) ? _resolve_template($args) : undef;
+    return sub {
+       my $record = shift;
+       my $template =
+         defined($record->{$itf})
+         ? _resolve_template(
+          {
+             template_perlish => $tp,
+             template         => $record->{$itf}
+          }
+         )
+         : ($ctmpl
+            // die {message => 'undefined template', record => $record});
+       $record->{$output} =
+         $tp->evaluate($template, $record->{$input} // {});
+       return $record;
+    };
+ } ## end sub _rwtp_ntp_t
+ 
+ sub _rwtp_tp_nt {
+    my $args   = shift;
+    my $itpf   = $args->{template_perlish_input};
+    my $input  = $args->{input};
+    my $output = $args->{output};
+    my $ctp    = $args->{template_perlish};
+    my $ctmpl  = $args->{template} // LOGDIE 'undefined template';
+    my $pctmpl = _resolve_template($args) if defined $ctmpl;
+    return sub {
+       my $record = shift;
+       my $tp = $record->{$itpf} // $ctp;
+       my $template =
+         defined($record->{$itpf})
+         ? _resolve_template({template_perlish => $tp, template => $ctmpl})
+         : $pctmpl;
+       $record->{$output} =
+         $tp->evaluate($template, $record->{$input} // {});
+       return $record;
+    };
+ } ## end sub _rwtp_tp_nt
+ 
+ sub _rwtp_tp_t {
+    my $args   = shift;
+    my $itpf   = $args->{template_perlish_input};
+    my $itf    = $args->{template_input};
+    my $input  = $args->{input};
+    my $output = $args->{output};
+    my $ctp    = $args->{template_perlish};
+    my $ctmpl  = $args->{template};
+    my $pctmpl = defined($ctmpl) ? _resolve_template($args) : undef;
+    return sub {
+       my $record = shift;
+       my $tp = $record->{$itpf} // $ctp;
+       my $template =
+         defined($record->{$itf}) ? _resolve_template(
+          {
+             template_perlish => $tp,
+             template         => $record->{$itf}
+          }
+         )
+         : (!defined($ctmpl))
+         ? die({message => 'undefined template', record => $record})
+         : defined($record->{$itpf})
+         ? _resolve_template({template_perlish => $tp, template => $ctmpl})
+         : $pctmpl;
+       $record->{$output} =
+         $tp->evaluate($template, $record->{$input} // {});
+       return $record;
+    };
+ } ## end sub _rwtp_tp_t
  
  sub render_with_template_perlish {
     my %args = normalize_args(
@@ -2994,16 +3322,15 @@ END_OF_FILE
     );
     my $name = $args{name};
  
-    my $tp = $args{template_perlish} ||= _create_tp(\%args);
-    my $template = _resolve_template(\%args);
+    $args{template_perlish} //= _create_tp(\%args);
  
-    my $input  = $args{input};
-    my $output = $args{output};
-    return sub {
-       my $record = shift;
-       $record->{$output} = $tp->evaluate($template, $record->{$input});
-       return $record;
-    };
+    my $tpi = defined $args{template_perlish_input};
+    my $ti  = defined $args{template_input};
+    return
+        ($tpi && $ti) ? _rwtp_tp_t(\%args)
+      : $tpi ? _rwtp_tp_nt(\%args)
+      : $ti  ? _rwtp_ntp_t(\%args)
+      :        _rwtp_ntp_nt(\%args);
  } ## end sub render_with_template_perlish
  
  shorter_sub_names(__PACKAGE__, 'render_');
@@ -3020,7 +3347,7 @@ END_OF_FILE
  use strict;
  use warnings;
  use English qw< -no_match_vars >;
- our $VERSION = '0.728';
+ our $VERSION = '0.729';
  
  use Log::Log4perl::Tiny qw< :easy :dead_if_first LOGLEVEL >;
  
@@ -3147,12 +3474,18 @@ END_OF_FILE
  use English qw< -no_match_vars >;
  use Data::Dumper;
  use Scalar::Util qw< blessed >;
- our $VERSION = '0.728';
+ our $VERSION = '0.729';
  
  use Log::Log4perl::Tiny
    qw< :easy :dead_if_first get_logger LOGLEVEL LEVELID_FOR >;
- use Data::Tubes::Util
-   qw< args_array_with_options normalize_args traverse >;
+ use Data::Tubes::Util qw<
+   args_array_with_options
+   load_module
+   load_sub
+   pump
+   normalize_args
+   traverse
+ >;
  use Data::Tubes::Plugin::Util qw< identify log_helper tubify >;
  
  sub alternatives {
@@ -3174,19 +3507,109 @@ END_OF_FILE
     };
  } ## end sub alternatives
  
+ sub _get_selector {
+    my $args     = shift;
+    my $selector = $args->{selector};
+    if (!defined($selector) && defined($args->{key})) {
+       my $key = $args->{key};
+       my $ref = ref $key;
+       $selector =
+         ($ref eq 'CODE')
+         ? $key
+         : sub { return traverse($_[0], $ref ? @$key : $key); };
+    } ## end if (!defined($selector...))
+    LOGDIE "$args->{name}: required dispatch key or selector"
+      if (! defined $selector) && (! $args->{missing_ok});
+    return $selector;
+ } ## end sub _get_selector
+ 
+ sub cache {
+    my %args = normalize_args(@_, [{name => 'cache'}, 'tube']);
+    identify(\%args);
+    my $name = $args{name};
+ 
+    # the cached tube
+    my ($tube) = tubify($args{tube});
+    LOGCROAK "$name: no tube to cache" unless defined $tube;
+ 
+    # the cache! We will use something compatible with CHI
+    my $cache = $args{cache} // {};
+    $cache = ['!Data::Tubes::Util::Cache', repository => $cache]
+      if ref($cache) eq 'HASH';
+    if (!blessed($cache)) {
+       my ($x, @args) = ref($cache) ? @$cache : $cache;
+       $cache = ref($x) ? $x->(@args) : load_module($x)->new(@args);
+    }
+    my @get_options = $args{get_options} ? @{$args{get_options}} : ();
+    my @set_options = $args{set_options} ? @{$args{set_options}} : ();
+ 
+    # what allows me to look in the cache?
+    my $selector = _get_selector({%args, missing_ok => 1});
+    LOGCROAK "missing key or selector, but output is set"
+      if (! defined $selector) && defined($args{output});
+ 
+    # cleaning trigger, if any
+    my $cleaner = $args{cleaner};
+    $cleaner = $cache->can($cleaner) if defined($cleaner) && !ref($cleaner);
+ 
+    # cloning facility, if needed
+    my $merger = $args{merger};
+    $merger = load_sub($merger) if defined($merger) && !ref($merger);
+ 
+    my $output = $args{output};
+    return sub {
+       my $record = shift;
+       my $key    = $selector ? $selector->($record) : $record;
+       my $data   = $cache->get($key, @get_options);
+       if (!$data) {    # MUST be an array reference at this point
+          my @oc = $tube->($record);
+          if (scalar(@oc) == 2) {
+             my $rcs = ($oc[0] eq 'records') ? $oc[1] : pump($oc[1]);
+             $rcs = [map { $_->{$output} } @$rcs] if defined($output);
+             $data = [records => $rcs];
+          }
+          elsif (scalar @oc) {
+             $data = defined($output) ? [$oc[0]{$output}] : \@oc;
+          }
+          else {
+             $data = \@oc;
+          }
+ 
+          $cache->set($key, $data, @set_options);
+          $cleaner->($cache) if $cleaner;
+       } ## end if (!$data)
+ 
+       return unless scalar @$data;
+ 
+       if (scalar(@$data) == 1) {    # single record
+          return $merger->($record, $output, $data->[0]) if $merger;
+          return $data->[0] unless $output;
+          $record->{$output} = $data->[0];
+          return $record;
+       } ## end if (scalar(@$data) == ...)
+ 
+       # array of records here
+       my $aref = $data->[1];
+       my $records =
+         $merger
+         ? [map { $merger->($record, $output, $_) } @$aref]
+         : $output ? [
+          map {
+             { %$record, $output => $_ }
+          } @$aref
+         ]
+         : $aref;
+       return (records => $records);
+    };
+ } ## end sub cache
+ 
  sub dispatch {
     my %args = normalize_args(@_,
        {default => undef, name => 'dispatch', loglevel => $INFO});
     identify(\%args);
     my $name = $args{name};
  
-    my $selector = $args{selector};
-    if (!defined($selector) && defined($args{key})) {
-       my @key = ref($args{key}) ? @{$args{key}} : ($args{key});
-       $selector = sub { return traverse($_[0], @key); };
-    }
-    LOGDIE "$name: required dispatch key or selector"
-      unless defined $selector;
+    my $selector = _get_selector(\%args);
  
     my $handler_for = {%{$args{handlers} || {}}};    # our cache
     my $factory = $args{factory};
@@ -3361,7 +3784,7 @@ END_OF_FILE
  use strict;
  use warnings;
  use English qw< -no_match_vars >;
- our $VERSION = '0.728';
+ our $VERSION = '0.729';
  
  use Log::Log4perl::Tiny qw< :easy :dead_if_first >;
  
@@ -3503,7 +3926,7 @@ END_OF_FILE
  use warnings;
  use English qw< -no_match_vars >;
  use Data::Dumper;
- our $VERSION = '0.728';
+ our $VERSION = '0.729';
  
  use Template::Perlish;
  use Log::Log4perl::Tiny qw< :easy :dead_if_first get_logger >;
@@ -3603,7 +4026,7 @@ END_OF_FILE
        ($ref eq 'CODE')
          ? $_
          : tube(($ref eq 'ARRAY') ? @$_ : $_)
-    } @_;
+    } grep { $_ } @_;
  } ## end sub tubify
  
  1;
@@ -3622,7 +4045,7 @@ END_OF_FILE
  use warnings;
  use English qw< -no_match_vars >;
  use POSIX qw< strftime >;
- our $VERSION = '0.728';
+ our $VERSION = '0.729';
  
  use Log::Log4perl::Tiny qw< :easy :dead_if_first LOGLEVEL >;
  use Template::Perlish;
@@ -3763,6 +4186,91 @@ END_OF_FILE
 
 # __MOBUNDLE_FILE__
 
+      'Data/Tubes/Util/Cache.pm' => <<'END_OF_FILE',
+ package Data::Tubes::Util::Cache;
+ use strict;
+ use warnings;
+ use English qw< -no_match_vars >;
+ use 5.010;
+ our $VERSION = '0.729';
+ use File::Path qw< mkpath >;
+ 
+ use File::Spec::Functions qw< splitpath catpath >;
+ use Storable qw< nstore retrieve >;
+ use Log::Log4perl::Tiny qw< :easy :dead_if_first >;
+ use Mo qw< default >;
+ has repository => (default => sub { return {} });
+ has __filenames => (default => sub { return undef });
+ has max_items => (default => 0);
+ 
+ sub _path {
+    my ($dir, $filename) = @_;
+    my ($v, $d) = splitpath($dir, 'no-file');
+    return catpath($v, $d, $filename);
+ }
+ 
+ sub get {
+    my ($self, $key) = @_;
+    my $repo = $self->repository();
+    if (ref($repo) eq 'HASH') {
+       return unless exists $repo->{$key};
+       return $repo->{$key};
+    }
+    my $path = _path($repo, $key);
+    return retrieve($path) if -r $path;
+    return;
+ } ## end sub get
+ 
+ sub _filenames {
+    my $self = shift;
+    if (my $retval = $self->__filenames()) {
+       return $retval;
+    }
+    my $repo = $self->repository();
+    my ($v, $d) = splitpath($repo, 'no-file');
+    opendir my $dh, $repo or return;
+    my @filenames = map { catpath($v, $d, $_) } readdir $dh;
+    closedir $dh;
+    $self->__filenames(\@filenames);
+    return \@filenames;
+ }
+ 
+ sub purge {
+    my $self = shift;
+    my $max  = $self->max_items() or return;
+    my $repo = $self->repository();
+ 
+    if (ref($repo) eq 'HASH') {
+       my $n = scalar keys %$repo;
+       delete $repo->{(keys %$repo)[0]} while $n-- > $max;
+       return;
+    }
+ 
+    my $filenames = $self->_filenames() or return;
+    while (@$filenames > $max) {
+       my $filename = shift @$filenames;
+       unlink $filename;
+    }
+    return;
+ } ## end sub purge
+ 
+ sub set {
+    my ($self, $key, $data) = @_;
+    my $repo = $self->repository();
+    return $repo->{$key} = $data if ref($repo) eq 'HASH';
+    eval {
+       mkpath($repo) unless -d $repo;
+       nstore($data, _path($repo, $key));
+       1;
+    } or LOGWARN $EVAL_ERROR;
+    return $data;
+ }
+
+END_OF_FILE
+
+
+# __MOBUNDLE_FILE__
+
       'Data/Tubes/Util/Output.pm' => <<'END_OF_FILE',
  package Data::Tubes::Util::Output;
  use strict;
@@ -3771,7 +4279,7 @@ END_OF_FILE
  use 5.010;
  use File::Path qw< make_path >;
  use File::Basename qw< dirname >;
- our $VERSION = '0.728';
+ our $VERSION = '0.729';
  
  use Log::Log4perl::Tiny qw< :easy :dead_if_first >;
  use Mo qw< default >;
