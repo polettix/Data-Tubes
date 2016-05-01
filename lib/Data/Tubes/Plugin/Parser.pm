@@ -45,7 +45,10 @@ sub parse_by_format {
 
    my $value = $args{value} //= ['whatever'];
    $value = [$value] unless ref $value;
-   my $multiple = (scalar(@$value) > 1) || ($value->[0] ne 'whatever');
+   my $multiple =
+        (ref($value) ne 'ARRAY')
+     || (scalar(@$value) > 1)
+     || ($value->[0] ne 'whatever');
 
    return parse_by_separators(
       %args,
@@ -105,8 +108,7 @@ sub _resolve_value {
    $value //= 'whatever';
    $value = $value->($args) if ref($value) eq 'CODE';
    my $ref = ref $value;
-   return $value if $ref eq 'Regexp';
-   ($value, $ref) = ([$value], 'ARRAY') unless $ref;
+   ($value, $ref) = ([$value], 'ARRAY') if (!$ref) || ($ref eq 'Regexp');
    LOGCROAK "$args->{name}: unknown value type $ref" if $ref ne 'ARRAY';
 
    my (%flag_for, @regexps);
@@ -285,6 +287,7 @@ sub parse_by_separators {
          die {
             message => "'$name': invalid record, expected $n_keys, "
               . "got $n_values only",
+            values => \@values,
             record => $record
            }
            if $n_values < $n_keys;
