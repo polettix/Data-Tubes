@@ -374,21 +374,39 @@ sub parse_by_value_separator {
    my $allow_missing = $args{allow_missing} || 0;
    my $allow_surplus = $args{allow_surplus} || 0;
    my $trim          = $args{trim};
+   my $go_global     = $^V lt v5.18.0;
 
    return sub {
       my $record = shift;
 
       my @values;
-      $record->{$input} =~ m/
-         \A (?: $value $separator (?{push @values, $^N}) )*
-            $value \z (?{push @values, $^N})
-         /gmxs
-        or die {
-         message   => 'invalid record',
-         separator => $separator,
-         value     => $value,
-         record    => $record,
-        };
+      if ($go_global) {
+         local our @global_values = ();
+         my $collector = qr/(?{push @global_values, $^N})/;
+         $record->{$input} =~ m/
+            \A (?: $value $separator $collector )*
+               $value \z $collector
+            /gmxs
+           or die {
+            message   => 'invalid record',
+            separator => $separator,
+            value     => $value,
+            record    => $record,
+           };
+         @values = @global_values;
+      }
+      else {
+         $record->{$input} =~ m/
+            \A (?: $value $separator (?{push @values, $^N}) )*
+               $value \z (?{push @values, $^N})
+            /gmxs
+           or die {
+            message   => 'invalid record',
+            separator => $separator,
+            value     => $value,
+            record    => $record,
+           };
+      }
       trim(@values) if $trim;
       if ($decode) {
          eval { @values = @{$decode->(\@values)}; 1 } or do {
