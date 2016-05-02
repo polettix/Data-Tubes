@@ -1,5 +1,6 @@
 {{$NEXT}}
    - fixed bug in handling regexes as "value" in parsers
+   - workaround for pre-5.18 perl
 
 0.729  2016-05-01 23:00:31 CEST
    - tubergen-generated scripts are now easier to write and use
