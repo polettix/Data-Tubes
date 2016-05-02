@@ -1,4 +1,6 @@
 {{$NEXT}}
+
+0.729001  2016-05-02 23:09:55 CEST
    - fixed bug in handling regexes as "value" in parsers
    - workaround for pre-5.18 perl
 

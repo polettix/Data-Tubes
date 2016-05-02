@@ -3,7 +3,7 @@ use strict;
 use warnings;
 use English qw< -no_match_vars >;
 use 5.010;
-our $VERSION = '0.729';
+our $VERSION = '0.729001';
 use File::Path qw< mkpath >;
 
 use File::Spec::Functions qw< splitpath catpath >;

@@ -8,7 +8,7 @@ BEGIN {
 use strict;
 use warnings;
 use 5.010;
-my $VERSION = "0.729";
+my $VERSION = "0.729001";
 use Log::Log4perl::Tiny qw< :easy LOGLEVEL >;
 use Data::Tubes qw< pipeline >;
 
@@ -1977,7 +1977,7 @@ END_OF_FILE
  use strict;
  use warnings;
  use English qw< -no_match_vars >;
- our $VERSION = '0.729';
+ our $VERSION = '0.729001';
  use Exporter qw< import >;
  
  use Log::Log4perl::Tiny qw< :easy :dead_if_first LOGLEVEL >;
@@ -2096,7 +2096,7 @@ END_OF_FILE
  use warnings;
  use English qw< -no_match_vars >;
  use Exporter 'import';
- our $VERSION = '0.729';
+ our $VERSION = '0.729001';
  
  use Log::Log4perl::Tiny qw< :easy :dead_if_first >;
  
@@ -2551,7 +2551,7 @@ END_OF_FILE
  use warnings;
  use English qw< -no_match_vars >;
  use Log::Log4perl::Tiny qw< :easy :dead_if_first LOGLEVEL >;
- our $VERSION = '0.729';
+ our $VERSION = '0.729001';
  
  use Data::Tubes::Util
    qw< normalize_args normalize_filename args_array_with_options >;
@@ -2685,7 +2685,7 @@ END_OF_FILE
  use warnings;
  use English qw< -no_match_vars >;
  use Data::Dumper;
- our $VERSION = '0.729';
+ our $VERSION = '0.729001';
  
  use Log::Log4perl::Tiny qw< :easy :dead_if_first >;
  
@@ -2727,7 +2727,10 @@ END_OF_FILE
  
     my $value = $args{value} //= ['whatever'];
     $value = [$value] unless ref $value;
-    my $multiple = (scalar(@$value) > 1) || ($value->[0] ne 'whatever');
+    my $multiple =
+         (ref($value) ne 'ARRAY')
+      || (scalar(@$value) > 1)
+      || ($value->[0] ne 'whatever');
  
     return parse_by_separators(
        %args,
@@ -2787,8 +2790,7 @@ END_OF_FILE
     $value //= 'whatever';
     $value = $value->($args) if ref($value) eq 'CODE';
     my $ref = ref $value;
-    return $value if $ref eq 'Regexp';
-    ($value, $ref) = ([$value], 'ARRAY') unless $ref;
+    ($value, $ref) = ([$value], 'ARRAY') if (!$ref) || ($ref eq 'Regexp');
     LOGCROAK "$args->{name}: unknown value type $ref" if $ref ne 'ARRAY';
  
     my (%flag_for, @regexps);
@@ -2967,6 +2969,7 @@ END_OF_FILE
           die {
              message => "'$name': invalid record, expected $n_keys, "
                . "got $n_values only",
+             values => \@values,
              record => $record
             }
             if $n_values < $n_keys;
@@ -3053,21 +3056,39 @@ END_OF_FILE
     my $allow_missing = $args{allow_missing} || 0;
     my $allow_surplus = $args{allow_surplus} || 0;
     my $trim          = $args{trim};
+    my $go_global     = $^V lt v5.18.0;
  
     return sub {
        my $record = shift;
  
        my @values;
-       $record->{$input} =~ m/
-          \A (?: $value $separator (?{push @values, $^N}) )*
-             $value \z (?{push @values, $^N})
-          /gmxs
-         or die {
-          message   => 'invalid record',
-          separator => $separator,
-          value     => $value,
-          record    => $record,
-         };
+       if ($go_global) {
+          local our @global_values = ();
+          my $collector = qr/(?{push @global_values, $^N})/;
+          $record->{$input} =~ m/
+             \A (?: $value $separator $collector )*
+                $value \z $collector
+             /gmxs
+            or die {
+             message   => 'invalid record',
+             separator => $separator,
+             value     => $value,
+             record    => $record,
+            };
+          @values = @global_values;
+       }
+       else {
+          $record->{$input} =~ m/
+             \A (?: $value $separator (?{push @values, $^N}) )*
+                $value \z (?{push @values, $^N})
+             /gmxs
+            or die {
+             message   => 'invalid record',
+             separator => $separator,
+             value     => $value,
+             record    => $record,
+            };
+       }
        trim(@values) if $trim;
        if ($decode) {
           eval { @values = @{$decode->(\@values)}; 1 } or do {
@@ -3183,7 +3204,7 @@ END_OF_FILE
  use strict;
  use warnings;
  use English qw< -no_match_vars >;
- our $VERSION = '0.729';
+ our $VERSION = '0.729001';
  
  use Log::Log4perl::Tiny qw< :easy :dead_if_first >;
  
@@ -3347,7 +3368,7 @@ END_OF_FILE
  use strict;
  use warnings;
  use English qw< -no_match_vars >;
- our $VERSION = '0.729';
+ our $VERSION = '0.729001';
  
  use Log::Log4perl::Tiny qw< :easy :dead_if_first LOGLEVEL >;
  
@@ -3474,7 +3495,7 @@ END_OF_FILE
  use English qw< -no_match_vars >;
  use Data::Dumper;
  use Scalar::Util qw< blessed >;
- our $VERSION = '0.729';
+ our $VERSION = '0.729001';
  
  use Log::Log4perl::Tiny
    qw< :easy :dead_if_first get_logger LOGLEVEL LEVELID_FOR >;
@@ -3784,7 +3805,7 @@ END_OF_FILE
  use strict;
  use warnings;
  use English qw< -no_match_vars >;
- our $VERSION = '0.729';
+ our $VERSION = '0.729001';
  
  use Log::Log4perl::Tiny qw< :easy :dead_if_first >;
  
@@ -3926,7 +3947,7 @@ END_OF_FILE
  use warnings;
  use English qw< -no_match_vars >;
  use Data::Dumper;
- our $VERSION = '0.729';
+ our $VERSION = '0.729001';
  
  use Template::Perlish;
  use Log::Log4perl::Tiny qw< :easy :dead_if_first get_logger >;
@@ -4045,7 +4066,7 @@ END_OF_FILE
  use warnings;
  use English qw< -no_match_vars >;
  use POSIX qw< strftime >;
- our $VERSION = '0.729';
+ our $VERSION = '0.729001';
  
  use Log::Log4perl::Tiny qw< :easy :dead_if_first LOGLEVEL >;
  use Template::Perlish;
@@ -4192,7 +4213,7 @@ END_OF_FILE
  use warnings;
  use English qw< -no_match_vars >;
  use 5.010;
- our $VERSION = '0.729';
+ our $VERSION = '0.729001';
  use File::Path qw< mkpath >;
  
  use File::Spec::Functions qw< splitpath catpath >;
@@ -4279,7 +4300,7 @@ END_OF_FILE
  use 5.010;
  use File::Path qw< make_path >;
  use File::Basename qw< dirname >;
- our $VERSION = '0.729';
+ our $VERSION = '0.729001';
  
  use Log::Log4perl::Tiny qw< :easy :dead_if_first >;
  use Mo qw< default >;
