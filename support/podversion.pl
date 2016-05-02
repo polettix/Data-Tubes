@@ -7,6 +7,7 @@ use 5.010;
 
 my ($distro, $version) = @ARGV;
 my $podfile = path($distro)->child(qw< lib Data Tubes.pod >);
+my $readme  = path($distro)->child('README');
 
 my $tp = Template::Perlish->new(
    start => '{{[',
@@ -16,5 +17,8 @@ my $tp = Template::Perlish->new(
       version => $version,
    },
 );
-my $rendered = $tp->process($podfile->slurp_raw());
-$podfile->spew_raw($rendered);
+
+for my $file ($podfile, $readme) {
+   my $rendered = $tp->process($file->slurp_raw());
+   $file->spew_raw($rendered);
+}
