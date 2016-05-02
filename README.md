@@ -2,6 +2,8 @@
 
 Data::Tubes - Text and data canalising
 
+[![Build Status](https://travis-ci.org/polettix/Data-Tubes.svg?branch=master)](https://travis-ci.org/polettix/Data-Tubes)
+
 # VERSION
 
 This document describes Data::Tubes version {{\[ version \]}}.
