@@ -422,6 +422,14 @@ L</by_split>, where you can provide a way to specify what you consider
 I<valid> values, e.g. to allow for escaping or quoting (hence also
 allowing having the separator inside your values).
 
+B<CAVEAT>: this function uses the regular expression construct
+C<(?{...})> internally. While it is supported as of perl 5.10, this has
+evolved in time, up to perl 5.18 where it was stabilized. In particular,
+before perl 5.18 it was not possible to use lexical variables in the
+construct, so for older perls C<by_value_separator> uses a package
+variable for collecting values. This should not be a problem, but might
+be.
+
 Just to make an example, suppose that you are using semicolons as
 separators. C<by_value_separator> would allow you to take this:
 
