@@ -1,5 +1,9 @@
 {{$NEXT}}
 
+0.730  2016-05-03 22:08:39 CEST
+   - added note about workaround in documentation for Parser
+   - added test for package variable cleanup
+
 0.729001  2016-05-02 23:09:55 CEST
    - fixed bug in handling regexes as "value" in parsers
    - workaround for pre-5.18 perl
