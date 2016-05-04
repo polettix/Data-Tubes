@@ -1,4 +1,5 @@
 {{$NEXT}}
+   - upgraded dependency for Template::Perlish (no STDOUT clobbering)
 
 0.730  2016-05-03 22:08:39 CEST
    - added note about workaround in documentation for Parser
