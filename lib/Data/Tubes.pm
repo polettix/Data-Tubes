@@ -43,12 +43,23 @@ sub pipeline {
    my ($tubes, $args) = args_array_with_options(@_, {name => 'sequence'});
 
    my $tap = delete $args->{tap};
-   $tap = sub {
-      my $iterator = shift;
-      while (my @items = $iterator->()) { }
-      return;
-     }
-     if defined($tap) && ($tap eq 'sink');
+   if (defined $tap) {
+      $tap = sub {
+         my $iterator = shift;
+         while (my @items = $iterator->()) { }
+         return;
+        }
+        if $tap eq 'sink';
+      $tap = sub {
+         my $iterator = shift;
+         my @records;
+         while (my @items = $iterator->()) { push @records, @items; }
+         return unless @records;
+         return $records[0] if @records == 1;
+         return (records => \@records);
+        }
+        if $tap eq 'bucket';
+   }
 
    if ((!defined($tap)) && (defined($args->{pump}))) {
       my $pump = delete $args->{pump};

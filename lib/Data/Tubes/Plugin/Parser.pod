@@ -126,7 +126,12 @@ name of the output field, defaults to C<structured>;
 
 =item C<trim>
 
-remove leading and trailing whitespaces from the extracted values.
+remove leading and trailing whitespaces from the extracted values;
+
+=item C<value>
+
+set how you are going to accept input values, e.g. escaped or quoted.
+See L</parse_by_separators> for details.
 
 =back
 

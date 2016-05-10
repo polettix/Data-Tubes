@@ -190,7 +190,6 @@ sub fallback {
    my $name = $args->{name};
 
    my @tubes = tubify(@$tubes);
-
    my $catch = $args->{catch};
    return sub {
       my $record = shift;
