@@ -6,7 +6,7 @@ use strict;
 use warnings;
 use English qw< -no_match_vars >;
 use Exporter 'import';
-our $VERSION = '0.730';
+our $VERSION = '0.731';
 
 use Log::Log4perl::Tiny qw< :easy :dead_if_first >;
 

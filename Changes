@@ -1,4 +1,6 @@
 {{$NEXT}}
+
+0.731  2016-05-12 09:41:34 CEST
    - upgraded dependency for Template::Perlish (no STDOUT clobbering)
    - documented "value" in parse_by_format
    - added tap type `bucket`
