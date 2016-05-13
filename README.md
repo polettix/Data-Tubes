@@ -300,14 +300,30 @@ exhausted.
 
     - `tap`
 
-        set to either the string `sink` or to a subroutine ref. In the first
-        case, whatever iterator returned by the sequence will be exhausted. In
-        the second case, the output iterator will be fed into the provided
-        subroutine reference, that will have to use it as it sees fit.
+        set to either an allowed string or to a subroutine ref. In the second
+        case, the output iterator will be fed into the provided subroutine
+        reference, that will have to use it as it sees fit. Note that this
+        `tap` will always be provided with an iterator, which means that it
+        MUST be exhausted in order to actually make the whole pipeline work.
 
-        Note that this `tap` will always be provided with an iterator, which
-        means that it MUST be exhausted in order to actually make the whole
-        pipeline work.
+        You can also set this to one of the allowed strings, which will generate
+        a suitable tap for you:
+
+        - `sink`
+
+            this allows you to exhaust the iterator tossing the outcoming records
+            away. This is what you usually want in some \*outer\* pipeline, when you
+            are not interested in the records that go out of the pipeline because...
+            you already did all that you needed to do;
+
+        - `bucket`
+
+            available as of release 0.732, transforms the input iterator into one of
+            the other allowed return values for a valid tube (i.e. the empty list, a
+            single output record, or a string \`records\` followed by an array
+            reference holding the output records). This is useful if you are
+            interested into what goes out of the pipeline, but you don't want the
+            delayed processing provided by the iterator.
 
     If `tap` is present, `pump` is ignored.
 
