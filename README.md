@@ -273,7 +273,20 @@ exhausted.
     it provides no more output records. This is useful if the tube returns
     an iterator, as it will be exhausted.
 
-    Returns nothing.
+    Returns different things depending on the calling context:
+
+    - in _void_ context, nothing is returned;
+    - in _scalar_ context, different things are returned depending on what
+    the `$tube` returns. If it returns a single item (i.e. a record), it is
+    returned back. If it returns the string `records` and an array
+    reference, the array reference is returned. If it returns an iterator,
+    an array reference with all the output records produced by the iterator
+    is returned;
+    - In _list_ context, it always returns a sequence of output records.
+
+    Note that the _scalar_ context requires you to know precisely what your
+    tube provides back, otherwise you might not know if what you are getting
+    back is a single record or an array reference with the records inside.
 
 - **pipeline**
 
