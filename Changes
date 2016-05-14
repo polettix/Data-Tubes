@@ -1,6 +1,7 @@
 {{$NEXT}}
    - better documentation for `drain`
    - slight enhancements to the docs
+   - `factory` in `dispatch` now goes through `tubify`
 
 0.732  2016-05-13 22:58:40 CEST
    - release after 100 PASSes in CPAN Testers (thanks!)

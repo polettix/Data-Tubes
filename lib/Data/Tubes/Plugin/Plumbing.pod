@@ -263,15 +263,15 @@ lack of a selector will throw an exception. Defaults to C<undef>;
 set a sub reference to generate new tubes when needed. The factory
 function will be fed with the specific I<selection key> as the first
 argument, and the record as the second argument, and it is supposed to
-return a valid tube (although it might throw an exception by itself, of
-course);
+return anything that can be converted to a valid tube via
+L<Data::Tubes::Plugin::Util/tubify> (although it might throw an
+exception by itself, of course);
 
 =item C<handlers>
 
 this is a quick way to set a simple factory that just returns elements
 from a hash reference (that is passed as value). If this is used, every
-key that is I<not> present in the hash will throw an exception. If
-C<factory> is present, this field will be ignored;
+key that is I<not> present in the hash will throw an exception;
 
 =item C<key>
 
@@ -297,8 +297,9 @@ SHOULD provide a string back, that will uniquely identify a tube.
 
 =back
 
-One between C<selector> or C<key> MUST be provided. One between
-C<factory> and C<handlers> MUST be provided.
+One between C<selector> or C<key> MUST be provided. At least one between
+C<factory> and C<handlers> MUST be provided (but you can provide both,
+in which case C<handlers> acts as a starting point).
 
 
 =item B<< fallback >>

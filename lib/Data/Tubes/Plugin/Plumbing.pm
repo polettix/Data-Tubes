@@ -171,7 +171,7 @@ sub dispatch {
         unless defined $key;
 
       # register a new handler... or die!
-      $handler_for->{$key} = $factory->($key, $record)
+      ($handler_for->{$key}) = tubify($factory->($key, $record))
         unless exists $handler_for->{$key};
 
       return $handler_for->{$key}->($record);
