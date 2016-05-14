@@ -54,7 +54,7 @@ call is a story apart, of course):
     - _exactly one scalar_, representing the _output record_;
     - the string `records` followed by an _array reference_, containing
       the sequence of _output records_;
-    - the string _iterator_ followed by a _sub reference_, from where you
+    - the string `iterator` followed by a _sub reference_, from where you
       can draw the _output records_.
 
 The iterator has some additional constraints:
