@@ -233,13 +233,13 @@ mechanisms:
 
 =over
 
-=item -
+=item *
 
 first, a I<selector> function is applied to the input record, optionally
 defaulting to a configurable value. This selector is a string that MUST
 uniquely identify the output tube where the record should be dispatched;
 
-=item -
+=item *
 
 then, if the tube associated to the I<selector> is already known, it
 will be used for the dispatching. Otherwise, a I<factory> will be used
