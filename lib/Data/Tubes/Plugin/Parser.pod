@@ -687,11 +687,13 @@ L<Data::Tubes::Util/metadata>.
 
 =item C<chunks_separator>
 
-character used to divide chunks in the input;
+character used to divide chunks in the input, defaults to a space
+character (ASCII 0x20);
 
 =item C<default_key>
 
-the default key to be used when a key is not present in a chunk;
+the default key to be used when a key is not present in a chunk,
+defaults to the empty string;
 
 =item C<defaults>
 
@@ -703,7 +705,8 @@ name of the input field, defaults to C<raw>;
 
 =item C<key_value_separator>
 
-character used to divide the key from the value in a chunk;
+character used to divide the key from the value in a chunk, defaults to
+the equal sign C<=>;
 
 =item C<name>
 
