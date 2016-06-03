@@ -8,29 +8,32 @@ use Data::Dumper;
 
 use Data::Tubes qw< pipeline summon >;
 
-summon('+Validator::with_subs');
-ok __PACKAGE__->can('with_subs'), "summoned with_subs";
+summon('+Validator::thoroughly');
+ok __PACKAGE__->can('thoroughly'), "summoned thoroughly";
 
 {
-   my $v = with_subs(
+   my $v = thoroughly(
       sub { $_[0]{foo} =~ /bar|baz/ },
       ['is-even'   => sub { $_[0]{number} % 2 == 0 }],
-      ['in-bounds' => sub { $_[0]{number} >= 10 && $_[0]{number} <= 21 }]
+      ['in-bounds' => sub { $_[0]{number} >= 10 && $_[0]{number} <= 21 }],
+      {keep_empty => 1}
    );
 
    validate_validator($v, {structured => {foo => 'bar', number => 12}},
-      undef, 'all validators are fine');
-   validate_validator(
-      $v,
-      {structured => {foo => 'bar', number => 13}},
-      [['is-even', '']],
-      'is-even has issues'
+      [], 'all validators are fine');
+}
+
+{
+   my $v = thoroughly(
+      sub { $_[0]{foo} =~ /bar|baz/ },
+      ['is-even'   => sub { ($_[0]{number} % 2 == 0) or die "odd\n" }],
+      ['in-bounds' => sub { $_[0]{number} >= 10      or die "too low\n" }],
+      {keep_empty => 1, wrapper => 'try'}
    );
+
    validate_validator(
-      $v,
-      {structured => {foo => 'hey', number => 3}},
-      [['validator-0', 0], ['is-even', ''], ['in-bounds', ''],],
-      'all validators have issues'
+      $v, {structured => {foo => 'bar', number => 12}},
+      [], 'all validators are fine, even throwers'
    );
 }
 
