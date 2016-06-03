@@ -642,10 +642,10 @@ unquoted strings, you might provide the following:
    my $tube = ghashy(\%args);
 
 parse the input thext as a hash, generalized. The algorithm used is the
-same as L<Data::Tubes::Util/generalized_hash>. It is a generalization of
+same as L<Data::Tubes::Util/generalized_hashy>. It is a generalization of
 L</hashy> below.
 
-Accepts all arguments as L<Data::Tubes::Util/generalized_hash>, with the
+Accepts all arguments as L<Data::Tubes::Util/generalized_hashy>, with the
 same default values except for C<default_key> that is set to the empty
 string (as opposed to not being defined). This means that stand-alone
 values will always be accepted. This setting is in line with L</hashy>
