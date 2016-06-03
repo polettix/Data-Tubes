@@ -14,20 +14,6 @@ Data::Tubes::Plugin::Validator
 This module contains factory functions to generate I<tubes> that ease
 validation of records.
 
-=over
-
-=item *
-
-the input record MUST be a hash reference;
-
-=item *
-
-one field in the hash (according to factory argument C<output>, set to
-C<validation> by default) is set to the output of the validation
-operation.
-
-=back
-
 The factory functions below have two names, one starting with
 C<validate_> and the other without this prefix. They are perfectly
 equivalent to each other, whereas the short version can be handier e.g.
@@ -140,6 +126,23 @@ defined as any line that only contains optional whitespaces.
    $tube = with_subs(@validators, \%args);
 
 validate record according to provided C<@validators>.
+
+Differently from other validators in this plugin:
+
+=over
+
+=item *
+
+the input record MUST be a hash reference;
+
+=item *
+
+one field in the hash (according to factory argument C<output>, set to
+C<validation> by default) is set to the output of the validation
+operation.
+
+=back
+
 
 Items in C<@validators> can be either sub references or array
 references, as explained below. An optional hash reference at the end
