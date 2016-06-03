@@ -118,7 +118,11 @@ sub validate_thoroughly {
            ? $wrapper->($validator, $target, $record, $args, @params)
            : (ref($validator) eq 'CODE')
            ? $validator->($target, $record, $args, @params)
-           : ($target =~ m{$validator} ? 1 : [$name, "failed $validator"]);
+           : (
+               $target =~ m{$validator}
+               ? (1)
+               : (0, regex => "$validator")
+            );
          push @outcome, 0 unless @outcome;
          push @outcomes, [$name, @outcome]
            if !$outcome[0] || $keep_positives;
