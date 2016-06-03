@@ -118,12 +118,12 @@ first non-space character, if present, is the hash C<#>.
 Thin wrapper around L</validate_refuse> to eliminate empty lines,
 defined as any line that only contains optional whitespaces.
 
-=item B<< with_subs >>
+=item B<< with_thoroughly >>
 
-=item B<< validate_with_subs >>
+=item B<< validate_thoroughly >>
 
-   $tube = with_subs(@validators); # OR
-   $tube = with_subs(@validators, \%args);
+   $tube = thoroughly(@validators); # OR
+   $tube = thoroughly(@validators, \%args);
 
 validate record according to provided C<@validators>.
 
@@ -137,23 +137,29 @@ the input record MUST be a hash reference;
 
 =item *
 
+the input to be validated is set via argument C<input>, that defaults to
+C<structured> (instead of C<raw>). You might want to change this if you
+intend to use regular expression validators;
+
+=item *
+
 one field in the hash (according to factory argument C<output>, set to
 C<validation> by default) is set to the output of the validation
 operation.
 
 =back
 
-
-Items in C<@validators> can be either sub references or array
+Items in C<@validators> can be sub references, regex references or array
 references, as explained below. An optional hash reference at the end
 can carry options, see below for their explanation.
 
 A I<validator> basically boils down to a sub reference that is called to
-perform the validation. It can be either provided directly as an item in
-C<@validators>, or embedded in an array reference, prefixed with a
-I<name> and with optional additional parameters. Example:
+perform the validation, or a regular expression. It can be either
+provided directly as an item in C<@validators>, or embedded in an array
+reference, prefixed with a I<name> and with optional additional
+parameters. Example:
 
-   $tube = with_subs(
+   $tube = thoroughly(
       sub { $_[0]{foo} =~ /bar|baz/ }, # straight sub ref
       [
          'Number should be even',
@@ -291,7 +297,7 @@ C<validation>.
 =item C<wrapper>
 
 a subroutine to wrap each call to a validator. In this case,
-C<with_subs> will call the wrapper instead, passing as the first
+C<thoroughly> will call the wrapper instead, passing as the first
 parameter the I<validator>, then the list of parameter it would have
 passed to the validator itself.
 
@@ -323,7 +329,7 @@ A few examples should be of help now.
 First, an example with validators that all return a true or false value,
 hence there is nothing to trap:
 
-   my $v = with_subs(
+   my $v = thoroughly(
       sub { $_[0]{foo} =~ /bar|baz/ },
       ['is-even' => sub { $_[0]{number} % 2 == 0 }],
       ['in-bounds' =>
@@ -368,7 +374,7 @@ generated based on the index of the test in the list of validators.
 
 Here's an example for trapping exceptions:
 
-   my $v= with_subs(
+   my $v= thoroughly(
       sub { $_[0]{foo} =~ /bar|baz/ },
       ['is-even' => 
        sub { ($_[0]{number} % 2 == 0) or die "odd\n" }],
@@ -418,6 +424,18 @@ Always remember to return a true value from your validators, like this:
    sub { die "odd\n" if $_[0]{number} % 2; 1 }
 
 (Yes, this actually happened while writing the tests...)
+
+=item B<< with_subs >>
+
+=item B<< validate_with_subs >>
+
+   $tube = with_subs(@validators); # OR
+   $tube = with_subs(@validators, \%args);
+
+This function is DEPRECATED and currently aliased to L</thoroughly>. It
+used to do all that L</thoroughly> does, except handling regular
+expression validators; now ith supports them too, which is why a name
+change was necessary.
 
 =back
 

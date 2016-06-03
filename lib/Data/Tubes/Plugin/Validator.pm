@@ -69,7 +69,8 @@ sub validate_refuse_empty {
    return validate_refuse(qr{(?mxs:\A \s* \z)}, $args);
 } ## end sub validate_refuse_empty
 
-sub validate_with_subs {
+
+sub validate_thoroughly {
    my ($validators, $args) = args_array_with_options(
       @_,
       {
@@ -115,7 +116,9 @@ sub validate_with_subs {
          my @outcome =
              $wrapper
            ? $wrapper->($validator, $target, $record, $args, @params)
-           : $validator->($target, $record, $args, @params);
+           : (ref($validator) eq 'CODE')
+           ? $validator->($target, $record, $args, @params)
+           : ($target =~ m{$validator} ? 1 : [$name, "failed $validator"]);
          push @outcome, 0 unless @outcome;
          push @outcomes, [$name, @outcome]
            if !$outcome[0] || $keep_positives;
@@ -125,6 +128,8 @@ sub validate_with_subs {
       return $record;
    };
 } ## end sub validate_with_subs
+
+*validate_with_subs = \&validate_thoroughly;
 
 shorter_sub_names(__PACKAGE__, 'validate_');
 
