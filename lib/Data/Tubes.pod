@@ -178,14 +178,14 @@ can potentially give birth to multiple output records, like this:
 
 =over
 
-=item -
+=item *
 
 if you can/want to compute all the output records right away (e.g. you
 just to need to C<split> something in the input record), you can use
 C<records> for I<type> and pass a reference to an array as the second
 output value (each of them will be considered an output record);
 
-=item -
+=item *
 
 if you cannot (or don't want to) compute all the output records, e.g.
 because they might just blow out your process' memory, you can use
@@ -195,11 +195,11 @@ possible results:
 
 =over
 
-=item o
+=item *
 
 one single element, that is the I<next> output record, OR
 
-=item o
+=item *
 
 the empty list, that signals that the iterator has been emptied.
 
@@ -342,9 +342,7 @@ exhausted.
 
 =head1 FUNCTIONS
 
-=over
-
-=item B<< drain >>
+=head2 B<< drain >>
 
    drain($tube, @tube_inputs);
 
@@ -380,7 +378,7 @@ Note that the I<scalar> context requires you to know precisely what your
 tube provides back, otherwise you might not know if what you are getting
 back is a single record or an array reference with the records inside.
 
-=item B<< pipeline >>
+=head2 B<< pipeline >>
 
    $pl = pipeline(@tubes); # OR
    $pl = pipeline(@tubes, \%args);
@@ -484,7 +482,7 @@ Examples (the following alternatives all do the same thing, mostly):
    );
    $handler->($record); # the pump will exhaust the iterator
 
-=item B<< summon >>
+=head2 B<< summon >>
 
    # Direct function import
    summon('Some::Package::subroutine');
@@ -570,7 +568,7 @@ Note that you MUST NOT put the C<::>, it will be added automatically.
 
 =back
 
-=item B<< tube >>
+=head2 B<< tube >>
 
    $tube = tube($factory_locator, @parameters); # OR
    $tube = tube(\@factory_locator, @parameters); # OR
@@ -599,8 +597,6 @@ it in one, single call:
 
 Most of the times, you are probably looking for L</pipeline> above,
 as that will eventually call C<tube> automatically.
-
-=back
 
 =head1 BUGS AND LIMITATIONS
 

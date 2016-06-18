@@ -41,11 +41,7 @@ or C<pipeline> from L<Data::Tubes>.
 
 =head1 FUNCTIONS
 
-=over
-
-=item B<< by_format >>
-
-=item B<< parse_by_format >>
+=head2 B<< by_format >>
 
    my $tube = by_format($format, %args); # OR
    my $tube = by_format(%args); # OR
@@ -74,8 +70,8 @@ is interpreted as follows:
    @separators  = (';', '~~~');
 
 In the first case, i.e. when all separators are equal to each other,
-L</parse_by_split> will be called, as it is (arguably) slightly more
-efficient. Otherwise, L</parse_by_regexes> will be called. Whatever
+L</by_split> will be called, as it is (arguably) slightly more
+efficient. Otherwise, L</by_separators> will be called. Whatever
 these two factories return will be returned back.
 
 All C<@field_names> MUST be different from one another.
@@ -88,7 +84,7 @@ The following arguments are supported:
 
 set to the number of missing trailing elements that you are fine to
 lose, in case the format is only compound of a single separator and
-L</parse_by_split> is used behind the scenes. This allows you setting an
+L</by_split> is used behind the scenes. This allows you setting an
 optional I<catchall> trailing parameter to collect whatever you are not
 really interested into, also allowing for its absence.
 
@@ -131,13 +127,12 @@ remove leading and trailing whitespaces from the extracted values;
 =item C<value>
 
 set how you are going to accept input values, e.g. escaped or quoted.
-See L</parse_by_separators> for details.
+See L</by_separators> for details.
 
 =back
 
-=item B<< by_regex >>
 
-=item B<< parse_by_regex >>
+=head2 B<< by_regex >>
 
    my $tube = by_regex($regex, %args); # OR
    my $tube = by_regex(%args); # OR
@@ -172,9 +167,7 @@ argument list.
 
 =back
 
-=item B<< by_separators >>
-
-=item B<< parse_by_separators >>
+=head2 B<< by_separators >>
 
    my $tube = by_separators($separators, %args); # OR
    my $tube = by_separators(%args); # OR
@@ -340,9 +333,7 @@ unquoted strings, you might provide the following:
 
 =back
 
-=item B<< by_split >>
-
-=item B<< parse_by_split >>
+=head2 B<< by_split >>
 
    my $tube = by_split(%args); # OR
    my $tube = by_split(\%args); # OR
@@ -414,9 +405,7 @@ would be split into the following elements:
 
 =back
 
-=item B<< by_value_separator >>
-
-=item B<< parse_by_value_separator >>
+=head2 B<< by_value_separator >>
 
    $tube = by_value_separator($separator, %args); # OR
    $tube = by_value_separator(%args); # OR
@@ -634,9 +623,7 @@ unquoted strings, you might provide the following:
 =back
 
 
-=item B<< ghashy >>
-
-=item B<< parse_ghashy >>
+=head2 B<< ghashy >>
 
    my $tube = ghashy(%args); # OR
    my $tube = ghashy(\%args);
@@ -673,9 +660,7 @@ name of the output field, defaults to C<structured>;
 
 =back
 
-=item B<< hashy >>
-
-=item B<< parse_hashy >>
+=head2 B<< hashy >>
 
    my $tube = hashy(%args); # OR
    my $tube = hashy(\%args);
@@ -722,9 +707,39 @@ This tube factory is strict in what accepts as inputs, in that the
 separators MUST be single characters and there is no escaping mechanism.
 If you need something more flexible, see L</ghashy> above.
 
-=item B<< single >>
+=head2 B<< parse_by_format >>
 
-=item B<< parse_single >>
+Alias for L</by_format>.
+
+=head2 B<< parse_by_regex >>
+
+Alias for L</by_regex>.
+
+=head2 B<< parse_by_separators >>
+
+Alias for L</by_separators>.
+
+=head2 B<< parse_by_split >>
+
+Alias for L</by_split>.
+
+=head2 B<< parse_by_value_separator >>
+
+Alias for L</by_value_separator>.
+
+=head2 B<< parse_ghashy >>
+
+Alias for L</ghashy>.
+
+=head2 B<< parse_hashy >>
+
+Alias for L</hashy>.
+
+=head2 B<< parse_single >>
+
+Alias for L</single>.
+
+=head2 B<< single >>
 
    my $tube = single(%args); # OR
    my $tube = single(\%args);
@@ -749,8 +764,6 @@ name of the tube, useful for debugging;
 =item C<output>
 
 name of the output field, defaults to C<structured>;
-
-=back
 
 =back
 

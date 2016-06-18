@@ -15,9 +15,7 @@ This module contains functions to ease using tubes.
 
 =head1 FUNCTIONS
 
-=over
-
-=item B<< identify >>
+=head2 B<< identify >>
 
    identify($args, $opts);
 
@@ -123,7 +121,7 @@ the name of the tube, defaults to C<*undef*>.
 
 =back
 
-=item B<< log_helper >>
+=head2 B<< log_helper >>
 
    my $lh = log_helper($args, $opts);
 
@@ -190,7 +188,7 @@ the name of the tube, defaults to C<*undef*>.
 
 =back
 
-=item B<< read_file >>
+=head2 B<< read_file >>
 
    my $contents = read_file($filename, %args); # OR
    my $contents = read_file(%args); # OR
@@ -199,7 +197,7 @@ the name of the tube, defaults to C<*undef*>.
 See L<Data::Tubes::Util/read_file>, this is a re-export for ease of use
 with L<Data::Tubes/summon> and backwards compatibility.
 
-=item B<< tubify >>
+=head2 B<< tubify >>
 
    @tubes = tubify(@specifications);
 
@@ -224,8 +222,6 @@ Additionally, this actually does what you think:
       ['Parser::by_format', format => 'foo,bar,baz'],
       ($foobar && sub { die unless $_[0]->{structured}}),
    );
-
-=back
 
 =head1 BUGS AND LIMITATIONS
 

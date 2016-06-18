@@ -23,25 +23,17 @@ directory will be created if not existent).
 
 The class is realized via L<Mo>. You can extend it, to a certain degree.
 
-=head1 METHODS
+=head1 CLASS METHODS
 
-=head2 Class
-
-=over 
-
-=item B<< new >>
+=head2 B<< new >>
 
    my cache = Data::Tubes::Util::Cache->new(%args);
 
-constructor for the class. See L</Accessors> for the accepted arguments.
+constructor for the class. See L</ACCESSOR METHODS> for the accepted arguments.
 
-=back
+=head1 ACCESSOR METHODS
 
-=head2 Accessors
-
-=over
-
-=item B<< repository >>
+=head2 B<< repository >>
 
    $cache->repository($href);
    $href = $cache->repository();
@@ -62,7 +54,7 @@ a directory name, in which case the cache is kept in the filesystem.
 
 Defaults to an empty hash.
 
-=item B<< max_items >>
+=head2 B<< max_items >>
 
    $cache->max_items($n);
    $n = $cache->max_items();
@@ -72,21 +64,17 @@ cache. When set to a false value, the limitation is disabled.
 
 Used by L</purge>.
 
-=back
+=head1 BUSINESS LOGIC METHODS
 
-=head2 Business Logic
-
-=over
-
-=item B<< get >>
+=head2 B<< get >>
 
    $item = $cache->get($key, @args);
 
-get the item related to C<$key>, taking it from the L</cache>. Any
+get the item related to C<$key>, taking it from the cache. Any
 additional argument in C<@arg> is ignored. Returns C<undef> if the
 C<$key> is missing.
 
-=item B<< purge >>
+=head2 B<< purge >>
 
    $cache->purge();
 
@@ -95,15 +83,13 @@ method does nothing. Otherwise, elements are removed from the cache
 until the number of items is less than, or equal to, the maximum number
 set.
 
-=item B<< set >>
+=head2 B<< set >>
 
    $cache->set($key, $value, @args);
 
 set the C<$value> corresponding to the C<$key> in the cache, overriding
 any previous value or creating a new item. Any additional argument in
 C<@args> is ignored. Returns C<$value>.
-
-=back
 
 =head1 SEE ALSO
 

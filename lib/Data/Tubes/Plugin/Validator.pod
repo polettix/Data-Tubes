@@ -21,11 +21,7 @@ when using C<tube> or C<pipeline> from L<Data::Tubes>.
 
 =head1 FUNCTIONS
 
-=over
-
-=item B<< admit >>
-
-=item B<< validate_admit >>
+=head2 B<< admit >>
 
    $tube = admit(@validators); # OR
    $tube = admit(@validators, \%args);
@@ -74,9 +70,7 @@ it advertises your intentions a bit more clearly.
 
 =back
 
-=item B<< refuse >>
-
-=item B<< validate_refuse >>
+=head2 B<< refuse >>
 
    $tube = refuse(@validators); # OR
    $tube = refuse(@validators, \%args);
@@ -86,9 +80,7 @@ C<refuse> is inconditionally set to a true value. No, you cannot revert
 this setting C<refuse> to a false value explicitly, because it would not
 be sane.
 
-=item B<< refuse_comment >>
-
-=item B<< validate_refuse_comment >>
+=head2 B<< refuse_comment >>
 
    $tube = refuse_comment(%args); # OR
    $tube = refuse_comment(\%args);
@@ -97,9 +89,7 @@ Thin wrapper around L</validate_refuse> to eliminate comment lines,
 defined as any line that starts with optional spaces and whose first
 non-space character is the hash C<#>.
 
-=item B<< refuse_comment_or_empty >>
-
-=item B<< validate_refuse_comment_or_empty >>
+=head2 B<< refuse_comment_or_empty >>
 
    $tube = refuse_comment(%args); # OR
    $tube = refuse_comment(\%args);
@@ -108,9 +98,7 @@ Thin wrapper around L</validate_refuse> to eliminate comment or empty
 lines, defined as any line that starts with optional spaces and whose
 first non-space character, if present, is the hash C<#>.
 
-=item B<< refuse_empty >>
-
-=item B<< validate_refuse_empty >>
+=head2 B<< refuse_empty >>
 
    $tube = refuse_comment(%args); # OR
    $tube = refuse_comment(\%args);
@@ -118,9 +106,7 @@ first non-space character, if present, is the hash C<#>.
 Thin wrapper around L</validate_refuse> to eliminate empty lines,
 defined as any line that only contains optional whitespaces.
 
-=item B<< thoroughly >>
-
-=item B<< validate_thoroughly >>
+=head2 B<< thoroughly >>
 
    $tube = thoroughly(@validators); # OR
    $tube = thoroughly(@validators, \%args);
@@ -425,9 +411,35 @@ Always remember to return a true value from your validators, like this:
 
 (Yes, this actually happened while writing the tests...)
 
-=item B<< with_subs >>
+=head2 B<< validate_admit >>
 
-=item B<< validate_with_subs >>
+Alias for L</admit>.
+
+=head2 B<< validate_refuse >>
+
+Alias for L</refuse>.
+
+=head2 B<< validate_refuse_comment >>
+
+Alias for L</refuse_comment>.
+
+=head2 B<< validate_refuse_comment_or_empty >>
+
+Alias for L</refuse_comment_or_empty>.
+
+=head2 B<< validate_refuse_empty >>
+
+Alias for L</refuse_empty>.
+
+=head2 B<< validate_thoroughly >>
+
+Alias for L</thoroughly>.
+
+=head2 B<< validate_with_subs >>
+
+Alias for L</with_subs>.
+
+=head2 B<< with_subs >>
 
    $tube = with_subs(@validators); # OR
    $tube = with_subs(@validators, \%args);
@@ -436,8 +448,6 @@ This function is DEPRECATED and currently aliased to L</thoroughly>. It
 used to do all that L</thoroughly> does, except handling regular
 expression validators; now ith supports them too, which is why a name
 change was necessary.
-
-=back
 
 =head1 BUGS AND LIMITATIONS
 

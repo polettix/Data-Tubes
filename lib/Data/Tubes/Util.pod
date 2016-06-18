@@ -15,9 +15,7 @@ Helper functions for automatic management of argument lists and other.
 
 =head1 FUNCTIONS
 
-=over
-
-=item B<< args_array_with_options >>
+=head2 B<< args_array_with_options >>
 
     my ($aref, $args) = args_array_with_options(@list, \%defaults); # OR
     my ($aref, $args) = args_array_with_options(@list, \%args, \%defaults);
@@ -50,7 +48,7 @@ reference containing the arguments, like this:
 In case your list might actually contain hash references, you will have
 to take this into consideration.
 
-=item B<< assert_all_different >>
+=head2 B<< assert_all_different >>
 
    $bool = assert_all_different(@strings);
 
@@ -59,7 +57,7 @@ the check is successful, throws an exception otherwise. The exception is
 a hash reference with a key C<message> set to the first string that is
 found repeated.
 
-=item B<< generalized_hashy >>
+=head2 B<< generalized_hashy >>
 
    $outcome = generalized_hashy($text, %args); # OR
    $outcome = generalized_hashy(%args);        # OR
@@ -353,7 +351,7 @@ This shows you that you can do some escaping in the keys and values:
    output hash -> {what => 'ever "," you= do', wow => 'yay'}
 
 
-=item B<< load_module >>
+=head2 B<< load_module >>
 
    my $module = load_module($locator); # OR
    my $module = load_module($locator, $prefix);
@@ -379,7 +377,7 @@ loads module C<Foo::Bar> and returns string C<Foo::Bar>.
 You can optionally pass a C<$prefix> that will be passed to
 L</resolve_module>, see there for further information.
 
-=item B<< load_sub >>
+=head2 B<< load_sub >>
 
    my $sub = load_sub($locator); # OR
    my $sub = load_sub($locator, $prefix);
@@ -406,7 +404,7 @@ C<Foo::Bar>.
 You can optionally pass a C<$prefix> that will be passed to
 L</resolve_module>, see there for further information.
 
-=item B<< metadata >>
+=head2 B<< metadata >>
 
    my $href = metadata($input, %args); # OR
    my $href = metadata($input, \%args);
@@ -472,7 +470,7 @@ Examples:
    #    name => 'whatever'
    # }
 
-=item B<< normalize_args >>
+=head2 B<< normalize_args >>
 
    my $args = normalize_args( %args, \%defaults); # OR
    my $args = normalize_args(\%args, \%defaults); # OR
@@ -511,7 +509,7 @@ and C<$args> will be populated as follows:
    };
 
 
-=item B<< normalize_filename >>
+=head2 B<< normalize_filename >>
 
    my $name_or_handle = normalize_filename($name, $default_handle);
 
@@ -575,7 +573,7 @@ otherwise, the provided C<$filename> will be returned as-is.
 
 =back
 
-=item B<< pump >>
+=head2 B<< pump >>
 
    pull($iterator);
    my $records = pull($iterator);
@@ -604,7 +602,7 @@ reference or a list of generated records is returned.
 
 =back
 
-=item B<< read_file >>
+=head2 B<< read_file >>
 
    my $contents = read_file($filename, %args); # OR
    my $contents = read_file(%args); # OR
@@ -629,7 +627,7 @@ You can optionally pass the filename standalone as the first argument
 without pre-pending it with the string C<filename>. In this case, it
 MUST appear as the first item in the argument list.
 
-=item B<< read_file_maybe >>
+=head2 B<< read_file_maybe >>
 
    my $text = read_file_maybe(\@aref);
    my $x    = read_file_maybe($x); # where ref($x) ne 'ARRAY'
@@ -661,7 +659,7 @@ Examples:
    # ditto, but read as raw text instead of default utf-8
 
 
-=item B<< resolve_module >>
+=head2 B<< resolve_module >>
 
    my $full_module_name = resolve_module($module_name); # OR
    my $full_module_name = resolve_module($module_name, $prefix);
@@ -704,7 +702,7 @@ Examples (in the same order as the bullet above):
    module_name('Pack', 'Some::Thing'); # Some::Thing::Pack
    module_name('Some::Pack', 'Some::Thing'); # Some::Pack
 
-=item B<< shorter_sub_names >>
+=head2 B<< shorter_sub_names >>
 
    shorter_sub_names($package_name);
 
@@ -735,7 +733,7 @@ and it generates, among the others, C<by_line> and C<by_paragraph>.
 
 Consider using this if you generate new plugins.
 
-=item B<< sprintffy >>
+=head2 B<< sprintffy >>
 
    my $string = sprintffy($template, \@substitutions);
 
@@ -756,7 +754,7 @@ single percent sign and expands to a percent sign, so that the string
 C<%%> will be I<unescaped> to C<%> as you would expect in something that
 is C<sprintf>-like.
 
-=item B<< test_all_equal >>
+=head2 B<< test_all_equal >>
 
    my $bool = test_all_equal(@list);
 
@@ -764,32 +762,30 @@ test whether all elements in C<@list> are equal to one another or not,
 and return test output as a boolean value (i.e. something that Perl
 considers true or false).
 
-=item B<< trim >>
+=head2 B<< trim >>
 
    trim(@strings);
 
 remove leading/trailing whitespaces from input C<@strings>, in-place.
 
-=item B<< traverse >>
+=head2 B<< traverse >>
 
    my $item = traverse($data, @keys);
 
 Assuming that C<$data> is an array or hash reference, traverse it using
 items in C<@keys> at each step in the descent.
 
-=item B<< tube >>
+=head2 B<< tube >>
 
 see C<tube> in L<Data::Tubes>, this is the same function.
 
-=item B<< unzip >>
+=head2 B<< unzip >>
 
    my ($even, $odds) = unzip(@list); # OR
    my ($even, $odds) = unzip(\@list);
 
 separates even and odd items in the input C<@list> and returns them as
 two references to arrays.
-
-=back
 
 =head1 SEE ALSO
 
