@@ -18,9 +18,7 @@ This module contains functions to ease using tubes.
 Functions starting with C<write_> have an equivalent form without this
 prefix.
 
-=over
-
-=item B<< dispatch_to_files >>
+=head2 B<< dispatch_to_files >>
 
    my $tube = dispatch_to_files($filename, %args); # OR
    my $tube = dispatch_to_files(%args); # OR
@@ -117,9 +115,7 @@ An example is due at this point:
       footer => '}}}',
    );
 
-=item B<< to_files >>
-
-=item B<< write_to_files >>
+=head2 B<< to_files >>
 
    my $tube = to_files($filename, %args); # OR
    my $tube = to_files(%args); # OR
@@ -218,7 +214,7 @@ expands to the second (two digits, zero-padded on the left, starting from
 
 =item C<%z>
 
-expands to the time zone (in the format C<[-+]\d\d:\d\d>); 
+expands to the time zone (in the format C<[-+]\d\d:\d\d>);
 
 =item C<%D>
 
@@ -325,7 +321,9 @@ content/size of generated files. See L<Data::Tubes::Util::Output>.
 
 =back
 
-=back
+=head2 B<< write_to_files >>
+
+Alias for L</to_files>.
 
 =head1 BUGS AND LIMITATIONS
 

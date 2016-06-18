@@ -42,11 +42,11 @@ or C<pipeline> from L<Data::Tubes>.
 
 =head1 FUNCTIONS
 
-=over
+=head2 B<< render_with_template_perlish >>
 
-=item B<< with_template_perlish >>
+Alias for L</with_template_perlish>.
 
-=item B<< render_with_template_perlish >>
+=head2 B<< with_template_perlish >>
 
    my $tube = with_template_perlish($template, %args); # OR
    my $tube = with_template_perlish(%args); # OR
@@ -161,8 +161,6 @@ C<template_perlish> or the auto-generated instance;
 hash reference with variables that will always be available when
 expanding the template. Defaults to the empty hash. Will be ignored if
 C<template_perlish> is present in the arguments.
-
-=back
 
 =back
 

@@ -22,19 +22,15 @@ open).
 
 The class is realized via L<Mo>. You can extend it, to a certain degree.
 
-=head1 METHODS
+=head1 CLASS METHODS
 
-=head2 Class
-
-=over 
-
-=item B<< new >>
+=head2 B<< new >>
 
    my oh = Data::Tubes::Util::Output->new(%args);
 
 constructor for the class.
 
-=item B<< writer >>
+=head2 B<< writer >>
 
    my oh = Data::Tubes::Util::Output->writer(%args);
 
@@ -42,31 +38,27 @@ shorthand to create a C<Data::Tubes::Util::Output> object (via L</new>,
 passing C<%args>) and return a sub reference that will delegate to
 L</print> at each call.
 
-=back
+=head1 ACCESSOR METHODS
 
-=head2 Accessors
-
-=over
-
-=item B<< binmode >>
+=head2 B<< binmode >>
 
 value used for calling C<binmode> after a file is opened;
 
-=item B<< footer >>
+=head2 B<< footer >>
 
 a footer that will be written at the end of a file, just before it is
 closed;
 
-=item B<< header >>
+=head2 B<< header >>
 
 a header that will be written in every newly opened file, just after it
 has been opened;
 
-=item B<< interlude >>
+=head2 B<< interlude >>
 
 a string that will be written between two successive prints;
 
-=item B<< output >>
+=head2 B<< output >>
 
 whatever is set as an I<output channel>. It might be multiple things:
 
@@ -95,7 +87,7 @@ A valid I<filename> (either set as output or returned by the I<factory>)
 can be whatever is good for plain old C<open>, i.e. a real filename or a
 reference to a string.
 
-=item B<< policy >>
+=head2 B<< policy >>
 
 a policy is a hash containing rules associated to the handler, whatever
 it means. By default, it can contain either C<records_threshold> or
@@ -103,18 +95,14 @@ C<characters_threshold> (or both), that will be used as thresholds for
 printint out records/characters. If you extend this class you can of
 course implement your own policies.
 
-=item B<< track >>
+=head2 B<< track >>
 
 a hash reference that tracks the printing process. You should usually
 not need to fiddle with this... or you'd better take a look at the code.
 
-=back
+=head1 BUSINESS LOGIC METHODS
 
-=head2 Business Logic
-
-=over
-
-=item B<< checker >>
+=head2 B<< checker >>
 
    my $checker = $o->checker();
 
@@ -126,19 +114,19 @@ In case C<check> is not present, the L</default_check> will be used if a
 L</policy> is set, nothing otherwise (and this is the reason why we
 don't set a C<check> method in this base class).
 
-=item B<< close >>
+=head2 B<< close >>
 
    $o->close($filehandle, $tracker);
 
 print the footer, then L</release_fh>. If you just want to close... call
 L</just_close>.
 
-=item B<< default_check >>
+=head2 B<< default_check >>
 
 a checker function that uses the policy as described in L</policy>. See
 L</checker>.
 
-=item B<< get_fh >>
+=head2 B<< get_fh >>
 
    my ($fh, $releaser) = $o->get_fh($channel);
 
@@ -151,11 +139,11 @@ called when it's time to close the filehandle, so if you override this
 you have to provide both the opened handle and this releasing
 functionality.
 
-=item B<< just_close >>
+=head2 B<< just_close >>
 
 close whatever is open, flushing the footer if needed.
 
-=item B<< open >>
+=head2 B<< open >>
 
    my $filehandle = $o->open($channel);
 
@@ -164,7 +152,7 @@ back. Resets a few counters in the tracking object, then calls
 L</get_fh>, prints the header on the new handle, and eventually returns
 the handle.
 
-=item B<< print >>
+=head2 B<< print >>
 
    $o->print($iterator); # OR
    $o->print(@records);
@@ -177,14 +165,12 @@ is not C<undef> (and that is possible to print, of course).
 If L</interlude> is set, each record that is printed is prefixed with
 its value, except for the very first one.
 
-=item B<< release_fh >>
+=head2 B<< release_fh >>
 
    $o->release_fh($filehandle);
 
 uses the I<filehandle releaser> (see L</open>), if present, then gets
 rid of the currently tracked filehandle.
-
-=back
 
 =head1 SEE ALSO
 

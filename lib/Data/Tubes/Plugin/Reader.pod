@@ -42,25 +42,17 @@ or C<pipeline> from L<Data::Tubes>.
 
 =head1 FUNCTIONS
 
-=over
+=head2 B<< by_line >>
 
-=item B<< by_line >>
-
-=item B<< read_by_line >>
-
-This is a simple wrapper around L</read_by_separator>, where the
+This is a simple wrapper around L</by_separator>, where the
 C<separator> argument is forced to be a newline C<\n>.
 
-=item B<< by_paragraph >>
+=head2 B<< by_paragraph >>
 
-=item B<< read_by_paragraph >>
-
-This is a simple wrapper around L</read_by_separator>, where the
+This is a simple wrapper around L</by_separator>, where the
 C<separator> argument is forced to be the empty string.
 
-=item B<< by_record_reader >>
-
-=item B<< read_by_record_reader >>
+=head2 B<< by_record_reader >>
 
    my $tube = by_record_reader($record_reader, %args); # OR
    my $tube = by_record_reader(%args); # OR
@@ -109,9 +101,7 @@ function. It has no default and is required.
 
 =back
 
-=item B<< by_separator >>
-
-=item B<< read_by_separator >>
+=head2 B<< by_separator >>
 
    my $tube = by_separator($separator, %args); # OR
    my $tube = by_separator(%args); # OR
@@ -166,7 +156,21 @@ factory function.
 
 =back
 
-=back
+=head2 B<< read_by_line >>
+
+Alias for L</by_line>.
+
+=head2 B<< read_by_paragraph >>
+
+Alias for L</by_paragraph>.
+
+=head2 B<< read_by_record_reader >>
+
+Alias for L</by_record_reader>.
+
+=head2 B<< read_by_separator >>
+
+Alias for L</by_separator>.
 
 =head1 BUGS AND LIMITATIONS
 

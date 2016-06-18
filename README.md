@@ -156,28 +156,17 @@ case;
 returned (i.e. its _type_, and the second will be some way to get the
 return value(s). This is what you would use if a single `$input_record`
 can potentially give birth to multiple output records, like this:
-    - -
-
-        if you can/want to compute all the output records right away (e.g. you
-        just to need to `split` something in the input record), you can use
-        `records` for _type_ and pass a reference to an array as the second
-        output value (each of them will be considered an output record);
-
-    - -
-
-        if you cannot (or don't want to) compute all the output records, e.g.
-        because they might just blow out your process' memory, you can use
-        _type_ `iterator` and return a subroutine reference back. This
-        subroutine MUST be such that repeatingly calling it can yield two
-        possible results:
-
-        - o
-
-            one single element, that is the _next_ output record, OR
-
-        - o
-
-            the empty list, that signals that the iterator has been emptied.
+    - if you can/want to compute all the output records right away (e.g. you
+    just to need to `split` something in the input record), you can use
+    `records` for _type_ and pass a reference to an array as the second
+    output value (each of them will be considered an output record);
+    - if you cannot (or don't want to) compute all the output records, e.g.
+    because they might just blow out your process' memory, you can use
+    _type_ `iterator` and return a subroutine reference back. This
+    subroutine MUST be such that repeatingly calling it can yield two
+    possible results:
+        - one single element, that is the _next_ output record, OR
+        - the empty list, that signals that the iterator has been emptied.
 
 This is all that is assumed about tubes in the general case. Some
 plugins will make further assumptions about what's expected as an input
@@ -287,218 +276,218 @@ exhausted.
 
 # FUNCTIONS
 
-- **drain**
+## **drain**
 
-        drain($tube, @tube_inputs);
+    drain($tube, @tube_inputs);
 
-    drain whatever comes out of a tube. The tube is run with the provided
-    inputs, and if an iterator comes out of it, it is repeatedly run until
-    it provides no more output records. This is useful if the tube returns
-    an iterator, as it will be exhausted.
+drain whatever comes out of a tube. The tube is run with the provided
+inputs, and if an iterator comes out of it, it is repeatedly run until
+it provides no more output records. This is useful if the tube returns
+an iterator, as it will be exhausted.
 
-    Returns different things depending on the calling context:
+Returns different things depending on the calling context:
 
-    - in _void_ context, nothing is returned;
-    - in _scalar_ context, different things are returned depending on what
-    the `$tube` returns. If it returns a single item (i.e. a record), it is
-    returned back. If it returns the string `records` and an array
-    reference, the array reference is returned. If it returns an iterator,
-    an array reference with all the output records produced by the iterator
-    is returned;
-    - In _list_ context, it always returns a sequence of output records.
+- in _void_ context, nothing is returned;
+- in _scalar_ context, different things are returned depending on what
+the `$tube` returns. If it returns a single item (i.e. a record), it is
+returned back. If it returns the string `records` and an array
+reference, the array reference is returned. If it returns an iterator,
+an array reference with all the output records produced by the iterator
+is returned;
+- In _list_ context, it always returns a sequence of output records.
 
-    Note that the _scalar_ context requires you to know precisely what your
-    tube provides back, otherwise you might not know if what you are getting
-    back is a single record or an array reference with the records inside.
+Note that the _scalar_ context requires you to know precisely what your
+tube provides back, otherwise you might not know if what you are getting
+back is a single record or an array reference with the records inside.
 
-- **pipeline**
+## **pipeline**
 
-        $pl = pipeline(@tubes); # OR
-        $pl = pipeline(@tubes, \%args);
+    $pl = pipeline(@tubes); # OR
+    $pl = pipeline(@tubes, \%args);
 
-    build up a pipeline (sequence) of `@tubes`, possibly with options in
-    `%args`. This is actually only little more than a wrapper around
-    `sequence` in [Data::Tubes::Plugin::Plumbing](https://metacpan.org/pod/Data::Tubes::Plugin::Plumbing).
+build up a pipeline (sequence) of `@tubes`, possibly with options in
+`%args`. This is actually only little more than a wrapper around
+`sequence` in [Data::Tubes::Plugin::Plumbing](https://metacpan.org/pod/Data::Tubes::Plugin::Plumbing).
 
-    The `@tubes` are passed to `sequence` (see
-    [Data::Tubes::Plugin::Plumbing](https://metacpan.org/pod/Data::Tubes::Plugin::Plumbing)) as parameter `tubes`. Basically,
-    Each item in it must be either a tube itself or something that can be
-    transformed into a tube via ["tube"](#tube) below.
+The `@tubes` are passed to `sequence` (see
+[Data::Tubes::Plugin::Plumbing](https://metacpan.org/pod/Data::Tubes::Plugin::Plumbing)) as parameter `tubes`. Basically,
+Each item in it must be either a tube itself or something that can be
+transformed into a tube via ["tube"](#tube) below.
 
-    An optional last parameter allows you to specify additional options:
+An optional last parameter allows you to specify additional options:
 
-    - `pump`
+- `pump`
 
-        set a sub ref that will be called on the output stream from the
-        sequence. In particular, the output iterator from the `sequence` is
-        repeatedly called to get an output record, and this record is fed into
-        the `pump` sub ref.
+    set a sub ref that will be called on the output stream from the
+    sequence. In particular, the output iterator from the `sequence` is
+    repeatedly called to get an output record, and this record is fed into
+    the `pump` sub ref.
 
-    - `tap`
+- `tap`
 
-        set to either an allowed string or to a subroutine ref. In the second
-        case, the output iterator will be fed into the provided subroutine
-        reference, that will have to use it as it sees fit. Note that this
-        `tap` will always be provided with an iterator, which means that it
-        MUST be exhausted in order to actually make the whole pipeline work.
+    set to either an allowed string or to a subroutine ref. In the second
+    case, the output iterator will be fed into the provided subroutine
+    reference, that will have to use it as it sees fit. Note that this
+    `tap` will always be provided with an iterator, which means that it
+    MUST be exhausted in order to actually make the whole pipeline work.
 
-        You can also set this to one of the allowed strings, which will generate
-        a suitable tap for you:
+    You can also set this to one of the allowed strings, which will generate
+    a suitable tap for you:
 
-        - `sink`
+    - `sink`
 
-            this allows you to exhaust the iterator tossing the outcoming records
-            away. This is what you usually want in some \*outer\* pipeline, when you
-            are not interested in the records that go out of the pipeline because...
-            you already did all that you needed to do;
+        this allows you to exhaust the iterator tossing the outcoming records
+        away. This is what you usually want in some \*outer\* pipeline, when you
+        are not interested in the records that go out of the pipeline because...
+        you already did all that you needed to do;
 
-        - `bucket`
+    - `bucket`
 
-            available as of release 0.732, transforms the input iterator into one of
-            the other allowed return values for a valid tube (i.e. the empty list, a
-            single output record, or a string \`records\` followed by an array
-            reference holding the output records). This is useful if you are
-            interested into what goes out of the pipeline, but you don't want the
-            delayed processing provided by the iterator.
+        available as of release 0.732, transforms the input iterator into one of
+        the other allowed return values for a valid tube (i.e. the empty list, a
+        single output record, or a string \`records\` followed by an array
+        reference holding the output records). This is useful if you are
+        interested into what goes out of the pipeline, but you don't want the
+        delayed processing provided by the iterator.
 
-    If `tap` is present, `pump` is ignored.
+If `tap` is present, `pump` is ignored.
 
-    The returned value is always a subroutine reference. If neither `tap`
-    nor `pump` are present, the returned sub reference is a tube resulting
-    from the sequence or provided tubes, so you can use it as any other
-    tube. Otherwise, the returned sub reference will take care of invoking
-    the sequence for you with the parameters you provide, and will then pass
-    the iterator to the provided `tap`/`pump` as explained above.
+The returned value is always a subroutine reference. If neither `tap`
+nor `pump` are present, the returned sub reference is a tube resulting
+from the sequence or provided tubes, so you can use it as any other
+tube. Otherwise, the returned sub reference will take care of invoking
+the sequence for you with the parameters you provide, and will then pass
+the iterator to the provided `tap`/`pump` as explained above.
 
-    Examples (the following alternatives all do the same thing, mostly):
+Examples (the following alternatives all do the same thing, mostly):
 
-        # no options, what comes back is just a plain tube
-        $sequence = pipeline($tube1, $tube2, $tube3);
-        (undef, $it) = $sequence->($record);
-        # so far, nothing really happened because we have to run
-        # the iterator until it's exhausted
-        while (my ($record) = $it->()) { ... }
+    # no options, what comes back is just a plain tube
+    $sequence = pipeline($tube1, $tube2, $tube3);
+    (undef, $it) = $sequence->($record);
+    # so far, nothing really happened because we have to run
+    # the iterator until it's exhausted
+    while (my ($record) = $it->()) { ... }
 
-        # set a "sink" tap, we don't care about returned records
-        $handler = pipeline($tube1, $tube2, $tube3, {tap => 'sink'});
-        $handler->($record); # this will exhaust the iterator
+    # set a "sink" tap, we don't care about returned records
+    $handler = pipeline($tube1, $tube2, $tube3, {tap => 'sink'});
+    $handler->($record); # this will exhaust the iterator
 
-        # set an explicit tap
-        $handler = pipeline(
-           $tube1, $tube2, $tube3,
-           {
-              tap => sub {
-                 my $iterator = shift;
-                 while (my ($record) = $iterator->()) { ... }
-              }
-           }
-        );
-        $handler->($record); # the tap will exhaust the iterator
+    # set an explicit tap
+    $handler = pipeline(
+       $tube1, $tube2, $tube3,
+       {
+          tap => sub {
+             my $iterator = shift;
+             while (my ($record) = $iterator->()) { ... }
+          }
+       }
+    );
+    $handler->($record); # the tap will exhaust the iterator
 
-        # set a pump
-        $handler = pipeline(
-           $tube1, $tube2, $tube3,
-           {
-              pump => sub {
-                 my $record = shift;
-                 ...
-              }
-           }
-        );
-        $handler->($record); # the pump will exhaust the iterator
+    # set a pump
+    $handler = pipeline(
+       $tube1, $tube2, $tube3,
+       {
+          pump => sub {
+             my $record = shift;
+             ...
+          }
+       }
+    );
+    $handler->($record); # the pump will exhaust the iterator
 
-- **summon**
+## **summon**
 
-        # Direct function import
-        summon('Some::Package::subroutine');
+    # Direct function import
+    summon('Some::Package::subroutine');
 
-        # DWIM, treat 'em as plugins under Data::Tubes::Plugin
-        summon(
-           [ qw< +Plumbing sequence logger > ],
-           '+Reader::read_by_line',
-           \%options,
-        );
+    # DWIM, treat 'em as plugins under Data::Tubes::Plugin
+    summon(
+       [ qw< +Plumbing sequence logger > ],
+       '+Reader::read_by_line',
+       \%options,
+    );
 
-    summon operations, most likely from plugins.  This is pretty much the
-    same as a regular `import` done by `use`, only supposed to be easier
-    to use in a script.
+summon operations, most likely from plugins.  This is pretty much the
+same as a regular `import` done by `use`, only supposed to be easier
+to use in a script.
 
-    You can pass different things:
+You can pass different things:
 
-    - _array references_
+- _array references_
 
-        the first item in the array will be considered the package name, the
-        following ones sub names inside that package;
+    the first item in the array will be considered the package name, the
+    following ones sub names inside that package;
 
-    - _strings_
+- _strings_
 
-        this will be considered a fully qualified sub name, i.e. including the
-        package name at the beginning.
+    this will be considered a fully qualified sub name, i.e. including the
+    package name at the beginning.
 
-    The package name will be subject to some analysis that will make using
-    it a bit easier, by means of `resolve_module` in [Data::Tubes::Util](https://metacpan.org/pod/Data::Tubes::Util).
-    In particular:
+The package name will be subject to some analysis that will make using
+it a bit easier, by means of `resolve_module` in [Data::Tubes::Util](https://metacpan.org/pod/Data::Tubes::Util).
+In particular:
 
-    - if the name of the package starts with an exclamation point `!`, this
-    initial character will be stripped away and the rest will be used as the
-    package name;
-    - otherwise, if the package name starts with a plus sign `+`, this first
-    character will be stripped away and the prefix in the provided options
-    will be used (defaulting to `Data::Tubes::Plugin`)
-    - otherwise, if the package name does _not_ contain sub-packages (i.e.
-    the sequence `::`), then the prefix will be used as in the previous
-    bullet;
-    - otherwise, the provide name is used straight.
+- if the name of the package starts with an exclamation point `!`, this
+initial character will be stripped away and the rest will be used as the
+package name;
+- otherwise, if the package name starts with a plus sign `+`, this first
+character will be stripped away and the prefix in the provided options
+will be used (defaulting to `Data::Tubes::Plugin`)
+- otherwise, if the package name does _not_ contain sub-packages (i.e.
+the sequence `::`), then the prefix will be used as in the previous
+bullet;
+- otherwise, the provide name is used straight.
 
-    Examples (in the same order as the bullet above):
+Examples (in the same order as the bullet above):
 
-        !SimplePack --> SimplePack
-        +Some::Pack --> Data::Tubes::Plugin::Some::Pack
-        SimplePack  --> Data::Tubes::Plugin::SimplePack
-        Some::Pack  --> Some::Pack
+    !SimplePack --> SimplePack
+    +Some::Pack --> Data::Tubes::Plugin::Some::Pack
+    SimplePack  --> Data::Tubes::Plugin::SimplePack
+    Some::Pack  --> Some::Pack
 
-    You can optionally pass a hash reference with options as the last
-    parameter, with the following options:
+You can optionally pass a hash reference with options as the last
+parameter, with the following options:
 
-    - `package`
+- `package`
 
-        the package where the loaded sub should be imported. Defaults to the
-        package calling the `summon` function;
+    the package where the loaded sub should be imported. Defaults to the
+    package calling the `summon` function;
 
-    - `prefix`
+- `prefix`
 
-        the prefix to apply when needed. Defaults to `Data::Tubes::Plugin`.
-        Note that you MUST NOT put the `::`, it will be added automatically.
+    the prefix to apply when needed. Defaults to `Data::Tubes::Plugin`.
+    Note that you MUST NOT put the `::`, it will be added automatically.
 
-- **tube**
+## **tube**
 
-        $tube = tube($factory_locator, @parameters); # OR
-        $tube = tube(\@factory_locator, @parameters); # OR
+    $tube = tube($factory_locator, @parameters); # OR
+    $tube = tube(\@factory_locator, @parameters); # OR
 
-    this allows you to facilitate the creation of a tube, doing most of the
-    heavy-lifting automatically.
+this allows you to facilitate the creation of a tube, doing most of the
+heavy-lifting automatically.
 
-    The first parameter is used as a _locator_ of a factory method to
-    generate the real tube. It can be either a string, or an array reference
-    containing two elements, a package name and a subroutine name inside
-    that package. The function `load_sub` in [Data::Tubes::Util](https://metacpan.org/pod/Data::Tubes::Util) is used
-    to load the factory method automatically, which means that the package
-    name is subject to the same rules described in ["summon"](#summon) above.
+The first parameter is used as a _locator_ of a factory method to
+generate the real tube. It can be either a string, or an array reference
+containing two elements, a package name and a subroutine name inside
+that package. The function `load_sub` in [Data::Tubes::Util](https://metacpan.org/pod/Data::Tubes::Util) is used
+to load the factory method automatically, which means that the package
+name is subject to the same rules described in ["summon"](#summon) above.
 
-    After the factory function is loaded, it is called with the provided
-    `@parameters` and the returned value... returned back.
+After the factory function is loaded, it is called with the provided
+`@parameters` and the returned value... returned back.
 
-    Hence, this is a quick way to load some factory from a plugin and call
-    it in one, single call:
+Hence, this is a quick way to load some factory from a plugin and call
+it in one, single call:
 
-        # no additional parameters
-        $files = tube('Reader::iterate_files');
+    # no additional parameters
+    $files = tube('Reader::iterate_files');
 
-        # set some parameters for iterate_files
-        $files = tube('Reader::iterate_files', binmode => ':raw');
+    # set some parameters for iterate_files
+    $files = tube('Reader::iterate_files', binmode => ':raw');
 
-    Most of the times, you are probably looking for ["pipeline"](#pipeline) above,
-    as that will eventually call `tube` automatically.
+Most of the times, you are probably looking for ["pipeline"](#pipeline) above,
+as that will eventually call `tube` automatically.
 
 # BUGS AND LIMITATIONS
 

@@ -16,9 +16,7 @@ requirements, e.g. put some other I<tubes> in a sequence.
 
 =head1 FUNCTIONS
 
-=over
-
-=item B<< alternatives >>
+=head2 B<< alternatives >>
 
    $tube = alternatives(@tubes); # OR
    $tube = alternatives(@tubes, \%args);
@@ -45,7 +43,7 @@ plan to use more than one dispatcher.
 
 =back
 
-=item B<< cache >>
+=head2 B<< cache >>
 
    $ctube = cache($tube, %args); # OR
    $ctube = cache(%args); # OR
@@ -129,7 +127,7 @@ If you want to use L<CHI>, you can do like this:
    cache => ['!CHI', driver => 'File', root_dir => '/path/to/root']
 
 Note that the exclamation point is necessary in this case to avoid the
-automatic prefixing performed by C<resolve_module>.
+automatic prefixing performed by L<Data::Tubes::Util/resolve_module>.
 
 If this parameter is missing, an empty hash is assumed and
 L<Data::Tubes::Util::Cache> is used.
@@ -222,7 +220,7 @@ later reuse.
 
 
 
-=item B<< dispatch >>
+=head2 B<< dispatch >>
 
    $tube = dispatch(%args); # OR
    $tube = dispatch(\%args);
@@ -302,7 +300,7 @@ C<factory> and C<handlers> MUST be provided (but you can provide both,
 in which case C<handlers> acts as a starting point).
 
 
-=item B<< fallback >>
+=head2 B<< fallback >>
 
    $tube = fallback(@tubes); # OR
    $tube = fallback(@tubes, \%args);
@@ -344,7 +342,7 @@ plan to use more than one dispatcher.
 =back
 
 
-=item B<< logger >>
+=head2 B<< logger >>
 
    my $tube = logger(%args); # OR
    my $tube = logger(\%args);
@@ -390,7 +388,7 @@ traversal is something meaningful for printing.
 
 The generated tube always returns back the input record, unchanged.
 
-=item B<< pipeline >>
+=head2 B<< pipeline >>
 
    $tube = pipeline(@tubes); # OR
    $tube = pipeline(@tubes, \%args);
@@ -403,7 +401,7 @@ signature. It is the same as calling:
 
 (depending on what you provide as input), only a bit more natural.
 
-=item B<< sequence >>
+=head2 B<< sequence >>
 
    my $tube = sequence($tubes, %args); # OR
    my $tube = sequence(%args); # OR
@@ -466,8 +464,6 @@ following:
    if (my ($output_record) = $it2->()) {
       # work with $output_record here, it's your output record!
    }
-
-=back
 
 =head1 BUGS AND LIMITATIONS
 
