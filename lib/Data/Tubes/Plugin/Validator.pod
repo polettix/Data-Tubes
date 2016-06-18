@@ -32,12 +32,12 @@ when using C<tube> or C<pipeline> from L<Data::Tubes>.
 
 simple validator mainly aimed at providing regular expressions to be
 tested against text input. For this reason, the default input field from
-the record is C<raw> and not C<structured> like in L</validate_subs>,
+the record is C<raw> and not C<structured> like in L</thoroughly>,
 although you can override it.
 
 The goal of this validator is to get rid of uninteresting parts quickly.
 For this reason, there is no on-the-fly collection of validation
-outcomes; see L</validate_subs> if you need them.
+outcomes; see L</thoroughly> if you need them.
 
 The input record MUST be a hash reference I<except> when C<input> is set
 to C<undef>. In this case it can be almost anything, although it SHOULD
@@ -118,7 +118,7 @@ first non-space character, if present, is the hash C<#>.
 Thin wrapper around L</validate_refuse> to eliminate empty lines,
 defined as any line that only contains optional whitespaces.
 
-=item B<< with_thoroughly >>
+=item B<< thoroughly >>
 
 =item B<< validate_thoroughly >>
 
