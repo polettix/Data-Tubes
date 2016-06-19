@@ -4,6 +4,7 @@
    - `factory` in `dispatch` now goes through `tubify`
    - moved validator `with_subs` to `thoroughly`, also extended
    - extended Travis-CI to 5.24 and 5.22 too
+   - turned doc for subs into =head2 instead of =item
 
 0.732  2016-05-13 22:58:40 CEST
    - release after 100 PASSes in CPAN Testers (thanks!)

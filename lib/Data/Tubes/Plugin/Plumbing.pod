@@ -214,7 +214,8 @@ L<CHI>. Defaults to an empty array reference;
 =item C<tube>
 
 the I<wrapped tube>, i.e. the tube whose output we want to cache for
-later reuse.
+later reuse. You can use whatever L<Data::Tubes::Plugin::Util/tubify>
+accepts, which means a tube or whatever can be turned into one.
 
 =back
 
