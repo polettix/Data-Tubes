@@ -104,7 +104,7 @@ something that can be used as a cache, namely:
 =item *
 
 a hash reference, that will be used via
-L<Data::Tubes::Util::Cache/cache>;
+L<Data::Tubes::Util::Cache/repository>;
 
 =item *
 
