@@ -5,7 +5,7 @@ use English qw< -no_match_vars >;
 use 5.010;
 use File::Path qw< make_path >;
 use File::Basename qw< dirname >;
-our $VERSION = '0.732';
+our $VERSION = '0.733';
 
 use Log::Log4perl::Tiny qw< :easy :dead_if_first >;
 use Mo qw< default >;
