@@ -404,7 +404,7 @@ signature. It is the same as calling:
 
 =head2 B<< sequence >>
 
-   my $tube = sequence($tubes, %args); # OR
+   my $tube = sequence(\@tubes, %args); # OR
    my $tube = sequence(%args); # OR
    my $tube = sequence(\%args);
 
