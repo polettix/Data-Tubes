@@ -437,9 +437,9 @@ arguments. Use this if you want to do some logging, ignore otherwise;
 
 an array reference containing the list of tubes part of the sequence.
 These can be either direct tubes (i.e. references to subroutines) or
-definitions suitable for calling C<tube> in L<Data::Tubes>. This
-parameter can also be passed as the first unnamed argument in the call
-to the function.
+definitions suitable for calling L<Data::Tubes/tube>. This parameter can
+also be passed as the first unnamed argument in the call to the
+function.
 
 =back
 
