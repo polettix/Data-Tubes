@@ -334,7 +334,7 @@ some additional DWIM-mery;
 if you have a tube and you want to call it on some input, but you don't
 care about what will get out, you can use L</drain>. This is
 particularly useful if you know (or suspect) that the tube will return
-an iterator (like a C<sequence> in L<Data::Tubes::Plugin::Plumbing>)
+an iterator (like L<Data::Tubes::Plugin::Plumbing/sequence>)
 because L</drain> will ensure that the iterator is run until it is
 exhausted.
 
@@ -385,10 +385,10 @@ back is a single record or an array reference with the records inside.
 
 build up a pipeline (sequence) of C<@tubes>, possibly with options in
 C<%args>. This is actually only little more than a wrapper around
-C<sequence> in L<Data::Tubes::Plugin::Plumbing>.
+L<Data::Tubes::Plugin::Plumbing/sequence>.
 
-The C<@tubes> are passed to C<sequence> (see
-L<Data::Tubes::Plugin::Plumbing>) as parameter C<tubes>. Basically,
+The C<@tubes> are passed to
+L<Data::Tubes::Plugin::Plumbing/sequence> as parameter C<tubes>. Basically,
 Each item in it must be either a tube itself or something that can be
 transformed into a tube via L</tube> below.
 
@@ -515,8 +515,8 @@ package name at the beginning.
 =back
 
 The package name will be subject to some analysis that will make using
-it a bit easier, by means of C<resolve_module> in L<Data::Tubes::Util>.
-In particular:
+it a bit easier, by means of L<Data::Tubes::Util/resolve_module>. In
+particular:
 
 =over
 
@@ -579,7 +579,7 @@ heavy-lifting automatically.
 The first parameter is used as a I<locator> of a factory method to
 generate the real tube. It can be either a string, or an array reference
 containing two elements, a package name and a subroutine name inside
-that package. The function C<load_sub> in L<Data::Tubes::Util> is used
+that package. The function L<Data::Tubes::Util/load_sub> is used
 to load the factory method automatically, which means that the package
 name is subject to the same rules described in L</summon> above.
 
