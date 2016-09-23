@@ -590,10 +590,10 @@ Hence, this is a quick way to load some factory from a plugin and call
 it in one, single call:
 
    # no additional parameters
-   $files = tube('Reader::iterate_files');
+   $files = tube('Source::iterate_files');
 
    # set some parameters for iterate_files
-   $files = tube('Reader::iterate_files', binmode => ':raw');
+   $files = tube('Source::iterate_files', binmode => ':raw');
 
 Most of the times, you are probably looking for L</pipeline> above,
 as that will eventually call C<tube> automatically.
