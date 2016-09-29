@@ -59,6 +59,19 @@ sub pipeline {
          return (records => \@records);
         }
         if $tap eq 'bucket';
+      $tap = sub {
+         my ($record) = $_[0]->();
+         return $record;
+        }
+        if $tap eq 'first';
+      $tap = sub {
+         my $iterator = shift;
+         my @records;
+         while (my @items = $iterator->()) { push @records, @items; }
+         return unless @records;
+         return \@records;
+        }
+        if $tap eq 'array';
    }
 
    if ((!defined($tap)) && (defined($args->{pump}))) {
