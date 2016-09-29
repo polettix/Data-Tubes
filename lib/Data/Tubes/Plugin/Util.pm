@@ -101,11 +101,13 @@ sub log_helper {
 } ## end sub log_helper
 
 sub tubify {
+   my $opts = {};
+   $opts = shift(@_) if (@_ && ref($_[0]) eq 'HASH');
    map {
       my $ref = ref $_;
       ($ref eq 'CODE')
         ? $_
-        : tube(($ref eq 'ARRAY') ? @$_ : $_)
+        : tube($opts, ($ref eq 'ARRAY') ? @$_ : $_)
    } grep { $_ } @_;
 } ## end sub tubify
 

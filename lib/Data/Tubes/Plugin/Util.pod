@@ -199,14 +199,14 @@ with L<Data::Tubes/summon> and backwards compatibility.
 
 =head2 B<< tubify >>
 
-   @tubes = tubify(@specifications);
+   @tubes = tubify(@specifications); # OR
+   @tubes = tubify(\%opts, @specifications);
 
 automatically transform input specifications into tubes. Each item in
 C<@specification> can be either a tube (i.e. a code reference), or
-something that can be transformed into a tube (see C<tube> in
-L<Data::Tubes> for a definition). Additionally, whatever in
-C<@specification> is found to be I<false> (in the Perl sense) will just
-be ignored.
+something that can be transformed into a tube (see L<Data::Tubes/tube>
+for a definition). Additionally, whatever in C<@specification> is found
+to be I<false> (in the Perl sense) will just be ignored.
 
 Hence, this does returns the two tubes you think:
 
@@ -222,6 +222,10 @@ Additionally, this actually does what you think:
       ['Parser::by_format', format => 'foo,bar,baz'],
       ($foobar && sub { die unless $_[0]->{structured}}),
    );
+
+You can optionally pass a I<hash reference> of options as the first
+parameter. This allows you to set any option available through
+L<Data::Tubes/tube>, e.g. C<prefix>.
 
 =head1 BUGS AND LIMITATIONS
 
