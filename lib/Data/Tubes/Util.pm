@@ -429,8 +429,11 @@ sub trim {
 }
 
 sub tube {
+   my $opts = {};
+   $opts = shift(@_) if (@_ && ref($_[0]) eq 'HASH');
+   my @prefix = exists($opts->{prefix}) ? ($opts->{prefix}) : ();
    my $locator = shift;
-   return load_sub($locator)->(@_);
+   return load_sub($locator, @prefix)->(@_);
 }
 
 sub unzip {
