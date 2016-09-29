@@ -270,7 +270,7 @@ some additional DWIM-mery;
 - if you have a tube and you want to call it on some input, but you don't
 care about what will get out, you can use ["drain"](#drain). This is
 particularly useful if you know (or suspect) that the tube will return
-an iterator (like a `sequence` in [Data::Tubes::Plugin::Plumbing](https://metacpan.org/pod/Data::Tubes::Plugin::Plumbing))
+an iterator (like ["sequence" in Data::Tubes::Plugin::Plumbing](https://metacpan.org/pod/Data::Tubes::Plugin::Plumbing#sequence))
 because ["drain"](#drain) will ensure that the iterator is run until it is
 exhausted.
 
@@ -307,21 +307,26 @@ back is a single record or an array reference with the records inside.
 
 build up a pipeline (sequence) of `@tubes`, possibly with options in
 `%args`. This is actually only little more than a wrapper around
-`sequence` in [Data::Tubes::Plugin::Plumbing](https://metacpan.org/pod/Data::Tubes::Plugin::Plumbing).
+["sequence" in Data::Tubes::Plugin::Plumbing](https://metacpan.org/pod/Data::Tubes::Plugin::Plumbing#sequence).
 
-The `@tubes` are passed to `sequence` (see
-[Data::Tubes::Plugin::Plumbing](https://metacpan.org/pod/Data::Tubes::Plugin::Plumbing)) as parameter `tubes`. Basically,
+The `@tubes` are passed to
+["sequence" in Data::Tubes::Plugin::Plumbing](https://metacpan.org/pod/Data::Tubes::Plugin::Plumbing#sequence) as parameter `tubes`. Basically,
 Each item in it must be either a tube itself or something that can be
 transformed into a tube via ["tube"](#tube) below.
 
 An optional last parameter allows you to specify additional options:
+
+- `prefix`
+
+    an alternative prefix to be used whenever ["load\_sub" in Data::Tubes::Util](https://metacpan.org/pod/Data::Tubes::Util#load_sub)
+    is called behind the scenes during this invocation;
 
 - `pump`
 
     set a sub ref that will be called on the output stream from the
     sequence. In particular, the output iterator from the `sequence` is
     repeatedly called to get an output record, and this record is fed into
-    the `pump` sub ref.
+    the `pump` sub ref;
 
 - `tap`
 
@@ -334,12 +339,11 @@ An optional last parameter allows you to specify additional options:
     You can also set this to one of the allowed strings, which will generate
     a suitable tap for you:
 
-    - `sink`
+    - `array`
 
-        this allows you to exhaust the iterator tossing the outcoming records
-        away. This is what you usually want in some \*outer\* pipeline, when you
-        are not interested in the records that go out of the pipeline because...
-        you already did all that you needed to do;
+        available as of release 0.736, transforms the input iterator in an array
+        reference with all return values inside. Differently from `bucket`,
+        only the array reference is returned.
 
     - `bucket`
 
@@ -349,6 +353,22 @@ An optional last parameter allows you to specify additional options:
         reference holding the output records). This is useful if you are
         interested into what goes out of the pipeline, but you don't want the
         delayed processing provided by the iterator.
+
+    - `first`
+
+        available as of release 0.736, gets the first record from the input
+        iterator and returns it (turning the pipeline into a _simple_ tube that
+        only returns one record). Please note that `undef` will be returned if
+        there is no record in the iterator, so this _tap_ does not allow
+        distinguishing an undefined record from a missing one (which becomes
+        relevant only if you are anticipating undefined records, of course).
+
+    - `sink`
+
+        this allows you to exhaust the iterator tossing the outcoming records
+        away. This is what you usually want in some \*outer\* pipeline, when you
+        are not interested in the records that go out of the pipeline because...
+        you already did all that you needed to do;
 
 If `tap` is present, `pump` is ignored.
 
@@ -425,8 +445,8 @@ You can pass different things:
     package name at the beginning.
 
 The package name will be subject to some analysis that will make using
-it a bit easier, by means of `resolve_module` in [Data::Tubes::Util](https://metacpan.org/pod/Data::Tubes::Util).
-In particular:
+it a bit easier, by means of ["resolve\_module" in Data::Tubes::Util](https://metacpan.org/pod/Data::Tubes::Util#resolve_module). In
+particular:
 
 - if the name of the package starts with an exclamation point `!`, this
 initial character will be stripped away and the rest will be used as the
@@ -463,16 +483,24 @@ parameter, with the following options:
 
     $tube = tube($factory_locator, @parameters); # OR
     $tube = tube(\@factory_locator, @parameters); # OR
+    $tube = tube(\%opts, $factory_locator, @parameters); # OR
+    $tube = tube(\%opts, \@factory_locator, @parameters);
 
 this allows you to facilitate the creation of a tube, doing most of the
 heavy-lifting automatically.
 
-The first parameter is used as a _locator_ of a factory method to
-generate the real tube. It can be either a string, or an array reference
-containing two elements, a package name and a subroutine name inside
-that package. The function `load_sub` in [Data::Tubes::Util](https://metacpan.org/pod/Data::Tubes::Util) is used
-to load the factory method automatically, which means that the package
-name is subject to the same rules described in ["summon"](#summon) above.
+The first parameter can optionally be a _hash reference_ of options.
+Currently, the only supported option is `prefix`, which allows you to
+set an alternative prefix with respect to what
+`Data::Tubes::Util/load_sub` would assume by default.
+
+The following (or first, if `%opts` is missing) parameter is used as a
+_locator_ of a factory method to generate the real tube. It can be
+either a string, or an array reference containing two elements, a
+package name and a subroutine name inside that package. The function
+["load\_sub" in Data::Tubes::Util](https://metacpan.org/pod/Data::Tubes::Util#load_sub) is used to load the factory method
+automatically, which means that the package name is subject to the same
+rules described in ["summon"](#summon) above.
 
 After the factory function is loaded, it is called with the provided
 `@parameters` and the returned value... returned back.
@@ -481,10 +509,10 @@ Hence, this is a quick way to load some factory from a plugin and call
 it in one, single call:
 
     # no additional parameters
-    $files = tube('Reader::iterate_files');
+    $files = tube('Source::iterate_files');
 
     # set some parameters for iterate_files
-    $files = tube('Reader::iterate_files', binmode => ':raw');
+    $files = tube('Source::iterate_files', binmode => ':raw');
 
 Most of the times, you are probably looking for ["pipeline"](#pipeline) above,
 as that will eventually call `tube` automatically.

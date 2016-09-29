@@ -396,12 +396,17 @@ An optional last parameter allows you to specify additional options:
 
 =over
 
+=item C<prefix>
+
+an alternative prefix to be used whenever L<Data::Tubes::Util/load_sub>
+is called behind the scenes during this invocation;
+
 =item C<pump>
 
 set a sub ref that will be called on the output stream from the
 sequence. In particular, the output iterator from the C<sequence> is
 repeatedly called to get an output record, and this record is fed into
-the C<pump> sub ref.
+the C<pump> sub ref;
 
 =item C<tap>
 
@@ -416,12 +421,11 @@ a suitable tap for you:
 
 =over
 
-=item C<sink>
+=item C<array>
 
-this allows you to exhaust the iterator tossing the outcoming records
-away. This is what you usually want in some *outer* pipeline, when you
-are not interested in the records that go out of the pipeline because...
-you already did all that you needed to do;
+available as of release 0.736, transforms the input iterator in an array
+reference with all return values inside. Differently from C<bucket>,
+only the array reference is returned.
 
 =item C<bucket>
 
@@ -431,6 +435,22 @@ single output record, or a string `records` followed by an array
 reference holding the output records). This is useful if you are
 interested into what goes out of the pipeline, but you don't want the
 delayed processing provided by the iterator.
+
+=item C<first>
+
+available as of release 0.736, gets the first record from the input
+iterator and returns it (turning the pipeline into a I<simple> tube that
+only returns one record). Please note that C<undef> will be returned if
+there is no record in the iterator, so this I<tap> does not allow
+distinguishing an undefined record from a missing one (which becomes
+relevant only if you are anticipating undefined records, of course).
+
+=item C<sink>
+
+this allows you to exhaust the iterator tossing the outcoming records
+away. This is what you usually want in some *outer* pipeline, when you
+are not interested in the records that go out of the pipeline because...
+you already did all that you needed to do;
 
 =back
 
@@ -572,16 +592,24 @@ Note that you MUST NOT put the C<::>, it will be added automatically.
 
    $tube = tube($factory_locator, @parameters); # OR
    $tube = tube(\@factory_locator, @parameters); # OR
+   $tube = tube(\%opts, $factory_locator, @parameters); # OR
+   $tube = tube(\%opts, \@factory_locator, @parameters);
 
 this allows you to facilitate the creation of a tube, doing most of the
 heavy-lifting automatically.
 
-The first parameter is used as a I<locator> of a factory method to
-generate the real tube. It can be either a string, or an array reference
-containing two elements, a package name and a subroutine name inside
-that package. The function L<Data::Tubes::Util/load_sub> is used
-to load the factory method automatically, which means that the package
-name is subject to the same rules described in L</summon> above.
+The first parameter can optionally be a I<hash reference> of options.
+Currently, the only supported option is C<prefix>, which allows you to
+set an alternative prefix with respect to what
+C<Data::Tubes::Util/load_sub> would assume by default.
+
+The following (or first, if C<%opts> is missing) parameter is used as a
+I<locator> of a factory method to generate the real tube. It can be
+either a string, or an array reference containing two elements, a
+package name and a subroutine name inside that package. The function
+L<Data::Tubes::Util/load_sub> is used to load the factory method
+automatically, which means that the package name is subject to the same
+rules described in L</summon> above.
 
 After the factory function is loaded, it is called with the provided
 C<@parameters> and the returned value... returned back.
