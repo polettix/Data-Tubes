@@ -1,4 +1,7 @@
 {{$NEXT}}
+   - documentation fixes
+   - add new "tap"s for pipeline: array and first
+   - extend tube() and tubify() to include options
 
 0.734  2016-06-24 08:03:56 CEST
    - release after 126 PASSes in CPAN Testers (thanks!)
