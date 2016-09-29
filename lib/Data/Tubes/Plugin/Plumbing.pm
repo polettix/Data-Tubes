@@ -27,7 +27,7 @@ sub alternatives {
    identify($args);
    my $name = $args->{name};
 
-   my @tubes = tubify(@$tubes);
+   my @tubes = tubify($args, @$tubes);
 
    return sub {
       my $record = shift;
@@ -62,7 +62,7 @@ sub cache {
    my $name = $args{name};
 
    # the cached tube
-   my ($tube) = tubify($args{tube});
+   my ($tube) = tubify(\%args, $args{tube});
    LOGCROAK "$name: no tube to cache" unless defined $tube;
 
    # the cache! We will use something compatible with CHI
@@ -171,7 +171,7 @@ sub dispatch {
         unless defined $key;
 
       # register a new handler... or die!
-      ($handler_for->{$key}) = tubify($factory->($key, $record))
+      ($handler_for->{$key}) = tubify(\%args, $factory->($key, $record))
         unless exists $handler_for->{$key};
 
       return $handler_for->{$key}->($record);
@@ -189,7 +189,7 @@ sub fallback {
    identify($args);
    my $name = $args->{name};
 
-   my @tubes = tubify(@$tubes);
+   my @tubes = tubify($args, @$tubes);
    my $catch = $args->{catch};
    return sub {
       my $record = shift;
@@ -260,7 +260,7 @@ sub sequence {
      unless @$tubes;
 
    # auto-generate tubes if you get definitions
-   my @tubes = tubify(@$tubes);
+   my @tubes = tubify(\%args, @$tubes);
 
    my $logger = log_helper(\%args);
    my $name   = $args{name};
