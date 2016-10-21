@@ -422,6 +422,14 @@ sequence of key/value pairs. The following options are supported:
 
 =over
 
+=item C<gate>
+
+a sub ref that is called over each intermediate record to establish if
+it can continue down the sequence or it should be returned immediately,
+depending on the truth of the returned value. The sub reference is
+passed the record and might change it. Defaults to C<undef>, which means
+that no gating function is invoked;
+
 =item C<name>
 
 set a name for the sequence, which might come handy when debugging.

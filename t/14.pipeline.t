@@ -97,4 +97,37 @@ use Data::Tubes qw< pipeline >;
    is_deeply $outcome[1][1], {first => 1, second => 2}, 'item from tube';
 }
 
+{
+   my $tube = pipeline(
+      sub {
+         my $record = shift;
+         return (records => $record);
+      },
+      sub {
+         my $record = shift;
+         return $record * 2 + 1;
+      },
+      sub {
+         my $record = shift;
+         return $record * 4 + 1;
+      },
+      {
+         gate => sub {
+            my $record = shift;
+            return 1 if ref $record;
+            return $record % 3;
+         },
+         tap => 'bucket',
+      },
+   );
+   isa_ok $tube, 'CODE';
+
+   my @outcome = $tube->([1..10]);
+   is scalar(@outcome), 2, '2 items from tube invocation with bucket';
+   is $outcome[0], 'records', 'sequence of records';
+   my @numbers = @{$outcome[1]};
+   is_deeply $outcome[1], [qw< 3 21 3 9 45 6 15 69 9 21 >],
+     'gating mechanism';
+}
+
 done_testing();

@@ -262,6 +262,8 @@ sub sequence {
    # auto-generate tubes if you get definitions
    my @tubes = tubify(\%args, @$tubes);
 
+   my $gate = $args{gate} // undef;
+
    my $logger = log_helper(\%args);
    my $name   = $args{name};
    return sub {
@@ -289,6 +291,9 @@ sub sequence {
 
             my $record = $record[0];
             return $record if @stack > @tubes;    # output cache
+
+            # cut the sequence early if the gate function says so
+            return $record if $gate && ! $gate->($record);
 
             # something must be done...
             my @outcome = $tubes[$pos]->($record)

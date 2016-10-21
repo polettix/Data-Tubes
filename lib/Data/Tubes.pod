@@ -396,6 +396,13 @@ An optional last parameter allows you to specify additional options:
 
 =over
 
+=item C<gate>
+
+a sub ref that is called over each intermediate record to establish if
+it can continue down the sequence or it should be returned immediately,
+depending on the truth of the returned value. See
+L<Data::Tubes::Plugin::Plumbing/sequence>;
+
 =item C<prefix>
 
 an alternative prefix to be used whenever L<Data::Tubes::Util/load_sub>
