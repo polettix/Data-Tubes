@@ -8,7 +8,7 @@ BEGIN {
 use strict;
 use warnings;
 use 5.010;
-my $VERSION = "0.734";
+my $VERSION = "0.735";
 use Log::Log4perl::Tiny qw< :easy LOGLEVEL >;
 use Data::Tubes qw< pipeline >;
 
@@ -2086,7 +2086,7 @@ END_OF_FILE
  use strict;
  use warnings;
  use English qw< -no_match_vars >;
- our $VERSION = '0.734';
+ our $VERSION = '0.735';
  use Exporter qw< import >;
  
  use Log::Log4perl::Tiny qw< :easy :dead_if_first LOGLEVEL >;
@@ -2140,6 +2140,19 @@ END_OF_FILE
           return (records => \@records);
          }
          if $tap eq 'bucket';
+       $tap = sub {
+          my ($record) = $_[0]->();
+          return $record;
+         }
+         if $tap eq 'first';
+       $tap = sub {
+          my $iterator = shift;
+          my @records;
+          while (my @items = $iterator->()) { push @records, @items; }
+          return unless @records;
+          return \@records;
+         }
+         if $tap eq 'array';
     }
  
     if ((!defined($tap)) && (defined($args->{pump}))) {
@@ -2216,7 +2229,7 @@ END_OF_FILE
  use warnings;
  use English qw< -no_match_vars >;
  use Exporter 'import';
- our $VERSION = '0.734';
+ our $VERSION = '0.735';
  
  use Log::Log4perl::Tiny qw< :easy :dead_if_first >;
  
@@ -2639,8 +2652,11 @@ END_OF_FILE
  }
  
  sub tube {
+    my $opts = {};
+    $opts = shift(@_) if (@_ && ref($_[0]) eq 'HASH');
+    my @prefix = exists($opts->{prefix}) ? ($opts->{prefix}) : ();
     my $locator = shift;
-    return load_sub($locator)->(@_);
+    return load_sub($locator, @prefix)->(@_);
  }
  
  sub unzip {
@@ -2671,7 +2687,7 @@ END_OF_FILE
  use warnings;
  use English qw< -no_match_vars >;
  use Log::Log4perl::Tiny qw< :easy :dead_if_first LOGLEVEL >;
- our $VERSION = '0.734';
+ our $VERSION = '0.735';
  
  use Data::Tubes::Util
    qw< normalize_args normalize_filename args_array_with_options >;
@@ -2805,7 +2821,7 @@ END_OF_FILE
  use warnings;
  use English qw< -no_match_vars >;
  use Data::Dumper;
- our $VERSION = '0.734';
+ our $VERSION = '0.735';
  
  use Log::Log4perl::Tiny qw< :easy :dead_if_first >;
  
@@ -3324,7 +3340,7 @@ END_OF_FILE
  use strict;
  use warnings;
  use English qw< -no_match_vars >;
- our $VERSION = '0.734';
+ our $VERSION = '0.735';
  
  use Log::Log4perl::Tiny qw< :easy :dead_if_first >;
  
@@ -3488,7 +3504,7 @@ END_OF_FILE
  use strict;
  use warnings;
  use English qw< -no_match_vars >;
- our $VERSION = '0.734';
+ our $VERSION = '0.735';
  
  use Log::Log4perl::Tiny qw< :easy :dead_if_first LOGLEVEL >;
  
@@ -3615,7 +3631,7 @@ END_OF_FILE
  use English qw< -no_match_vars >;
  use Data::Dumper;
  use Scalar::Util qw< blessed >;
- our $VERSION = '0.734';
+ our $VERSION = '0.735';
  
  use Log::Log4perl::Tiny
    qw< :easy :dead_if_first get_logger LOGLEVEL LEVELID_FOR >;
@@ -3635,7 +3651,7 @@ END_OF_FILE
     identify($args);
     my $name = $args->{name};
  
-    my @tubes = tubify(@$tubes);
+    my @tubes = tubify($args, @$tubes);
  
     return sub {
        my $record = shift;
@@ -3670,7 +3686,7 @@ END_OF_FILE
     my $name = $args{name};
  
     # the cached tube
-    my ($tube) = tubify($args{tube});
+    my ($tube) = tubify(\%args, $args{tube});
     LOGCROAK "$name: no tube to cache" unless defined $tube;
  
     # the cache! We will use something compatible with CHI
@@ -3779,7 +3795,7 @@ END_OF_FILE
          unless defined $key;
  
        # register a new handler... or die!
-       ($handler_for->{$key}) = tubify($factory->($key, $record))
+       ($handler_for->{$key}) = tubify(\%args, $factory->($key, $record))
          unless exists $handler_for->{$key};
  
        return $handler_for->{$key}->($record);
@@ -3797,7 +3813,7 @@ END_OF_FILE
     identify($args);
     my $name = $args->{name};
  
-    my @tubes = tubify(@$tubes);
+    my @tubes = tubify($args, @$tubes);
     my $catch = $args->{catch};
     return sub {
        my $record = shift;
@@ -3868,7 +3884,9 @@ END_OF_FILE
       unless @$tubes;
  
     # auto-generate tubes if you get definitions
-    my @tubes = tubify(@$tubes);
+    my @tubes = tubify(\%args, @$tubes);
+ 
+    my $gate = $args{gate} // undef;
  
     my $logger = log_helper(\%args);
     my $name   = $args{name};
@@ -3898,6 +3916,9 @@ END_OF_FILE
              my $record = $record[0];
              return $record if @stack > @tubes;    # output cache
  
+             # cut the sequence early if the gate function says so
+             return $record if $gate && ! $gate->($record);
+ 
              # something must be done...
              my @outcome = $tubes[$pos]->($record)
                or next STEP;
@@ -3924,7 +3945,7 @@ END_OF_FILE
  use strict;
  use warnings;
  use English qw< -no_match_vars >;
- our $VERSION = '0.734';
+ our $VERSION = '0.735';
  
  use Log::Log4perl::Tiny qw< :easy :dead_if_first >;
  
@@ -4075,7 +4096,7 @@ END_OF_FILE
  use warnings;
  use English qw< -no_match_vars >;
  use Data::Dumper;
- our $VERSION = '0.734';
+ our $VERSION = '0.735';
  
  use Template::Perlish;
  use Log::Log4perl::Tiny qw< :easy :dead_if_first get_logger >;
@@ -4170,11 +4191,13 @@ END_OF_FILE
  } ## end sub log_helper
  
  sub tubify {
+    my $opts = {};
+    $opts = shift(@_) if (@_ && ref($_[0]) eq 'HASH');
     map {
        my $ref = ref $_;
        ($ref eq 'CODE')
          ? $_
-         : tube(($ref eq 'ARRAY') ? @$_ : $_)
+         : tube($opts, ($ref eq 'ARRAY') ? @$_ : $_)
     } grep { $_ } @_;
  } ## end sub tubify
  
@@ -4194,7 +4217,7 @@ END_OF_FILE
  use warnings;
  use English qw< -no_match_vars >;
  use POSIX qw< strftime >;
- our $VERSION = '0.734';
+ our $VERSION = '0.735';
  
  use Log::Log4perl::Tiny qw< :easy :dead_if_first LOGLEVEL >;
  use Template::Perlish;
@@ -4341,7 +4364,7 @@ END_OF_FILE
  use warnings;
  use English qw< -no_match_vars >;
  use 5.010;
- our $VERSION = '0.734';
+ our $VERSION = '0.735';
  use File::Path qw< mkpath >;
  
  use File::Spec::Functions qw< splitpath catpath >;
@@ -4428,7 +4451,7 @@ END_OF_FILE
  use 5.010;
  use File::Path qw< make_path >;
  use File::Basename qw< dirname >;
- our $VERSION = '0.734';
+ our $VERSION = '0.735';
  
  use Log::Log4perl::Tiny qw< :easy :dead_if_first >;
  use Mo qw< default >;

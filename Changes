@@ -1,4 +1,6 @@
 {{$NEXT}}
+
+0.735  2016-10-22 01:34:04 CEST
    - documentation fixes
    - add new "tap"s for pipeline: array and first
    - extend tube() and tubify() to include options
