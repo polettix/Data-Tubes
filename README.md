@@ -316,6 +316,13 @@ transformed into a tube via ["tube"](#tube) below.
 
 An optional last parameter allows you to specify additional options:
 
+- `gate`
+
+    a sub ref that is called over each intermediate record to establish if
+    it can continue down the sequence or it should be returned immediately,
+    depending on the truth of the returned value. See
+    ["sequence" in Data::Tubes::Plugin::Plumbing](https://metacpan.org/pod/Data::Tubes::Plugin::Plumbing#sequence);
+
 - `prefix`
 
     an alternative prefix to be used whenever ["load\_sub" in Data::Tubes::Util](https://metacpan.org/pod/Data::Tubes::Util#load_sub)
