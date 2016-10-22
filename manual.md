@@ -1230,6 +1230,138 @@ tube, but we want to be sure that we get a record from either tube in
 case we need to add some post-processing at some later time in the
 future.
 
+### Sequence Gates
+
+You might sometimes run into the following situation: you have a sequence
+of input records, which have to satisfy a whole lot of different
+conditions to be really applicable for some processing. These conditions
+might involve loading additional data, etc.
+
+It's easy to say that, in this case, all records that *do not* satisfy all
+conditions can be pruned as soon as the first condition is not met. So,
+for example, in a sequence of numbers, we can easily get rid of all
+multiples of 3 like this tube:
+
+    sub {
+        my $record = shift; # it is a number in our example
+        return $record if $record % 3;
+        return;
+    }
+
+The final `return` signals that this track is finished, so the *sequence*
+handler will just backtrack.
+
+So far so good, but what if you want to provide some kind of *final*
+operation on your sequence? For example, you might want to record a
+*reason* why you excluded specific numbers (like, in this case, we would
+say `it is a multiple of 3` or so). Let's consider the following pipeline
+(remember that it uses *sequence* behind the scenes, so it's basically the
+same):
+
+    my $pl = pipeline(
+        sub { # turn an array reference in a sequence of numbers
+            return records => shift;
+        },
+        sub { return ($_[0] % 3) ? $_[0] : () },
+        sub { return ($_[0] % 5) ? $_[0] : () },
+        sub { return ($_[0] % 7) ? $_[0] : () },
+        sub { say $_[0]; return },
+        {tap => 'sink'}
+    );
+
+This will get rid of all multiples of 3, 5 and 7, printing what remains.
+So, with this input:
+
+    $pl->([1..15]);
+
+it will print:
+
+    1
+    2
+    4
+    8
+    11
+    13
+
+What if I would like to print somewhere else at which step the filter was
+applied though? We might e.g. setup a logging pipeline for this;
+
+    my $logger = pipeline(
+        sub {
+            my $number = shift;
+            return {rendered => "bailed out at multiple of $number"};
+        },
+        ['Writer:to_files', 'ouput-exception-%t.txt'],
+        {tap => 'sink'},
+    );
+
+Now, we should call C<$logger> at each step, like this:
+
+    my $pl = pipeline(
+        sub { # turn an array reference in a sequence of numbers
+            return records => shift;
+        },
+        sub {
+            return $_[0] if $_[0] % 3;
+            $logger->(3);
+            return;
+        },
+        sub {
+            return $_[0] if $_[0] % 5;
+            $logger->(5);
+            return;
+        },
+        sub {
+            return $_[0] if $_[0] % 7;
+            $logger->(7);
+            return;
+        },
+        sub { say $_[0]; return },
+        {tap => 'sink'}
+    );
+
+Admittedly, this is not very elegant. Enter `gate` (since version 0.736),
+a sub reference that performs a test for ealy interruption of a sequence,
+while still returning records. This is how we can transform our whole
+thing:
+
+    my $pl = pipeline(
+        sub { # turn an array reference in a sequence of numbers
+            return records => [map {;{number => $_}} @{$_[0]}];
+        },
+        
+        pipeline(
+            sub {
+                return $_[0] if $_[0] % 3;
+                return {bail => 3};
+            },
+            sub {
+                return $_[0] if $_[0] % 5;
+                return {bail => 5};
+            },
+            sub {
+                return $_[0] if $_[0] % 7;
+                return {bail => 7};
+            },
+            {
+                gate => sub {
+                    return 1 unless exists $_[0]{bail};
+                    $logger->($_[0]{bail});
+                    return;
+                }
+            }
+        ),
+        sub {
+            return if exists $_[0]{bail}; # bail out if requested
+            return $_[0]{number};
+        }
+
+        sub { say $_[0]; return },
+        {tap => 'sink'},
+    );
+
+In this way, we can concentrate our logging stuff in one single point.
+
 ## Process In Peace
 
 Alas, we have come to the end of our journey through
