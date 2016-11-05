@@ -1,5 +1,10 @@
 {{$NEXT}}
 
+0.735001  2016-11-06 00:36:11 CET
+   - simplified resolve_module()
+   - simplified drain()
+   - added support for versioned API
+
 0.735  2016-10-22 01:34:04 CEST
    - documentation fixes
    - add new "tap"s for pipeline: array and first

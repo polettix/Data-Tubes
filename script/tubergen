@@ -8,7 +8,7 @@ BEGIN {
 use strict;
 use warnings;
 use 5.010;
-my $VERSION = "0.735";
+my $VERSION = "0.735001";
 use Log::Log4perl::Tiny qw< :easy LOGLEVEL >;
 use Data::Tubes qw< pipeline >;
 
@@ -2086,8 +2086,10 @@ END_OF_FILE
  use strict;
  use warnings;
  use English qw< -no_match_vars >;
- our $VERSION = '0.735';
- use Exporter qw< import >;
+ our $VERSION = '0.735001';
+ our $API_VERSION = $VERSION;
+ use Exporter ();
+ our @ISA = qw< Exporter >;
  
  use Log::Log4perl::Tiny qw< :easy :dead_if_first LOGLEVEL >;
  use Data::Tubes::Util qw<
@@ -2109,16 +2111,60 @@ END_OF_FILE
  );
  our %EXPORT_TAGS = (all => \@EXPORT_OK,);
  
- sub drain {
+ sub _drain_0_734 {
     my $tube = shift;
     my @outcome = $tube->(@_);
-    return @outcome if scalar(@outcome) < 2;
+    return unless scalar @outcome;
+    return $outcome[0] if scalar(@outcome) == 1;
     return pump($outcome[1]) if $outcome[0] eq 'iterator';
     my $wa = wantarray();
     return if ! defined($wa);
     return $outcome[1] unless $wa;
     return @{$outcome[1]};
  } ## end sub drain
+ 
+ sub drain {
+    goto \&_drain_0_734 if $API_VERSION le '0.734';
+ 
+    my $tube = shift;
+    my @outcome = $tube->(@_);
+ 
+    my $retval;
+    if (scalar(@outcome) < 2) { # one single record inside
+       $retval = \@outcome;
+    }
+    elsif ($outcome[0] eq 'iterator') {
+       $retval = [pump($outcome[1])];
+    }
+    elsif ($outcome[0] eq 'records') {
+       $retval = $outcome[1];
+    }
+    else {
+       LOGDIE "invalid tube output";
+    }
+ 
+    my $wa = wantarray();
+    return unless defined $wa;
+    return $retval unless $wa;
+    return @$retval;
+ }
+ 
+ sub import {
+    my $package = shift;
+    my @filtered;
+    while (@_) {
+       my $item = shift;
+       if (lc($item) eq '-api') {
+          LOGDIE "no API version provided for parameter -api"
+            unless @_;
+          $API_VERSION = shift;
+       }
+       else {
+          push @filtered, $item;
+       }
+    }
+    $package->export_to_level(1, $package, @filtered);
+ }
  
  sub pipeline {
     my ($tubes, $args) = args_array_with_options(@_, {name => 'sequence'});
@@ -2168,7 +2214,7 @@ END_OF_FILE
     LOGDIE 'invalid tap or pump'
       if $tap && ref($tap) ne 'CODE';
  
-    my $sequence = tube('+Plumbing::sequence', %$args, tubes => $tubes);
+    my $sequence = tube('Plumbing::sequence', %$args, tubes => $tubes);
     return $sequence unless $tap;
  
     return sub {
@@ -2229,7 +2275,7 @@ END_OF_FILE
  use warnings;
  use English qw< -no_match_vars >;
  use Exporter 'import';
- our $VERSION = '0.735';
+ our $VERSION = '0.735001';
  
  use Log::Log4perl::Tiny qw< :easy :dead_if_first >;
  
@@ -2548,6 +2594,11 @@ END_OF_FILE
  sub resolve_module {
     my ($module, $prefix) = @_;
  
+    # Force a first character transforming from new interface if after 0.734
+    if ($Data::Tubes::API_VERSION gt '0.734') {
+       $module = '+' . $module unless $module =~ s{^[+^]}{!}mxs;
+    }
+ 
     my ($first) = substr $module, 0, 1;
     return substr $module, 1 if $first eq '!';
  
@@ -2560,7 +2611,7 @@ END_OF_FILE
     }
     return $module unless defined $prefix;
     return $prefix . '::' . $module;
- } ## end sub resolve_module
+ }
  
  sub shorter_sub_names {
     my $stash = shift(@_) . '::';
@@ -2687,7 +2738,7 @@ END_OF_FILE
  use warnings;
  use English qw< -no_match_vars >;
  use Log::Log4perl::Tiny qw< :easy :dead_if_first LOGLEVEL >;
- our $VERSION = '0.735';
+ our $VERSION = '0.735001';
  
  use Data::Tubes::Util
    qw< normalize_args normalize_filename args_array_with_options >;
@@ -2821,7 +2872,7 @@ END_OF_FILE
  use warnings;
  use English qw< -no_match_vars >;
  use Data::Dumper;
- our $VERSION = '0.735';
+ our $VERSION = '0.735001';
  
  use Log::Log4perl::Tiny qw< :easy :dead_if_first >;
  
@@ -3340,7 +3391,7 @@ END_OF_FILE
  use strict;
  use warnings;
  use English qw< -no_match_vars >;
- our $VERSION = '0.735';
+ our $VERSION = '0.735001';
  
  use Log::Log4perl::Tiny qw< :easy :dead_if_first >;
  
@@ -3504,7 +3555,7 @@ END_OF_FILE
  use strict;
  use warnings;
  use English qw< -no_match_vars >;
- our $VERSION = '0.735';
+ our $VERSION = '0.735001';
  
  use Log::Log4perl::Tiny qw< :easy :dead_if_first LOGLEVEL >;
  
@@ -3631,7 +3682,7 @@ END_OF_FILE
  use English qw< -no_match_vars >;
  use Data::Dumper;
  use Scalar::Util qw< blessed >;
- our $VERSION = '0.735';
+ our $VERSION = '0.735001';
  
  use Log::Log4perl::Tiny
    qw< :easy :dead_if_first get_logger LOGLEVEL LEVELID_FOR >;
@@ -3691,7 +3742,7 @@ END_OF_FILE
  
     # the cache! We will use something compatible with CHI
     my $cache = $args{cache} // {};
-    $cache = ['!Data::Tubes::Util::Cache', repository => $cache]
+    $cache = ['^Data::Tubes::Util::Cache', repository => $cache]
       if ref($cache) eq 'HASH';
     if (!blessed($cache)) {
        my ($x, @args) = ref($cache) ? @$cache : $cache;
@@ -3945,7 +3996,7 @@ END_OF_FILE
  use strict;
  use warnings;
  use English qw< -no_match_vars >;
- our $VERSION = '0.735';
+ our $VERSION = '0.735001';
  
  use Log::Log4perl::Tiny qw< :easy :dead_if_first >;
  
@@ -4031,7 +4082,7 @@ END_OF_FILE
     my $wrapper = $args->{wrapper};
     if ($wrapper && $wrapper eq 'try') {
        eval { require Try::Tiny; }
-         or LOGCONFESS '+Validator::validate_with_subs '
+         or LOGCONFESS 'Validator::validate_with_subs '
          . 'needs Try::Tiny, please install';
  
        $wrapper = sub {
@@ -4096,7 +4147,7 @@ END_OF_FILE
  use warnings;
  use English qw< -no_match_vars >;
  use Data::Dumper;
- our $VERSION = '0.735';
+ our $VERSION = '0.735001';
  
  use Template::Perlish;
  use Log::Log4perl::Tiny qw< :easy :dead_if_first get_logger >;
@@ -4217,7 +4268,7 @@ END_OF_FILE
  use warnings;
  use English qw< -no_match_vars >;
  use POSIX qw< strftime >;
- our $VERSION = '0.735';
+ our $VERSION = '0.735001';
  
  use Log::Log4perl::Tiny qw< :easy :dead_if_first LOGLEVEL >;
  use Template::Perlish;
@@ -4364,7 +4415,7 @@ END_OF_FILE
  use warnings;
  use English qw< -no_match_vars >;
  use 5.010;
- our $VERSION = '0.735';
+ our $VERSION = '0.735001';
  use File::Path qw< mkpath >;
  
  use File::Spec::Functions qw< splitpath catpath >;
@@ -4451,7 +4502,7 @@ END_OF_FILE
  use 5.010;
  use File::Path qw< make_path >;
  use File::Basename qw< dirname >;
- our $VERSION = '0.735';
+ our $VERSION = '0.735001';
  
  use Log::Log4perl::Tiny qw< :easy :dead_if_first >;
  use Mo qw< default >;
