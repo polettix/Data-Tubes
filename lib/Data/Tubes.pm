@@ -6,7 +6,9 @@ use strict;
 use warnings;
 use English qw< -no_match_vars >;
 our $VERSION = '0.735';
-use Exporter qw< import >;
+our $API_VERSION = $VERSION;
+use Exporter ();
+our @ISA = qw< Exporter >;
 
 use Log::Log4perl::Tiny qw< :easy :dead_if_first LOGLEVEL >;
 use Data::Tubes::Util qw<
@@ -28,16 +30,60 @@ our @EXPORT_OK = (
 );
 our %EXPORT_TAGS = (all => \@EXPORT_OK,);
 
-sub drain {
+sub _drain_0_734 {
    my $tube = shift;
    my @outcome = $tube->(@_);
-   return @outcome if scalar(@outcome) < 2;
+   return unless scalar @outcome;
+   return $outcome[0] if scalar(@outcome) == 1;
    return pump($outcome[1]) if $outcome[0] eq 'iterator';
    my $wa = wantarray();
    return if ! defined($wa);
    return $outcome[1] unless $wa;
    return @{$outcome[1]};
 } ## end sub drain
+
+sub drain {
+   goto \&_drain_0_734 if $API_VERSION le '0.734';
+
+   my $tube = shift;
+   my @outcome = $tube->(@_);
+
+   my $retval;
+   if (scalar(@outcome) < 2) { # one single record inside
+      $retval = \@outcome;
+   }
+   elsif ($outcome[0] eq 'iterator') {
+      $retval = [pump($outcome[1])];
+   }
+   elsif ($outcome[0] eq 'records') {
+      $retval = $outcome[1];
+   }
+   else {
+      LOGDIE "invalid tube output";
+   }
+
+   my $wa = wantarray();
+   return unless defined $wa;
+   return $retval unless $wa;
+   return @$retval;
+}
+
+sub import {
+   my $package = shift;
+   my @filtered;
+   while (@_) {
+      my $item = shift;
+      if (lc($item) eq '-api') {
+         LOGDIE "no API version provided for parameter -api"
+           unless @_;
+         $API_VERSION = shift;
+      }
+      else {
+         push @filtered, $item;
+      }
+   }
+   $package->export_to_level(1, $package, @filtered);
+}
 
 sub pipeline {
    my ($tubes, $args) = args_array_with_options(@_, {name => 'sequence'});
