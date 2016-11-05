@@ -303,7 +303,7 @@ you can do like this:
 
    use Data::Tubes qw< pipeline >;
    pipeline(
-      '+Source::iterate_files',
+      'Source::iterate_files',
       sub {
          my $fh = $_[0]->{source}{fh};
          chomp(my @names = <$fh>);
@@ -321,7 +321,7 @@ before.
 We can notice one interesting thing about C<pipeline>: in addition to
 I<real> tubes, i.e. sub references, it can accept simple strings as
 well, that it will take care to automatically transform into tubes. In
-this case, it first turns C<+Source::iterate_files> into
+this case, it first turns C<Source::iterate_files> into
 C<Data::Tubes::Plugin::Source::iterate_files>, then loads the function
 C<iterate_files> from the relevant module and used it as a factory to
 generate the real tube. We will see later how we can pass additional
@@ -414,7 +414,7 @@ Remember the last example from L</Managing Sources>? Here's a refresher:
 
    use Data::Tubes qw< pipeline >;
    pipeline(
-      '+Source::iterate_files',
+      'Source::iterate_files',
       sub {
          my $fh = $_[0]->{source}{fh};
          chomp(my @names = <$fh>);

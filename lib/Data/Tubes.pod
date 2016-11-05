@@ -92,12 +92,12 @@ This document describes Data::Tubes version {{[ version ]}}.
    # load components from relevant plugins
    summon(
       qw<
-         +Plumbing::sequence
-         +Source::iterate_files
-         +Reader::read_by_line
-         +Parser::parse_hashy
-         +Renderer::render_with_template_perlish
-         +Writer::write_to_files
+         Plumbing::sequence
+         Source::iterate_files
+         Reader::read_by_line
+         Parser::parse_hashy
+         Renderer::render_with_template_perlish
+         Writer::write_to_files
          >
    );
 
@@ -592,8 +592,8 @@ Examples (the following alternatives all do the same thing, mostly):
 
    # DWIM, treat 'em as plugins under Data::Tubes::Plugin
    summon(
-      [ qw< +Plumbing sequence logger > ],
-      '+Reader::read_by_line',
+      [ qw< Plumbing sequence logger > ],
+      'Reader::read_by_line',
       \%options,
    );
 
@@ -618,41 +618,7 @@ package name at the beginning.
 =back
 
 The package name will be subject to some analysis that will make using
-it a bit easier, by means of L<Data::Tubes::Util/resolve_module>. In
-particular:
-
-=over
-
-=item *
-
-if the name of the package starts with an exclamation point C<!>, this
-initial character will be stripped away and the rest will be used as the
-package name;
-
-=item *
-
-otherwise, if the package name starts with a plus sign C<+>, this first
-character will be stripped away and the prefix in the provided options
-will be used (defaulting to C<Data::Tubes::Plugin>)
-
-=item *
-
-otherwise, if the package name does I<not> contain sub-packages (i.e.
-the sequence C<::>), then the prefix will be used as in the previous
-bullet;
-
-=item *
-
-otherwise, the provide name is used straight.
-
-=back
-
-Examples (in the same order as the bullet above):
-
-   !SimplePack --> SimplePack
-   +Some::Pack --> Data::Tubes::Plugin::Some::Pack
-   SimplePack  --> Data::Tubes::Plugin::SimplePack
-   Some::Pack  --> Some::Pack
+it a bit easier, by means of L<Data::Tubes::Util/resolve_module>.
 
 You can optionally pass a hash reference with options as the last
 parameter, with the following options:

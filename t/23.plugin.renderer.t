@@ -11,7 +11,7 @@ use Data::Tubes qw< summon >;
 my @functions = qw<
   render_with_template_perlish
 >;
-summon(['+Renderer', @functions]);
+summon(['Renderer', @functions]);
 ok __PACKAGE__->can($_), "summoned $_" for @functions;
 
 my $structured = {

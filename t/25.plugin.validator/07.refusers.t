@@ -8,9 +8,9 @@ use Scalar::Util qw< refaddr >;
 
 use Data::Tubes qw< summon >;
 
-summon('+Validator::refuse_comment');
-summon('+Validator::refuse_comment_or_empty');
-summon('+Validator::refuse_empty');
+summon('Validator::refuse_comment');
+summon('Validator::refuse_comment_or_empty');
+summon('Validator::refuse_empty');
 ok __PACKAGE__->can('refuse_comment'), "summoned refuse_comment";
 ok __PACKAGE__->can('refuse_comment_or_empty'),
   "summoned refuse_comment_or_empty";

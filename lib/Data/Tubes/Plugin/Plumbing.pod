@@ -124,7 +124,7 @@ or the C<new> method.
 
 If you want to use L<CHI>, you can do like this:
 
-   cache => ['!CHI', driver => 'File', root_dir => '/path/to/root']
+   cache => ['^CHI', driver => 'File', root_dir => '/path/to/root']
 
 Note that the exclamation point is necessary in this case to avoid the
 automatic prefixing performed by L<Data::Tubes::Util/resolve_module>.

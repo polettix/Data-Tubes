@@ -67,7 +67,7 @@ sub cache {
 
    # the cache! We will use something compatible with CHI
    my $cache = $args{cache} // {};
-   $cache = ['!Data::Tubes::Util::Cache', repository => $cache]
+   $cache = ['^Data::Tubes::Util::Cache', repository => $cache]
      if ref($cache) eq 'HASH';
    if (!blessed($cache)) {
       my ($x, @args) = ref($cache) ? @$cache : $cache;

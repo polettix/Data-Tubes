@@ -7,7 +7,7 @@ use Data::Dumper;
 
 use Data::Tubes qw< summon >;
 
-summon('+Parser::parse_by_format');
+summon('Parser::parse_by_format');
 ok __PACKAGE__->can('parse_by_format'), "summoned parse_by_format";
 
 {

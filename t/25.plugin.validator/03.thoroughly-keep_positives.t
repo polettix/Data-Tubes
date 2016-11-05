@@ -8,7 +8,7 @@ use Data::Dumper;
 
 use Data::Tubes qw< pipeline summon >;
 
-summon('+Validator::thoroughly');
+summon('Validator::thoroughly');
 ok __PACKAGE__->can('thoroughly'), "summoned thoroughly";
 
 {

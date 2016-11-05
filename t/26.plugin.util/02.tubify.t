@@ -11,7 +11,7 @@ use Encode qw< encode decode >;
 
 use Data::Tubes qw< summon >;
 
-summon('+Util::tubify');
+summon('Util::tubify');
 ok __PACKAGE__->can('tubify'), "summoned tubify";
 
 my $sub = sub { return };

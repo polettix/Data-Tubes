@@ -8,7 +8,7 @@ use Data::Dumper;
 
 use Data::Tubes qw< summon >;
 
-summon('+Plumbing::alternatives');
+summon('Plumbing::alternatives');
 ok __PACKAGE__->can('alternatives'), "summoned alternatives";
 
 {

@@ -325,6 +325,11 @@ sub read_file_maybe {
 sub resolve_module {
    my ($module, $prefix) = @_;
 
+   # Force a first character transforming from new interface if after 0.734
+   if ($Data::Tubes::API_VERSION gt '0.734') {
+      $module = '+' . $module unless $module =~ s{^[+^]}{!}mxs;
+   }
+
    my ($first) = substr $module, 0, 1;
    return substr $module, 1 if $first eq '!';
 
@@ -337,7 +342,7 @@ sub resolve_module {
    }
    return $module unless defined $prefix;
    return $prefix . '::' . $module;
-} ## end sub resolve_module
+}
 
 sub shorter_sub_names {
    my $stash = shift(@_) . '::';

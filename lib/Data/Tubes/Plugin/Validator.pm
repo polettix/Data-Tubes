@@ -88,7 +88,7 @@ sub validate_thoroughly {
    my $wrapper = $args->{wrapper};
    if ($wrapper && $wrapper eq 'try') {
       eval { require Try::Tiny; }
-        or LOGCONFESS '+Validator::validate_with_subs '
+        or LOGCONFESS 'Validator::validate_with_subs '
         . 'needs Try::Tiny, please install';
 
       $wrapper = sub {

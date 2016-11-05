@@ -8,7 +8,7 @@ use Scalar::Util qw< refaddr >;
 
 use Data::Tubes qw< summon >;
 
-summon('+Validator::refuse');
+summon('Validator::refuse');
 ok __PACKAGE__->can('refuse'), "summoned refuse";
 
 my $same_as_input = [];

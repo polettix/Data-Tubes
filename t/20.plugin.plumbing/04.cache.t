@@ -8,7 +8,7 @@ use Data::Dumper;
 
 use Data::Tubes qw< pipeline summon >;
 
-summon('+Plumbing::cache');
+summon('Plumbing::cache');
 ok __PACKAGE__->can('cache'), "summoned cache";
 
 my $wrapped = sub { $_[0]->{OUTPUT} = $_[0]->{INPUT} + 1; return $_[0]; };
@@ -48,7 +48,7 @@ my $wrapped = sub { $_[0]->{OUTPUT} = $_[0]->{INPUT} + 1; return $_[0]; };
    my $cache = {};
    my $tube  = cache(
       cache => [
-         '!Data::Tubes::Util::Cache',
+         '^Data::Tubes::Util::Cache',
          repository => $cache,
          max_items  => 1,
       ],
@@ -77,7 +77,7 @@ my $wrapped = sub { $_[0]->{OUTPUT} = $_[0]->{INPUT} + 1; return $_[0]; };
    my $cache = {};
    my $tube  = cache(
       cache => [
-         '!Data::Tubes::Util::Cache',
+         '^Data::Tubes::Util::Cache',
          repository => $cache,
          max_items  => 1,
       ],

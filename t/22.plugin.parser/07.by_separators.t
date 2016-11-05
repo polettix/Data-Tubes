@@ -7,7 +7,7 @@ use Data::Dumper;
 
 use Data::Tubes qw< summon >;
 
-summon('+Parser::parse_by_separators');
+summon('Parser::parse_by_separators');
 ok __PACKAGE__->can('parse_by_separators'), "summoned parse_by_separators";
 
 eval {

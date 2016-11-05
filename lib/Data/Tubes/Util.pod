@@ -665,7 +665,45 @@ Examples:
    my $full_module_name = resolve_module($module_name, $prefix);
 
 possibly expand a module's name according to a prefix. These are the
-rules:
+rules as of release C<0.736>:
+
+=over
+
+=item *
+
+if C<$module_name> starts with either a plus sign character C<+> or a
+caret character C<^>, this initial character will be stripped away and
+the rest will be used as the package name. C<$prefix> will be ignored in
+this case;
+
+=item *
+
+otherwise, C<${prefix}::${module_name}> will be returned (where
+C<$prefix> defaults to the string C<Data::Tubes::Plugin>).
+
+=back
+
+The change is related to simplification of interface and better
+conformance to what other modules do in similar situations (principle of
+I<least surprise>).
+
+Examples:
+
+   module_name('^SimplePack'); # SimplePack
+   module_name('+Some::Pack'); # Some::Pack
+   module_name('SimplePack');  # Data::Tubes::Plugin::SimplePack
+   module_name('Some::Pack');  # Data::Tubes::Plugin::Some::Pack
+   module_name('Pack', 'Some::Thing'); # Some::Thing::Pack
+   module_name('Some::Pack', 'Some::Thing'); # Some::Thing::Some::Pack
+
+B<API Versioning Note>: behaviour of this function changed between
+version C<0.734> and C<0.736>. The previous behaviour, described below,
+is still available when C<$Data::Tubes::API_VERSION> (see
+L<Data::Tubes/API Versioning>) is (lexicographically) less than, or
+equal to, C<0.734>. Here's what the function does with the older
+interface:
+
+=over
 
 =over
 
@@ -701,6 +739,8 @@ Examples (in the same order as the bullet above):
    module_name('Some::Pack');  # Some::Pack
    module_name('Pack', 'Some::Thing'); # Some::Thing::Pack
    module_name('Some::Pack', 'Some::Thing'); # Some::Pack
+
+=back
 
 =head2 B<< shorter_sub_names >>
 

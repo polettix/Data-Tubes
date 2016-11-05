@@ -7,7 +7,7 @@ use Data::Dumper;
 
 use Data::Tubes qw< summon >;
 
-summon('+Parser::parse_by_regex');
+summon('Parser::parse_by_regex');
 ok __PACKAGE__->can('parse_by_regex'), "summoned parse_by_regex";
 
 my $expected = {

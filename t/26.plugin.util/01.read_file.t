@@ -10,7 +10,7 @@ use Encode qw< encode decode >;
 
 use Data::Tubes qw< summon >;
 
-summon('+Util::read_file');
+summon('Util::read_file');
 ok __PACKAGE__->can('read_file'), "summoned read_file";
 
 my $me = path(__FILE__);

@@ -8,7 +8,7 @@ use Data::Dumper;
 
 use Data::Tubes qw< pipeline summon >;
 
-summon('+Plumbing::fallback');
+summon('Plumbing::fallback');
 ok __PACKAGE__->can('fallback'), "summoned fallback";
 
 {

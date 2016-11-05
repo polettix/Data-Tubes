@@ -8,7 +8,7 @@ use Test::Exception;
 
 use Data::Tubes qw< summon >;
 
-summon('+Parser::parse_ghashy');
+summon('Parser::parse_ghashy');
 ok __PACKAGE__->can('parse_ghashy'), "summoned parse_ghashy";
 
 my $raw = q< what = ever you= 'like whatever' this\ goes\ default >;

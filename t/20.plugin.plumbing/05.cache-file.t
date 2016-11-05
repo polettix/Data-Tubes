@@ -10,7 +10,7 @@ use Storable qw< nstore retrieve >;
 
 use Data::Tubes qw< pipeline summon >;
 
-summon('+Plumbing::cache');
+summon('Plumbing::cache');
 ok __PACKAGE__->can('cache'), "summoned cache";
 
 my $me = path(__FILE__);
@@ -25,7 +25,7 @@ my $wrapped = sub { $_[0]->{OUTPUT} = $_[0]->{INPUT} + 1; return $_[0]; };
    ok !$cache->is_dir(), 'directory does not exist initially';
 
    my $tube  = cache(
-      cache  => ['!Data::Tubes::Util::Cache', repository => $cache],
+      cache  => ['^Data::Tubes::Util::Cache', repository => $cache],
       tube   => $wrapped,
       key    => 'INPUT',
       output => 'OUTPUT',

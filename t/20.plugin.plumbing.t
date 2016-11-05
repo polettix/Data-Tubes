@@ -7,7 +7,7 @@ use Data::Dumper;
 
 use Data::Tubes qw< summon tube >;
 
-summon('+Plumbing::sequence');
+summon('Plumbing::sequence');
 ok __PACKAGE__->can('sequence'), 'summoned sequence';
 
 {
@@ -26,7 +26,7 @@ ok __PACKAGE__->can('sequence'), 'summoned sequence';
 
 {
    my $sequence =
-     sequence(tubes => [[qw< !main::factory foo >], \&second, \&third]);
+     sequence(tubes => [[qw< ^main::factory foo >], \&second, \&third]);
    my ($type, $iterator) = $sequence->({});
    is $type, 'iterator', 'sequence returned an iterator';
    is ref($iterator), 'CODE', 'iterator is a code reference';
@@ -54,7 +54,7 @@ ok __PACKAGE__->can('sequence'), 'summoned sequence';
    my $pt3 = sub { return (records => [@_]) };
    my $sequence =
      sequence(tubes =>
-        ['!main::factory', \&second, $pt1, $pt2, $pt3, \&iter_third]);
+        ['^main::factory', \&second, $pt1, $pt2, $pt3, \&iter_third]);
    my ($type, $iterator) = $sequence->({});
    is $type, 'iterator', 'sequence returned an iterator';
    is ref($iterator), 'CODE', 'iterator is a code reference';

@@ -34,7 +34,7 @@ This document describes Data::Tubes version {{\[ version \]}}.
 
 # SYNOPSIS
 
-    use Data::Tubes qw< pipeline >;
+    use Data::Tubes qw< pipeline >, -api => '0.736';
 
     my $id = 0;
     my $tube = sequence(
@@ -83,12 +83,12 @@ This document describes Data::Tubes version {{\[ version \]}}.
     # load components from relevant plugins
     summon(
        qw<
-          +Plumbing::sequence
-          +Source::iterate_files
-          +Reader::read_by_line
-          +Parser::parse_hashy
-          +Renderer::render_with_template_perlish
-          +Writer::write_to_files
+          Plumbing::sequence
+          Source::iterate_files
+          Reader::read_by_line
+          Parser::parse_hashy
+          Renderer::render_with_template_perlish
+          Writer::write_to_files
           >
     );
 
@@ -116,6 +116,11 @@ greater consistency across the whole codebase. As an example, passing
 options to sub-module `foo` might be done via option `foo_opt` in one
 function, and via option `opts_for_foo` in another, which is ugly and
 likely to be changed to have only one single way.
+
+**NOTE**: to try and mitigate the previous statement, whenever possible
+API changes will be versioned, so that both an "old" and the "new"
+behaviour will be possible. See ["API Versioning"](#api-versioning) for the details.
+Bottom line: always declare your `-api` when loading `Data::Tubes`!
 
 ## First Things First: What's a _Tube_?
 
@@ -274,6 +279,56 @@ an iterator (like ["sequence" in Data::Tubes::Plugin::Plumbing](https://metacpan
 because ["drain"](#drain) will ensure that the iterator is run until it is
 exhausted.
 
+## API Versioning
+
+As of release 0.736, an experimental API versioning mechanism is
+introduced to cope with interface changes. This should allow to keep
+both "old" and "new" behaviours when there is a change in e.g. the input
+parameters of a function, or what it returns in different contexts. Of
+course this kind of "backwards compatibility" might not be possible all
+times, in which case a regular deprecation cycle will be adopted or the
+backwards incompatibility stressed loudly (starting with a major version
+number change).
+
+The mechanism is simple and is centered on package variable
+`$Data::Tubes::API_VERSION`, which by default is initialized with the
+_current_ version (i.e. whatever `$Data::Tubes::VERSION` is set to).
+If you set a version value, the API SHOULD be compliant to what was
+available at that specific version.
+
+For example, in version 0.736 the function ["drain"](#drain) below was changed
+to expose a totally consistent behaviour when providing output in scalar
+context. This new behaviour is used only if `$Data::Tubes::API_VERSION`
+is (lexicographically) greater than, or equal to, the string `0.736`;
+otherwise, the old behaviour applies.
+
+You can set the api version value while importing the module, like this:
+
+    use Data::Tubes -api => '0.734', @other_imports;
+
+This will initialize `$Data::Tubes::API_VERSION` to whatever you
+provide. Order is not important but it is mandatory that you provide a
+parameter if you pass option `-api`.
+
+Note that the API Versioning mechanism is dynamically triggered every
+time, so you can e.g. do this:
+
+    # import "drain()" with the new behaviour in 0.736
+    use Data::Tubes qw< drain >, -api => '0.736';
+
+    # use "drain()", but with the previous behaviour
+    {
+       local $Data::Tubes::API_VERSION = '0.734';
+       my $whatever = drain($tube, @some_input);
+    }
+
+    # use "drain()", with the 0.736 behaviour
+    my $whatever = drain($tube, @some_input);
+
+In general, it's advised to always explicitly set your intentions
+related to the API version you want to use, so that you will likely not
+be biten by interface changes upon upgrades.
+
 # FUNCTIONS
 
 ## **drain**
@@ -288,17 +343,29 @@ an iterator, as it will be exhausted.
 Returns different things depending on the calling context:
 
 - in _void_ context, nothing is returned;
-- in _scalar_ context, different things are returned depending on what
-the `$tube` returns. If it returns a single item (i.e. a record), it is
-returned back. If it returns the string `records` and an array
-reference, the array reference is returned. If it returns an iterator,
-an array reference with all the output records produced by the iterator
-is returned;
+- in _scalar_ context it always returns an array reference containing the
+whole sequence of output records.
+
+    This behaviour is valid as of release `0.736`, see below for a
+    description of the previous behaviours and ["API Versioning"](#api-versioning) for a way
+    to trigger them.
+
 - In _list_ context, it always returns a sequence of output records.
 
-Note that the _scalar_ context requires you to know precisely what your
-tube provides back, otherwise you might not know if what you are getting
-back is a single record or an array reference with the records inside.
+Versioning notes (see ["API Versioning"](#api-versioning)):
+
+- up to, and including, release `0.734`, the behaviour of this function
+when called in _scalar_ context was the following:
+
+    >     Different things are returned depending on what the `$tube` returns. If
+    >     it returns a single item (i.e. a record), it is returned back. If it
+    >     returns the string `records` and an array reference, the array
+    >     reference is returned. If it returns an iterator, an array reference
+    >     with all the output records produced by the iterator is returned.
+    >
+    >     Note that the _scalar_ context requires you to know precisely what your
+    >     tube provides back, otherwise you might not know if what you are getting
+    >     back is a single record or an array reference with the records inside.
 
 ## **pipeline**
 
@@ -430,8 +497,8 @@ Examples (the following alternatives all do the same thing, mostly):
 
     # DWIM, treat 'em as plugins under Data::Tubes::Plugin
     summon(
-       [ qw< +Plumbing sequence logger > ],
-       '+Reader::read_by_line',
+       [ qw< Plumbing sequence logger > ],
+       'Reader::read_by_line',
        \%options,
     );
 
@@ -452,26 +519,7 @@ You can pass different things:
     package name at the beginning.
 
 The package name will be subject to some analysis that will make using
-it a bit easier, by means of ["resolve\_module" in Data::Tubes::Util](https://metacpan.org/pod/Data::Tubes::Util#resolve_module). In
-particular:
-
-- if the name of the package starts with an exclamation point `!`, this
-initial character will be stripped away and the rest will be used as the
-package name;
-- otherwise, if the package name starts with a plus sign `+`, this first
-character will be stripped away and the prefix in the provided options
-will be used (defaulting to `Data::Tubes::Plugin`)
-- otherwise, if the package name does _not_ contain sub-packages (i.e.
-the sequence `::`), then the prefix will be used as in the previous
-bullet;
-- otherwise, the provide name is used straight.
-
-Examples (in the same order as the bullet above):
-
-    !SimplePack --> SimplePack
-    +Some::Pack --> Data::Tubes::Plugin::Some::Pack
-    SimplePack  --> Data::Tubes::Plugin::SimplePack
-    Some::Pack  --> Some::Pack
+it a bit easier, by means of ["resolve\_module" in Data::Tubes::Util](https://metacpan.org/pod/Data::Tubes::Util#resolve_module).
 
 You can optionally pass a hash reference with options as the last
 parameter, with the following options:
