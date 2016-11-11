@@ -133,8 +133,8 @@ sub pipeline {
    LOGDIE 'invalid tap or pump'
      if $tap && ref($tap) ne 'CODE';
 
-   my $sequence =
-     tube('^Data::Tubes::Plumbing::sequence', %$args, tubes => $tubes);
+   my $sequence = tube('^Data::Tubes::Plugin::Plumbing::sequence',
+      %$args, tubes => $tubes);
    return $sequence unless $tap;
 
    return sub {
