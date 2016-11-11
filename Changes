@@ -1,5 +1,8 @@
 {{$NEXT}}
 
+0.736  2016-11-11 23:26:03 CET
+   - release on CPAN (CPAN Testers seems out these days...)
+
 0.735002  2016-11-11 13:25:38 CET
    - exact loading Plumbing (formerly brittle)
 

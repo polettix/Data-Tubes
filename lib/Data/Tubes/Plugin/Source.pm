@@ -6,7 +6,7 @@ use strict;
 use warnings;
 use English qw< -no_match_vars >;
 use Log::Log4perl::Tiny qw< :easy :dead_if_first LOGLEVEL >;
-our $VERSION = '0.735002';
+our $VERSION = '0.736';
 
 use Data::Tubes::Util
   qw< normalize_args normalize_filename args_array_with_options >;
