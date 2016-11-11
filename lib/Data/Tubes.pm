@@ -5,7 +5,7 @@ package Data::Tubes;
 use strict;
 use warnings;
 use English qw< -no_match_vars >;
-our $VERSION = '0.735001';
+our $VERSION     = '0.735001';
 our $API_VERSION = $VERSION;
 use Exporter ();
 our @ISA = qw< Exporter >;
@@ -31,25 +31,25 @@ our @EXPORT_OK = (
 our %EXPORT_TAGS = (all => \@EXPORT_OK,);
 
 sub _drain_0_734 {
-   my $tube = shift;
+   my $tube    = shift;
    my @outcome = $tube->(@_);
    return unless scalar @outcome;
    return $outcome[0] if scalar(@outcome) == 1;
    return pump($outcome[1]) if $outcome[0] eq 'iterator';
    my $wa = wantarray();
-   return if ! defined($wa);
+   return if !defined($wa);
    return $outcome[1] unless $wa;
    return @{$outcome[1]};
-} ## end sub drain
+} ## end sub _drain_0_734
 
 sub drain {
    goto \&_drain_0_734 if $API_VERSION le '0.734';
 
-   my $tube = shift;
+   my $tube    = shift;
    my @outcome = $tube->(@_);
 
    my $retval;
-   if (scalar(@outcome) < 2) { # one single record inside
+   if (scalar(@outcome) < 2) {    # one single record inside
       $retval = \@outcome;
    }
    elsif ($outcome[0] eq 'iterator') {
@@ -66,7 +66,7 @@ sub drain {
    return unless defined $wa;
    return $retval unless $wa;
    return @$retval;
-}
+} ## end sub drain
 
 sub import {
    my $package = shift;
@@ -81,9 +81,9 @@ sub import {
       else {
          push @filtered, $item;
       }
-   }
+   } ## end while (@_)
    $package->export_to_level(1, $package, @filtered);
-}
+} ## end sub import
 
 sub pipeline {
    my ($tubes, $args) = args_array_with_options(@_, {name => 'sequence'});
@@ -118,7 +118,7 @@ sub pipeline {
          return \@records;
         }
         if $tap eq 'array';
-   }
+   } ## end if (defined $tap)
 
    if ((!defined($tap)) && (defined($args->{pump}))) {
       my $pump = delete $args->{pump};
@@ -133,8 +133,8 @@ sub pipeline {
    LOGDIE 'invalid tap or pump'
      if $tap && ref($tap) ne 'CODE';
 
-   my $sequence = tube('^Data::Tubes::Plumbing::sequence', %$args,
-      tubes => $tubes);
+   my $sequence =
+     tube('^Data::Tubes::Plumbing::sequence', %$args, tubes => $tubes);
    return $sequence unless $tap;
 
    return sub {
