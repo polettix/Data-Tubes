@@ -1,8 +1,11 @@
 {{$NEXT}}
 
+0.735002  2016-11-11 13:25:38 CET
+   - exact loading Plumbing (formerly brittle)
+
 0.735001  2016-11-06 00:36:11 CET
-   - simplified resolve_module()
-   - simplified drain()
+   - simplified resolve_module() [after feedback from Doug Bell]
+   - simplified drain() [after feedback from Doug Bell]
    - added support for versioned API
 
 0.735  2016-10-22 01:34:04 CEST

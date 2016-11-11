@@ -5,7 +5,7 @@ package Data::Tubes;
 use strict;
 use warnings;
 use English qw< -no_match_vars >;
-our $VERSION     = '0.735001';
+our $VERSION     = '0.735002';
 our $API_VERSION = $VERSION;
 use Exporter ();
 our @ISA = qw< Exporter >;
