@@ -1,111 +1,33 @@
 # carton snapshot format: version 1.0
 DISTRIBUTIONS
-  ExtUtils-Config-0.008
-    pathname: L/LE/LEONT/ExtUtils-Config-0.008.tar.gz
+  Devel-Symdump-2.18
+    pathname: A/AN/ANDK/Devel-Symdump-2.18.tar.gz
     provides:
-      ExtUtils::Config 0.008
+      Devel::Symdump 2.18
+      Devel::Symdump::Export undef
     requirements:
-      Data::Dumper 0
-      ExtUtils::MakeMaker 6.30
-      strict 0
-      warnings 0
-  ExtUtils-Helpers-0.022
-    pathname: L/LE/LEONT/ExtUtils-Helpers-0.022.tar.gz
-    provides:
-      ExtUtils::Helpers 0.022
-      ExtUtils::Helpers::Unix 0.022
-      ExtUtils::Helpers::VMS 0.022
-      ExtUtils::Helpers::Windows 0.022
-    requirements:
-      Carp 0
-      Exporter 5.57
-      ExtUtils::MakeMaker 6.30
-      File::Basename 0
-      File::Copy 0
-      File::Spec::Functions 0
-      Module::Load 0
-      Text::ParseWords 3.24
-      strict 0
-      warnings 0
-  ExtUtils-InstallPaths-0.011
-    pathname: L/LE/LEONT/ExtUtils-InstallPaths-0.011.tar.gz
-    provides:
-      ExtUtils::InstallPaths 0.011
-    requirements:
-      Carp 0
-      ExtUtils::Config 0.002
+      Compress::Zlib 0
       ExtUtils::MakeMaker 0
-      File::Spec 0
-      perl 5.006
-      strict 0
-      warnings 0
-  Log-Log4perl-Tiny-1.2.9
-    pathname: P/PO/POLETTIX/Log-Log4perl-Tiny-1.2.9.tar.gz
+      Test::More 0
+      perl 5.004
+  Log-Log4perl-Tiny-1.4.0
+    pathname: P/PO/POLETTIX/Log-Log4perl-Tiny-1.4.0.tar.gz
     provides:
-      Log::Log4perl::Tiny 1.002009
+      Log::Log4perl::Tiny 1.004000
     requirements:
-      ExtUtils::MakeMaker 0
-      Test::More 0.94
-      perl 5.008_000
-  Mo-0.39
-    pathname: I/IN/INGY/Mo-0.39.tar.gz
+      Module::Build::Tiny 0.034
+      perl 5.008000
+  Path-Tiny-0.120
+    pathname: D/DA/DAGOLDEN/Path-Tiny-0.120.tar.gz
     provides:
-      Attr::Trait 0.39
-      Mo 0.39
-      Mo::Golf 0.39
-      Mo::Inline 0.39
-      Mo::Moose 0.39
-      Mo::Mouse 0.39
-      Mo::build 0.39
-      Mo::builder 0.39
-      Mo::chain 0.39
-      Mo::coerce 0.39
-      Mo::default 0.39
-      Mo::exporter 0.39
-      Mo::import 0.39
-      Mo::importer 0.39
-      Mo::is 0.39
-      Mo::nonlazy 0.39
-      Mo::option 0.39
-      Mo::required 0.39
-      Mo::xs 0.39
-    requirements:
-      ExtUtils::MakeMaker 6.30
-  Module-Build-Tiny-0.039
-    pathname: L/LE/LEONT/Module-Build-Tiny-0.039.tar.gz
-    provides:
-      Module::Build::Tiny 0.039
-    requirements:
-      CPAN::Meta 0
-      DynaLoader 0
-      Exporter 5.57
-      ExtUtils::CBuilder 0
-      ExtUtils::Config 0.003
-      ExtUtils::Helpers 0.020
-      ExtUtils::Install 0
-      ExtUtils::InstallPaths 0.002
-      ExtUtils::ParseXS 0
-      File::Basename 0
-      File::Find 0
-      File::Path 0
-      File::Spec::Functions 0
-      Getopt::Long 2.36
-      JSON::PP 2
-      Pod::Man 0
-      TAP::Harness::Env 0
-      perl 5.006
-      strict 0
-      warnings 0
-  Path-Tiny-0.084
-    pathname: D/DA/DAGOLDEN/Path-Tiny-0.084.tar.gz
-    provides:
-      Path::Tiny 0.084
-      Path::Tiny::Error 0.084
+      Path::Tiny 0.120
+      Path::Tiny::Error 0.120
     requirements:
       Carp 0
       Cwd 0
       Digest 1.03
       Digest::SHA 5.45
+      Encode 0
       Exporter 5.57
       ExtUtils::MakeMaker 6.17
       Fcntl 0
@@ -116,108 +38,58 @@ DISTRIBUTIONS
       File::Temp 0.19
       File::stat 0
       constant 0
-      if 0
       overload 0
       perl 5.008001
       strict 0
       warnings 0
-  Sub-Uplevel-0.25
-    pathname: D/DA/DAGOLDEN/Sub-Uplevel-0.25.tar.gz
+      warnings::register 0
+  Pod-Coverage-0.23
+    pathname: R/RC/RCLAMP/Pod-Coverage-0.23.tar.gz
     provides:
-      Sub::Uplevel 0.25
+      Pod::Coverage 0.23
+      Pod::Coverage::CountParents undef
+      Pod::Coverage::ExportOnly undef
+      Pod::Coverage::Extractor 0.23
+      Pod::Coverage::Overloader undef
     requirements:
-      Carp 0
-      ExtUtils::MakeMaker 6.17
-      constant 0
-      perl 5.006
-      strict 0
-      warnings 0
-  Template-Perlish-1.52
-    pathname: P/PO/POLETTIX/Template-Perlish-1.52.tar.gz
+      Devel::Symdump 2.01
+      ExtUtils::MakeMaker 0
+      Pod::Find 0.21
+      Pod::Parser 1.13
+      Test::More 0
+  Template-Perlish-1.56
+    pathname: P/PO/POLETTIX/Template-Perlish-1.56.tar.gz
     provides:
-      Template::Perlish 1.52
+      Template::Perlish 1.56
     requirements:
       Module::Build::Tiny 0.034
       perl 5.008000
-  Test-Exception-0.43
-    pathname: E/EX/EXODIST/Test-Exception-0.43.tar.gz
+  Test-Pod-1.52
+    pathname: E/ET/ETHER/Test-Pod-1.52.tar.gz
     provides:
-      Test::Exception 0.43
-    requirements:
-      Carp 0
-      Exporter 0
-      ExtUtils::MakeMaker 0
-      Sub::Uplevel 0.18
-      Test::Builder 0.7
-      Test::Builder::Tester 1.07
-      Test::Harness 2.03
-      base 0
-      perl 5.006001
-      strict 0
-      warnings 0
-  Test-Harness-3.36
-    pathname: L/LE/LEONT/Test-Harness-3.36.tar.gz
-    provides:
-      App::Prove 3.36
-      App::Prove::State 3.36
-      App::Prove::State::Result 3.36
-      App::Prove::State::Result::Test 3.36
-      Harness::Hook undef
-      TAP::Base 3.36
-      TAP::Formatter::Base 3.36
-      TAP::Formatter::Color 3.36
-      TAP::Formatter::Console 3.36
-      TAP::Formatter::Console::ParallelSession 3.36
-      TAP::Formatter::Console::Session 3.36
-      TAP::Formatter::File 3.36
-      TAP::Formatter::File::Session 3.36
-      TAP::Formatter::Session 3.36
-      TAP::Harness 3.36
-      TAP::Harness::Env 3.36
-      TAP::Object 3.36
-      TAP::Parser 3.36
-      TAP::Parser::Aggregator 3.36
-      TAP::Parser::Grammar 3.36
-      TAP::Parser::Iterator 3.36
-      TAP::Parser::Iterator::Array 3.36
-      TAP::Parser::Iterator::Process 3.36
-      TAP::Parser::Iterator::Stream 3.36
-      TAP::Parser::IteratorFactory 3.36
-      TAP::Parser::Multiplexer 3.36
-      TAP::Parser::Result 3.36
-      TAP::Parser::Result::Bailout 3.36
-      TAP::Parser::Result::Comment 3.36
-      TAP::Parser::Result::Plan 3.36
-      TAP::Parser::Result::Pragma 3.36
-      TAP::Parser::Result::Test 3.36
-      TAP::Parser::Result::Unknown 3.36
-      TAP::Parser::Result::Version 3.36
-      TAP::Parser::Result::YAML 3.36
-      TAP::Parser::ResultFactory 3.36
-      TAP::Parser::Scheduler 3.36
-      TAP::Parser::Scheduler::Job 3.36
-      TAP::Parser::Scheduler::Spinner 3.36
-      TAP::Parser::Source 3.36
-      TAP::Parser::SourceHandler 3.36
-      TAP::Parser::SourceHandler::Executable 3.36
-      TAP::Parser::SourceHandler::File 3.36
-      TAP::Parser::SourceHandler::Handle 3.36
-      TAP::Parser::SourceHandler::Perl 3.36
-      TAP::Parser::SourceHandler::RawTAP 3.36
-      TAP::Parser::YAMLish::Reader 3.36
-      TAP::Parser::YAMLish::Writer 3.36
-      Test::Harness 3.36
+      Test::Pod 1.52
     requirements:
       ExtUtils::MakeMaker 0
-  Try-Tiny-0.24
-    pathname: E/ET/ETHER/Try-Tiny-0.24.tar.gz
+      File::Find 0
+      Pod::Simple 3.05
+      Test::Builder::Tester 1.02
+      Test::More 0.62
+      perl 5.008
+  Test-Pod-Coverage-1.10
+    pathname: N/NE/NEILB/Test-Pod-Coverage-1.10.tar.gz
     provides:
-      Try::Tiny 0.24
+      Test::Pod::Coverage 1.10
     requirements:
-      Carp 0
-      Exporter 5.57
       ExtUtils::MakeMaker 0
-      constant 0
+      Pod::Coverage 0
+      Test::Builder 0
       perl 5.006
       strict 0
       warnings 0
+  Try-Catch-1.1.0
+    pathname: M/MA/MAMOD/Try-Catch-1.1.0.tar.gz
+    provides:
+      Try::Catch 1.001000
+    requirements:
+      ExtUtils::MakeMaker 0
+      perl v5.6.0
