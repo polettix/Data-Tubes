@@ -37,7 +37,7 @@ my %config = get_options(
    # start putting your options here
    'foo|f=s',
    ['bar|b=s', default  => 'default value for bar'],
-   ['baz|B=i', required => 1],
+   ['baz|B=i', required => 0, environment => 'MYAPP_BAZ'],
 );
 
 # Remove following line if you remove 'loglevel' in options above
@@ -131,6 +131,10 @@ sub get_options {
          my ($name) = split /\|/, $spec, 2;
          if (exists $opts{default}) {
             $config{$name} = $opts{default};
+         }
+         if (exists $opts{environment}) {
+            $config{$name} = $ENV{$opts{environment}}
+               if defined $ENV{$opts{environment}};
          }
          if (exists $opts{fallback}) {
             $fallback_for{$name} = $opts{fallback};

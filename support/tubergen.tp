@@ -21,12 +21,13 @@ my %config = get_options(
    ['loglevel|log=s', default => 'INFO'],
 
    # start putting your options here
-   ['abstract|A=s', required => 1],
-   ['author|a=s',   required => 1],
-   ['email|e=s',    required => 1],
-   ['name|n=s',     required => 1],
-   ['output|o=s'],
-   ['year|y=s', default => 1900 + (localtime)[5]],
+   ['abstract|A=s', environment => 'TG_ABSTRACT', required => 1],
+   ['author|a=s',   environment => 'TG_AUTHOR',   required => 1],
+   ['email|e=s',    environment => 'TG_EMAIL',    required => 1],
+   ['name|n=s',     environment => 'TG_NAME',     required => 1],
+   ['output|o=s',   environment => 'TG_OUTPUT'],
+   ['year|y=s',     environment => 'TG_YEAR',
+         default => 1900 + (localtime)[5]],
 );
 
 ########################################################################
@@ -67,6 +68,10 @@ sub get_options {
          my ($name) = split /\|/, $spec, 2;
          if (exists $opts{default}) {
             $config{$name} = $opts{default};
+         }
+         if (exists $opts{environment}) {
+            $config{$name} = $ENV{$opts{environment}}
+               if defined $ENV{$opts{environment}};
          }
          if (exists $opts{fallback}) {
             $fallback_for{$name} = $opts{fallback};
