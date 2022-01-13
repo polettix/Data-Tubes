@@ -1,5 +1,10 @@
 {{$NEXT}}
 
+0.737  2022-01-13 22:42:41 CET
+   - tubify dispatch handlers defined as array refs, now DWIM
+   - more testing (dispatch)
+   - add support for environment variables in tubergen
+
 0.736  2016-11-11 23:26:03 CET
    - release on CPAN (CPAN Testers seems out these days...)
 
