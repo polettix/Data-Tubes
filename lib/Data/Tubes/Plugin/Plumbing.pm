@@ -7,7 +7,7 @@ use warnings;
 use English qw< -no_match_vars >;
 use Data::Dumper;
 use Scalar::Util qw< blessed >;
-our $VERSION = '0.737';
+our $VERSION = '0.738';
 
 use Log::Log4perl::Tiny
   qw< :easy :dead_if_first get_logger LOGLEVEL LEVELID_FOR >;
