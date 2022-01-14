@@ -583,7 +583,7 @@ Flavio Poletti <polettix@cpan.org>
 
 # COPYRIGHT AND LICENSE
 
-Copyright (C) 2016 by Flavio Poletti <polettix@cpan.org>
+Copyright (C) 2022 by Flavio Poletti <polettix@cpan.org>
 
 This module is free software. You can redistribute it and/or modify it
 under the terms of the Artistic License 2.0.
