@@ -87,15 +87,15 @@ sub validate_thoroughly {
 
    my $wrapper = $args->{wrapper};
    if ($wrapper && $wrapper eq 'try') {
-      eval { require Try::Tiny; }
+      eval { require Try::Catch; }
         or LOGCONFESS 'Validator::validate_with_subs '
-        . 'needs Try::Tiny, please install';
+        . 'needs Try::Catch, please install';
 
       $wrapper = sub {
          my ($validator, @params) = @_;
-         return Try::Tiny::try(
+         return Try::Catch::try(
             sub { $validator->(@params); },
-            Try::Tiny::catch(sub { return (0, $_); }),
+            Try::Catch::catch(sub { return (0, $_); }),
          );
       };
    } ## end if ($wrapper && $wrapper...)
